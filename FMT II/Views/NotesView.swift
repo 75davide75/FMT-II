@@ -4,6 +4,23 @@ import UIKit
 private enum TagKind: Equatable { case subject, teacher, class_ }
 private struct TagFilter: Equatable { let kind: TagKind; let value: String }
 
+extension NoteTaskType {
+    var color: Color {
+        switch self {
+        case .compito:        return .yellow
+        case .verifica:       return .red
+        case .interrogazione: return .orange
+        }
+    }
+    var icon: String {
+        switch self {
+        case .compito:        return "pencil.and.list.clipboard"
+        case .verifica:       return "doc.text.magnifyingglass"
+        case .interrogazione: return "person.wave.2"
+        }
+    }
+}
+
 // MARK: - Notes List
 
 struct NotesListView: View {
@@ -21,6 +38,7 @@ struct NotesListView: View {
     @State private var showSettings = false
     @State private var searchQuery = ""
     @State private var tagFilter: TagFilter? = nil
+    @State private var taskFilter: NoteTaskType? = nil
     @State private var isSearching = false
     @FocusState private var searchFocused: Bool
 
@@ -54,12 +72,16 @@ struct NotesListView: View {
                 }
             }
         }
+        if let task = taskFilter {
+            base = base.filter { $0.taskType == task.rawValue }
+        }
         let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return base }
         // Full-text find — matches note content, plus its time and day.
         return base.filter { n in
             let day = n.dayId.flatMap { dayLabels[$0] } ?? ""
-            let hay = (n.attributedText.string + " " + (n.time ?? "") + " " + day).lowercased()
+            let date = n.createdAt.formatted(date: .abbreviated, time: .omitted)
+            let hay = (n.attributedText.string + " " + (n.time ?? "") + " " + day + " " + date).lowercased()
             return hay.contains(q)
         }
     }
@@ -180,7 +202,7 @@ struct NotesListView: View {
                                             withAnimation { store.delete(ids: [note.id]) }
                                         } label: { Label("Elimina", systemImage: "trash") }
                                     }
-                                    .listRowBackground(Color(.tertiarySystemGroupedBackground))
+                                    .listRowBackground(rowBackground(for: note))
                                 }
                             }
                         }
@@ -190,7 +212,7 @@ struct NotesListView: View {
                     .animation(.default, value: displayNotes.count)
                 }
             }
-            .background(Color(.secondarySystemGroupedBackground).ignoresSafeArea())
+            .background(Color.sectionPage.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -232,11 +254,19 @@ struct NotesListView: View {
                                     searchFocused = true
                                 } label: { Label("Cerca", systemImage: "magnifyingglass") }
 
-                                if !availableSubjects.isEmpty || !availableTeachers.isEmpty || !availableClasses.isEmpty {
+                                if !visibleBase.isEmpty {
                                     Menu {
-                                        Button { withAnimation { tagFilter = nil } } label: {
-                                            if tagFilter == nil { Label("Mostra tutte", systemImage: "checkmark") }
+                                        Button { withAnimation { tagFilter = nil; taskFilter = nil } } label: {
+                                            if tagFilter == nil && taskFilter == nil { Label("Mostra tutte", systemImage: "checkmark") }
                                             else { Text("Mostra tutte") }
+                                        }
+                                        Menu("Tipo") {
+                                            ForEach(NoteTaskType.allCases) { t in
+                                                Button { withAnimation { taskFilter = (taskFilter == t ? nil : t) } } label: {
+                                                    if taskFilter == t { Label(t.label, systemImage: "checkmark") }
+                                                    else { Label(t.label, systemImage: t.icon) }
+                                                }
+                                            }
                                         }
                                         if !availableSubjects.isEmpty {
                                             Menu("Materie") { tagButtons(.subject, availableSubjects) }
@@ -248,7 +278,7 @@ struct NotesListView: View {
                                             Menu("Classi") { tagButtons(.class_, availableClasses) }
                                         }
                                     } label: {
-                                        Label(tagFilter == nil ? "Filtra per tag" : "Filtro: \(tagFilter!.value)",
+                                        Label((tagFilter == nil && taskFilter == nil) ? "Filtra" : "Filtro attivo",
                                               systemImage: "line.3.horizontal.decrease.circle")
                                     }
                                 }
@@ -297,6 +327,7 @@ struct NotesListView: View {
                     isSearching = false
                     searchQuery = ""
                     tagFilter = nil
+                    taskFilter = nil
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -309,6 +340,20 @@ struct NotesListView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(store: scheduleStore, notesStore: store, gradesStore: gradesStore, showFilePicker: $showFilePicker)
+        }
+    }
+
+    /// Row background: a coloured, bordered card for special task types
+    /// (compito/verifica/interrogazione), otherwise a neutral card.
+    @ViewBuilder
+    private func rowBackground(for note: Note) -> some View {
+        if let tc = note.taskType.flatMap(NoteTaskType.init(rawValue:))?.color {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(tc.opacity(0.13))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(tc.opacity(0.55), lineWidth: 1.5))
+                .padding(.vertical, 2)
+        } else {
+            Color.sectionCard
         }
     }
 
@@ -370,7 +415,7 @@ struct NotesListView: View {
                 withAnimation {
                     store.delete(ids: selectedIds)
                     selectedIds.removeAll()
-                    if displayNotes.isEmpty { isSelecting = false }
+                    isSelecting = false
                 }
             } label: {
                 VStack(spacing: 3) {
@@ -389,6 +434,7 @@ struct NotesListView: View {
                     withAnimation {
                         store.unarchive(ids: selectedIds)
                         selectedIds.removeAll()
+                        isSelecting = false
                     }
                 } label: {
                     VStack(spacing: 3) {
@@ -404,7 +450,7 @@ struct NotesListView: View {
                     withAnimation {
                         store.archive(ids: selectedIds)
                         selectedIds.removeAll()
-                        if displayNotes.isEmpty { isSelecting = false }
+                        isSelecting = false
                     }
                 } label: {
                     VStack(spacing: 3) {
@@ -453,8 +499,10 @@ private struct NoteRowView: View {
     let note: Note
     var searchQuery: String = ""
 
+    private var taskType: NoteTaskType? { note.taskType.flatMap(NoteTaskType.init(rawValue:)) }
+
     private var hasTags: Bool {
-        note.time != nil || note.teacherTag != nil || note.classTag != nil || note.subjectTag != nil
+        taskType != nil || note.time != nil || note.teacherTag != nil || note.classTag != nil || note.subjectTag != nil
     }
 
     /// True when the active search matches this note's time — used to highlight it green.
@@ -462,6 +510,13 @@ private struct NoteRowView: View {
         let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty, let t = note.time else { return false }
         return t.lowercased().contains(q)
+    }
+
+    /// True when the active search matches this note's date — highlights it green.
+    private var dateMatches: Bool {
+        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return false }
+        return note.createdAt.formatted(date: .abbreviated, time: .omitted).lowercased().contains(q)
     }
 
     var body: some View {
@@ -472,7 +527,8 @@ private struct NoteRowView: View {
 
             HStack(spacing: 5) {
                 Text(note.createdAt, format: .dateTime.day().month(.abbreviated))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(dateMatches ? Color.green : Color.secondary)
+                    .fontWeight(dateMatches ? .semibold : .regular)
                 if !note.displayPreview.isEmpty {
                     Text(note.displayPreview)
                         .foregroundStyle(.tertiary)
@@ -483,6 +539,7 @@ private struct NoteRowView: View {
 
             if hasTags {
                 HStack(spacing: 6) {
+                    if let tt = taskType { TagChip(text: tt.label, icon: tt.icon, tint: tt.color) }
                     if let time = note.time { TagChip(text: time, icon: "clock", tint: timeMatches ? .green : .secondary) }
                     if let subject = note.subjectTag { TagChip(text: subject, icon: "book.closed.fill", tint: .purple) }
                     if let teacher = note.teacherTag { TagChip(text: teacher, icon: "person.fill", tint: .blue) }
@@ -528,8 +585,13 @@ struct NoteEditorSheet: View {
     @State private var teacherTag: String = ""
     @State private var classTag: String = ""
     @State private var subjectTag: String = ""
-    @State private var reminder = false
-    @State private var showMetadata = false
+    @State private var reminders: [NoteReminder] = []
+    @State private var taskType: NoteTaskType? = nil
+    @State private var showDetailsSheet = false
+
+    private var hasDetails: Bool {
+        day != nil || time != nil || !teacherTag.isEmpty || !classTag.isEmpty || !subjectTag.isEmpty || !reminders.isEmpty || taskType != nil
+    }
 
     private var isNew: Bool { context.existingNote == nil }
 
@@ -562,6 +624,30 @@ struct NoteEditorSheet: View {
         return String(format: "%02d:%02d",
                       Calendar.current.component(.hour, from: now),
                       Calendar.current.component(.minute, from: now))
+    }
+
+    private func reminderTime(_ binding: Binding<NoteReminder>) -> Binding<Date> {
+        Binding(
+            get: {
+                let parts = binding.wrappedValue.time.split(separator: ":").compactMap { Int($0) }
+                var c = DateComponents()
+                c.hour = parts.first ?? 8
+                c.minute = parts.count > 1 ? parts[1] : 0
+                return Calendar.current.date(from: c) ?? Date()
+            },
+            set: { newDate in
+                let h = Calendar.current.component(.hour, from: newDate)
+                let m = Calendar.current.component(.minute, from: newDate)
+                binding.wrappedValue.time = String(format: "%02d:%02d", h, m)
+            }
+        )
+    }
+
+    private func addReminder() {
+        let d = day ?? DayId.monday.rawValue
+        let t = time ?? currentHHmm()
+        reminders.append(NoteReminder(day: d, time: t))
+        Task { await NotificationManager.shared.requestAuthorization() }
     }
 
     // MARK: Autocomplete
@@ -618,32 +704,24 @@ struct NoteEditorSheet: View {
 
                 Divider()
 
-                VStack(spacing: 0) {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { showMetadata.toggle() }
-                    } label: {
-                        HStack {
-                            Label("Dettagli", systemImage: "tag")
-                                .font(.caption.weight(.medium))
-                            if day != nil || time != nil || !teacherTag.isEmpty || !classTag.isEmpty || !subjectTag.isEmpty {
-                                Circle().fill(.blue).frame(width: 6, height: 6)
-                            }
-                            Spacer()
-                            Image(systemName: showMetadata ? "chevron.up" : "chevron.down")
-                                .font(.caption2)
+                Button {
+                    showDetailsSheet = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Label("Dettagli", systemImage: "tag")
+                            .font(.callout)
+                        if hasDetails {
+                            Circle().fill(.blue).frame(width: 6, height: 6)
                         }
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption)
                     }
-                    .buttonStyle(.plain)
-
-                    if showMetadata {
-                        Divider()
-                        metadataFields
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .background(Color(.secondarySystemGroupedBackground))
             }
             .background(Color(.systemBackground).ignoresSafeArea())
@@ -659,6 +737,18 @@ struct NoteEditorSheet: View {
                         .disabled(attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+            .sheet(isPresented: $showDetailsSheet) {
+                NavigationStack {
+                    ScrollView { metadataFields.padding(.vertical, 4) }
+                        .background(Color(.systemGroupedBackground))
+                        .navigationTitle("Dettagli")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) { Button("Fine") { showDetailsSheet = false } }
+                        }
+                }
+                .presentationDetents([.medium, .large])
+            }
         }
         .onAppear { setupInitialState() }
     }
@@ -666,6 +756,22 @@ struct NoteEditorSheet: View {
     @ViewBuilder
     private var metadataFields: some View {
         VStack(spacing: 0) {
+            HStack {
+                Label("Tipo", systemImage: "flag.fill").font(.callout)
+                Spacer()
+                Picker("", selection: $taskType) {
+                    Text("Nessuno").tag(NoteTaskType?.none)
+                    ForEach(NoteTaskType.allCases) { t in
+                        Text(t.label).tag(NoteTaskType?.some(t))
+                    }
+                }
+                .pickerStyle(.menu)
+                .tint(.secondary)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+
+            Divider().padding(.leading, 16)
+
             HStack {
                 Label("Giorno", systemImage: "calendar").font(.callout)
                 Spacer()
@@ -748,22 +854,41 @@ struct NoteEditorSheet: View {
 
             Divider().padding(.leading, 16)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(isOn: $reminder) {
-                    Label("Promemoria settimanale", systemImage: "bell")
-                        .font(.callout)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("Promemoria", systemImage: "bell").font(.callout)
+                    Spacer()
+                    Button { addReminder() } label: {
+                        Image(systemName: "plus.circle.fill").foregroundStyle(.tint)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .disabled(day == nil || time == nil)
-                if day == nil || time == nil {
-                    Text("Imposta giorno e ora per attivare il promemoria.")
+                ForEach($reminders) { $r in
+                    HStack {
+                        Menu {
+                            ForEach(weekOrder, id: \.self) { d in
+                                Button(dayLabels[d] ?? d.rawValue) { $r.day.wrappedValue = d.rawValue }
+                            }
+                        } label: {
+                            Text(dayLabels[r.dayId ?? .monday] ?? "Giorno")
+                                .font(.callout)
+                        }
+                        Spacer()
+                        DatePicker("", selection: reminderTime($r), displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                        Button { reminders.removeAll { $0.id == r.id } } label: {
+                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                if reminders.isEmpty {
+                    Text("Aggiungi uno o più avvisi settimanali, ciascuno con giorno e ora.")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
-            .onChange(of: reminder) { _, on in
-                if on { Task { await NotificationManager.shared.requestAuthorization() } }
-            }
         }
     }
 
@@ -775,7 +900,8 @@ struct NoteEditorSheet: View {
             teacherTag = note.teacherTag ?? ""
             classTag = note.classTag ?? ""
             subjectTag = note.subjectTag ?? ""
-            reminder = note.reminder
+            taskType = note.taskType.flatMap(NoteTaskType.init(rawValue:))
+            reminders = note.reminders
             // Keep "Dettagli" collapsed by default so the text area stays large;
             // the blue dot signals that details are present.
         } else {
@@ -794,7 +920,9 @@ struct NoteEditorSheet: View {
         note.teacherTag = teacherTag.trimmingCharacters(in: .whitespaces).isEmpty ? nil : teacherTag.trimmingCharacters(in: .whitespaces)
         note.classTag = classTag.trimmingCharacters(in: .whitespaces).isEmpty ? nil : classTag.trimmingCharacters(in: .whitespaces)
         note.subjectTag = subjectTag.trimmingCharacters(in: .whitespaces).isEmpty ? nil : subjectTag.trimmingCharacters(in: .whitespaces)
-        note.reminder = reminder && note.day != nil && note.time != nil
+        note.taskType = taskType?.rawValue
+        note.reminders = reminders
+        note.reminder = !reminders.isEmpty
         if isNew { store.add(note) } else { store.update(note) }
         NotificationManager.shared.schedule(note: note)
         dismiss()
@@ -832,11 +960,67 @@ struct RichTextEditor: UIViewRepresentable {
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: RichTextEditor
         weak var textView: UITextView?
+        weak var boldBtn: UIButton?
+        weak var italicBtn: UIButton?
+        weak var underlineBtn: UIButton?
+        weak var strikeBtn: UIButton?
 
         init(_ parent: RichTextEditor) { self.parent = parent }
 
         func textViewDidChange(_ textView: UITextView) {
             parent.attributedText = textView.attributedText
+            updateFormatButtons()
+        }
+
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            updateFormatButtons()
+        }
+
+        // MARK: Active-state feedback
+
+        /// Highlights the B/I/U/S buttons that are active for the current
+        /// selection (or the cursor's typing attributes when nothing is selected).
+        func updateFormatButtons() {
+            guard let tv = textView else { return }
+            setActive(boldBtn,      traitActive(.traitBold, in: tv))
+            setActive(italicBtn,    traitActive(.traitItalic, in: tv))
+            setActive(underlineBtn, attrActive(.underlineStyle, in: tv))
+            setActive(strikeBtn,    attrActive(.strikethroughStyle, in: tv))
+        }
+
+        private func setActive(_ btn: UIButton?, _ active: Bool) {
+            guard let btn else { return }
+            btn.tintColor = active ? .tintColor : .label
+            var cfg = btn.configuration
+            cfg?.background.backgroundColor = active ? UIColor.tintColor.withAlphaComponent(0.16) : .clear
+            cfg?.background.cornerRadius = 7
+            btn.configuration = cfg
+        }
+
+        private func traitActive(_ trait: UIFontDescriptor.SymbolicTraits, in tv: UITextView) -> Bool {
+            let range = tv.selectedRange
+            if range.length == 0 {
+                let f = (tv.typingAttributes[.font] as? UIFont) ?? tv.font ?? UIFont.preferredFont(forTextStyle: .body)
+                return f.fontDescriptor.symbolicTraits.contains(trait)
+            }
+            var all = true
+            tv.attributedText.enumerateAttribute(.font, in: range) { v, _, stop in
+                let f = (v as? UIFont) ?? UIFont.preferredFont(forTextStyle: .body)
+                if !f.fontDescriptor.symbolicTraits.contains(trait) { all = false; stop.pointee = true }
+            }
+            return all
+        }
+
+        private func attrActive(_ key: NSAttributedString.Key, in tv: UITextView) -> Bool {
+            let range = tv.selectedRange
+            if range.length == 0 {
+                return (tv.typingAttributes[key] as? Int) == NSUnderlineStyle.single.rawValue
+            }
+            var all = true
+            tv.attributedText.enumerateAttribute(key, in: range) { v, _, stop in
+                if (v as? Int) != NSUnderlineStyle.single.rawValue { all = false; stop.pointee = true }
+            }
+            return all
         }
 
         func makeFormattingBar(for tv: UITextView) -> UIView {
@@ -880,6 +1064,10 @@ struct RichTextEditor: UIViewRepresentable {
             let italicBtn    = makeImgBtn("italic",        action: #selector(toggleItalic))
             let underlineBtn = makeImgBtn("underline",     action: #selector(toggleUnderline))
             let strikeBtn    = makeImgBtn("strikethrough", action: #selector(toggleStrikethrough))
+            self.boldBtn = boldBtn
+            self.italicBtn = italicBtn
+            self.underlineBtn = underlineBtn
+            self.strikeBtn = strikeBtn
 
             let vsep = UIView()
             vsep.backgroundColor = UIColor.separator
@@ -937,6 +1125,7 @@ struct RichTextEditor: UIViewRepresentable {
             }
             tv.attributedText = m; tv.selectedRange = range
             parent.attributedText = m
+            updateFormatButtons()
         }
 
         @objc func toggleUnderline() {
@@ -951,6 +1140,7 @@ struct RichTextEditor: UIViewRepresentable {
             else { m.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
             tv.attributedText = m; tv.selectedRange = range
             parent.attributedText = m
+            updateFormatButtons()
         }
 
         @objc func toggleStrikethrough() {
@@ -965,6 +1155,7 @@ struct RichTextEditor: UIViewRepresentable {
             else { m.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
             tv.attributedText = m; tv.selectedRange = range
             parent.attributedText = m
+            updateFormatButtons()
         }
 
         enum ParaStyle { case title, heading, subheading, body }

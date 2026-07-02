@@ -15,11 +15,22 @@ extension Double {
     }
 
     var gradeColor: Color {
-        if self >= 8.0 { return Color(red: 0.05, green: 0.58, blue: 0.18) }
-        if self >= 6.0 { return .green }
-        if self >= 5.0 { return .orange }
+        let s = sufficientGrade
+        if self >= s + 2 { return Color(red: 0.05, green: 0.58, blue: 0.18) }
+        if self >= s { return .green }
+        if self >= s - 1 { return .orange }
         return .red
     }
+}
+
+/// User-configurable grading scale (defaults 6 and 10).
+var sufficientGrade: Double {
+    let v = UserDefaults.standard.double(forKey: "sufficientGrade")
+    return v > 0 ? v : 6
+}
+var maxGrade: Double {
+    let v = UserDefaults.standard.double(forKey: "maxGrade")
+    return v > 0 ? v : 10
 }
 
 // MARK: - Trend
@@ -97,6 +108,25 @@ func subjectColor(_ name: String) -> Color {
     return subjectPalette[abs(hash) % subjectPalette.count]
 }
 
+// MARK: - Adaptive section backgrounds
+
+/// Page + card colours that keep good contrast in BOTH light and dark:
+/// - Light: light-grey page, white cards (the standard grouped look).
+/// - Dark:  soft dark-grey page (NOT pure black), slightly lighter cards.
+/// Built with a dynamic UIColor provider so they adapt automatically anywhere.
+extension Color {
+    static let sectionPage = Color(UIColor { tc in
+        tc.userInterfaceStyle == .dark
+            ? UIColor.secondarySystemGroupedBackground   // ~#1C1C1E, not pure black
+            : UIColor.systemGroupedBackground            // ~#F2F2F7 grey
+    })
+    static let sectionCard = Color(UIColor { tc in
+        tc.userInterfaceStyle == .dark
+            ? UIColor.tertiarySystemBackground           // ~#2C2C2E, lighter than the page
+            : UIColor.secondarySystemGroupedBackground   // white
+    })
+}
+
 // MARK: - Color <-> hex (for persisting custom subject colours)
 
 extension Color {
@@ -132,6 +162,43 @@ extension Color {
 enum PeriodSystem: String {
     case quadrimestri = "quadrimestri"
     case trimestre = "trimestre_pentamestre"
+}
+
+/// The year in which the current school year started (schools start in Aug/Sep).
+func schoolYearStartYear(_ now: Date = Date()) -> Int {
+    let c = Calendar.current.dateComponents([.year, .month], from: now)
+    let m = c.month ?? 1, y = c.year ?? 2024
+    return m >= 8 ? y : y - 1
+}
+
+func daysIn(month: Int, year: Int) -> Int {
+    var c = DateComponents(); c.year = year; c.month = month; c.day = 1
+    let cal = Calendar.current
+    guard let d = cal.date(from: c), let r = cal.range(of: .day, in: .month, for: d) else { return 31 }
+    return r.count
+}
+
+/// A date built from a day + month placed in the current school year (autumn
+/// months land in the start year, spring months in the following one). The year
+/// is inferred so the user only ever picks day + month.
+func schoolYearDate(month: Int, day: Int, now: Date = Date()) -> Date {
+    let start = schoolYearStartYear(now)
+    let year = month >= 8 ? start : start + 1
+    var comps = DateComponents()
+    comps.year = year
+    comps.month = month
+    comps.day = min(max(day, 1), daysIn(month: month, year: year))
+    return Calendar.current.date(from: comps) ?? now
+}
+
+/// Sensible default end of the first period:
+/// - Quadrimestri → 31 January.
+/// - Trimestre → 23 December (just before the Christmas break).
+func defaultPeriod1End(for system: PeriodSystem, now: Date = Date()) -> Date {
+    switch system {
+    case .quadrimestri: return schoolYearDate(month: 1, day: 31, now: now)
+    case .trimestre:    return schoolYearDate(month: 12, day: 23, now: now)
+    }
 }
 
 // MARK: - Grade model

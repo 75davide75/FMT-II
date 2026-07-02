@@ -24,6 +24,25 @@ struct NoteCreationContext: Identifiable {
     }
 }
 
+enum NoteTaskType: String, CaseIterable, Identifiable {
+    case compito, verifica, interrogazione
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .compito:        return "Compito"
+        case .verifica:       return "Verifica"
+        case .interrogazione: return "Interrogazione"
+        }
+    }
+}
+
+struct NoteReminder: Codable, Identifiable, Equatable, Hashable {
+    var id: UUID = UUID()
+    var day: String          // DayId raw value
+    var time: String         // "HH:mm"
+    var dayId: DayId? { DayId(rawValue: day) }
+}
+
 struct Note: Identifiable, Codable {
     var id: UUID = UUID()
     var rtfData: Data = Data()
@@ -32,9 +51,11 @@ struct Note: Identifiable, Codable {
     var teacherTag: String? = nil
     var classTag: String? = nil
     var subjectTag: String? = nil
+    var taskType: String? = nil   // NoteTaskType raw: compito / verifica / interrogazione
     var createdAt: Date = Date()
     var isArchived: Bool = false
-    var reminder: Bool = false   // weekly recurring local notification (needs day + time)
+    var reminder: Bool = false   // legacy single-reminder flag (kept for migration)
+    var reminders: [NoteReminder] = []   // weekly recurring reminders (day + time)
 
     var attributedText: NSAttributedString {
         guard !rtfData.isEmpty else { return NSAttributedString(string: "") }
@@ -81,9 +102,15 @@ extension Note {
         teacherTag = try c.decodeIfPresent(String.self, forKey: .teacherTag)
         classTag = try c.decodeIfPresent(String.self, forKey: .classTag)
         subjectTag = try c.decodeIfPresent(String.self, forKey: .subjectTag)
+        taskType = try c.decodeIfPresent(String.self, forKey: .taskType)
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         isArchived = try c.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
         reminder = try c.decodeIfPresent(Bool.self, forKey: .reminder) ?? false
+        reminders = try c.decodeIfPresent([NoteReminder].self, forKey: .reminders) ?? []
+        // Migrate the old single-reminder flag into the new list.
+        if reminders.isEmpty, reminder, let d = day, let t = time {
+            reminders = [NoteReminder(day: d, time: t)]
+        }
     }
 }
 

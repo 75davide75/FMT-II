@@ -21,6 +21,7 @@ struct ContentView: View {
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appSectionRaw") private var appSectionRaw = AppSection.notes.rawValue
+    @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
 
     @State private var showFilePicker = false
     @State private var showTutorial = false
@@ -33,7 +34,6 @@ struct ContentView: View {
     @State private var showEasterEgg = false
     @State private var pagerProgress: CGFloat = 0
     @State private var showBuilder = false
-    @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
 
     var preferredColorScheme: ColorScheme? {
         switch appearanceMode {
@@ -43,13 +43,13 @@ struct ContentView: View {
         }
     }
 
-    /// Optional app-wide text-size override (nil = follow the system setting).
+    /// Text-size override, re-applied to the toolbar bar because UIKit-hosted
+    /// toolbar content doesn't always inherit the app-root setting.
     private var overrideTypeSize: DynamicTypeSize? {
         switch dynamicTypeLevel {
         case 1: return .xLarge
         case 2: return .xxLarge
         case 3: return .xxxLarge
-        case 4: return .accessibility2
         default: return nil
         }
     }
@@ -76,7 +76,6 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.55), value: hasSeenTutorial)
-        .modifier(FixedTypeSize(size: overrideTypeSize))
         .preferredColorScheme(preferredColorScheme)
         .task {
             while !Task.isCancelled {
@@ -183,6 +182,7 @@ struct ContentView: View {
                         index: indexBinding,
                         progress: pagerProgress
                     )
+                    .modifier(FixedTypeSize(size: overrideTypeSize))
                 }
             }
             .sensoryFeedback(.selection, trigger: appSectionRaw)

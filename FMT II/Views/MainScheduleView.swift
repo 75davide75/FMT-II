@@ -318,7 +318,7 @@ struct MainScheduleView: View {
                 .font(.subheadline)
 
             if viewMode == .day {
-                let dayLabel = schedule.days.first { $0.id == manualDay }?.label ?? ""
+                let dayLabel = schedule.days.first { $0.id == dayForDayView }?.label ?? ""
                 Text(dayLabel)
                     .font(.subheadline.weight(.medium))
             } else {

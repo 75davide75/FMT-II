@@ -156,9 +156,11 @@ struct GlassSectionBar: View {
     @Binding var index: Int
     let progress: CGFloat
 
-    private let segWidth: CGFloat = 62
-    private let height: CGFloat = 32
-    private let inset: CGFloat = 5
+    // Scaled so the top menu grows with the app's text-size setting instead of
+    // clipping the labels inside a fixed-width pill.
+    @ScaledMetric(relativeTo: .footnote) private var segWidth: CGFloat = 62
+    @ScaledMetric(relativeTo: .footnote) private var height: CGFloat = 32
+    @ScaledMetric(relativeTo: .footnote) private var inset: CGFloat = 5
 
     private var tint: Color {
         guard !colors.isEmpty else { return .accentColor }

@@ -13,6 +13,9 @@ struct GradesView: View {
 
     @AppStorage("periodSystem") private var periodSystemRaw = PeriodSystem.quadrimestri.rawValue
     @AppStorage("period1EndTimestamp") private var period1EndTimestamp: Double = 0
+    // Observed so grade colours refresh live when the scale changes in Settings.
+    @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
+    @AppStorage("maxGrade") private var maxGrade: Double = 10
 
     @State private var showGradeEntry = false
     @State private var gradeToEdit: Grade? = nil
@@ -21,10 +24,7 @@ struct GradesView: View {
 
     private var period1End: Date? {
         if period1EndTimestamp > 0 { return Date(timeIntervalSince1970: period1EndTimestamp) }
-        var comps = Calendar.current.dateComponents([.year, .month], from: Date())
-        if (comps.month ?? 1) >= 9 { comps.year = (comps.year ?? 2024) + 1 }
-        comps.month = 1; comps.day = 31
-        return Calendar.current.date(from: comps)
+        return defaultPeriod1End(for: periodSystem)
     }
     private var periodSystem: PeriodSystem { PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri }
     private var periodLabel1: String { periodSystem == .quadrimestri ? "1° Quadrimestre" : "Trimestre" }
@@ -35,6 +35,9 @@ struct GradesView: View {
     }
 
     var body: some View {
+        // Touch the grading scale so the whole list re-renders (and recomputes
+        // grade colours) when the sufficient/max grade changes elsewhere.
+        let _ = sufficientGrade + maxGrade
         ZStack(alignment: .top) {
             LinearGradient(
                 colors: [Color.accentColor.opacity(0.10), .clear],
@@ -51,7 +54,7 @@ struct GradesView: View {
                 }
             }
         }
-        .background(Color(.secondarySystemGroupedBackground).ignoresSafeArea())
+        .background(Color.sectionPage.ignoresSafeArea())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -143,7 +146,7 @@ struct GradesView: View {
                 .padding(.horizontal, 16)
 
                 if sortedGrades.count >= 2 {
-                    RecentGradesRow(grades: Array(sortedGrades.prefix(8)))
+                    RecentGradesRow(grades: Array(sortedGrades.prefix(20)))
                         .padding(.horizontal, 16)
                 }
 
@@ -196,6 +199,13 @@ private struct GradeHomeRow: View {
                     Text(grade.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if grade.countsForAverage && grade.weight != 1.0 {
+                        Text("×\(Int((grade.weight * 100).rounded()))%")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Color(.tertiarySystemFill), in: Capsule())
+                    }
                 }
                 if !grade.teacher.isEmpty {
                     Text(grade.teacher)
@@ -206,7 +216,7 @@ private struct GradeHomeRow: View {
             Spacer()
             HStack(alignment: .center, spacing: 10) {
                 Text(grade.value.italianGrade)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
                     .monospacedDigit()
                     .frame(minWidth: 46, alignment: .trailing)
@@ -223,8 +233,9 @@ private struct GradeHomeRow: View {
             }
         }
         .padding(14)
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.03), radius: 6, y: 2)
+        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
     }
 }
 
@@ -236,6 +247,7 @@ private struct GradesSummaryCard: View {
     let period2Avg: Double?
     let period1Label: String
     let period2Label: String
+    @ScaledMetric private var ring: CGFloat = 84
 
     var body: some View {
         HStack(spacing: 20) {
@@ -259,7 +271,7 @@ private struct GradesSummaryCard: View {
                 }
                 VStack(spacing: 1) {
                     Text(overall?.italianGrade ?? "—")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(overall?.gradeColor ?? .secondary)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: overall)
@@ -269,7 +281,7 @@ private struct GradesSummaryCard: View {
                         .tracking(1.5)
                 }
             }
-            .frame(width: 84, height: 84)
+            .frame(width: ring, height: ring)
 
             VStack(alignment: .leading, spacing: 12) {
                 PeriodBarRow(label: period1Label, avg: period1Avg)
@@ -278,8 +290,9 @@ private struct GradesSummaryCard: View {
             .frame(maxWidth: .infinity)
         }
         .padding(16)
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
+        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
     }
 }
 
@@ -320,6 +333,7 @@ private struct PeriodBarRow: View {
 
 private struct RecentGradesRow: View {
     let grades: [Grade]
+    @ScaledMetric private var bubble: CGFloat = 50
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -335,19 +349,19 @@ private struct RecentGradesRow: View {
                             ZStack {
                                 Circle()
                                     .fill(c.opacity(0.10))
-                                    .frame(width: 50, height: 50)
+                                    .frame(width: bubble, height: bubble)
                                 Circle()
                                     .stroke(c.opacity(0.30), lineWidth: 1.5)
-                                    .frame(width: 50, height: 50)
+                                    .frame(width: bubble, height: bubble)
                                 Text(grade.value.italianGrade)
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .font(.system(.footnote, design: .rounded, weight: .bold))
                                     .foregroundStyle(c)
                             }
                             Text(grade.subject.prefix(5) + (grade.subject.count > 5 ? "." : ""))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
-                                .frame(width: 50)
+                                .frame(width: bubble)
                         }
                     }
                 }
@@ -356,8 +370,9 @@ private struct RecentGradesRow: View {
             }
         }
         .padding(14)
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.03), radius: 6, y: 2)
+        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
     }
 }
 
@@ -375,7 +390,7 @@ private struct GradientPageBackground: ViewModifier {
             .scrollContentBackground(.hidden)
             .background {
                 ZStack {
-                    Color(.secondarySystemGroupedBackground)
+                    Color.sectionPage
                     LinearGradient(
                         colors: [top.opacity(0.14), .clear],
                         startPoint: .top, endPoint: .center
@@ -405,8 +420,11 @@ struct SubjectsListView: View {
     let periodLabel1: String
     let periodLabel2: String
     var schedule: ScheduleData? = nil
+    @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
+    @AppStorage("maxGrade") private var maxGrade: Double = 10
 
     var body: some View {
+        let _ = sufficientGrade + maxGrade
         List {
             ForEach(store.subjects, id: \.self) { subject in
                 NavigationLink {
@@ -422,7 +440,7 @@ struct SubjectsListView: View {
                 } label: {
                     SubjectListRow(subject: subject, store: store)
                 }
-                .listRowBackground(Color(.tertiarySystemGroupedBackground))
+                .listRowBackground(Color.sectionCard)
             }
         }
         .navigationTitle("Materie")
@@ -453,7 +471,7 @@ private struct SubjectListRow: View {
             Spacer()
             if let avg {
                 Text(avg.italianGrade)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(avg.gradeColor)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: avg)
@@ -476,8 +494,12 @@ struct SubjectDetailView: View {
 
     @State private var gradeToEdit: Grade? = nil
     @State private var targetAverage: Double = 6.0
+    @State private var didInitTarget = false
     @State private var motivation: String = ""
     @State private var showColorPicker = false
+    // Local mirrors of the grading scale so the view refreshes when it changes.
+    @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
+    @AppStorage("maxGrade") private var maxGrade: Double = 10
 
     private static let motivations = [
         "Un voto alla volta: la media si costruisce con costanza. 💪",
@@ -490,7 +512,9 @@ struct SubjectDetailView: View {
         "Credici: la media più alta è più vicina di quanto pensi. ✨"
     ]
 
-    private static let targetOptions: [Double] = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]
+    private var targetOptions: [Double] {
+        stride(from: sufficientGrade, through: maxGrade, by: 0.5).map { $0 }
+    }
 
     private var grades: [Grade] { store.gradesForSubject(subject) }
 
@@ -511,9 +535,9 @@ struct SubjectDetailView: View {
         let sum = vals.reduce(0, +)
         if sum / n >= target { return .reached }
         let single = target * (n + 1) - sum
-        if single <= 10 { return .needsOne(max(single, 1)) }
-        if target >= 10 { return .impossibleTen }
-        let k = Int(ceil((target * n - sum) / (10 - target)))
+        if single <= maxGrade { return .needsOne(max(single, 1)) }
+        if target >= maxGrade { return .impossibleTen }
+        let k = Int(ceil((target * n - sum) / (maxGrade - target)))
         return .needsMany(max(k, 1))
     }
 
@@ -539,11 +563,11 @@ struct SubjectDetailView: View {
                     averageRow(periodLabel2, avg)
                 }
             }
-            .listRowBackground(Color(.tertiarySystemGroupedBackground))
+            .listRowBackground(Color.sectionCard)
 
             Section("Obiettivo") {
                 Menu {
-                    ForEach(Self.targetOptions, id: \.self) { t in
+                    ForEach(targetOptions, id: \.self) { t in
                         Button {
                             targetAverage = t
                         } label: {
@@ -576,7 +600,7 @@ struct SubjectDetailView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .listRowBackground(Color(.tertiarySystemGroupedBackground))
+            .listRowBackground(Color.sectionCard)
 
             Section("Voti (\(grades.count))") {
                 ForEach(grades.reversed()) { grade in
@@ -595,7 +619,7 @@ struct SubjectDetailView: View {
                     store.delete(ids: ids)
                 }
             }
-            .listRowBackground(Color(.tertiarySystemGroupedBackground))
+            .listRowBackground(Color.sectionCard)
         }
         .navigationTitle(subject)
         .navigationBarTitleDisplayMode(.large)
@@ -619,6 +643,7 @@ struct SubjectDetailView: View {
         }
         .onAppear {
             if motivation.isEmpty { motivation = Self.motivations.randomElement() ?? "" }
+            if !didInitTarget { targetAverage = sufficientGrade; didInitTarget = true }
         }
         .onChange(of: targetAverage) { _, _ in
             motivation = Self.motivations.randomElement() ?? ""
@@ -634,7 +659,7 @@ struct SubjectDetailView: View {
             Label("Obiettivo raggiunto 🎉", systemImage: "checkmark.seal.fill")
                 .foregroundStyle(.green)
         case .impossibleTen:
-            Label("Per il 10 servono solo voti pieni", systemImage: "exclamationmark.triangle.fill")
+            Label("Per il massimo servono solo voti pieni", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
         case .needsOne(let v):
             HStack(spacing: 5) {
@@ -649,7 +674,7 @@ struct SubjectDetailView: View {
                 Text("\(k)")
                     .font(.system(.body, design: .rounded, weight: .bold))
                     .foregroundStyle(.tint)
-                Text("voti da 10")
+                Text("voti da \(maxGrade.italianGrade)")
             }
         }
     }
@@ -747,7 +772,7 @@ private struct GradeChartView: View {
             // Detail of the tapped point, OUTSIDE the plot so it's never clipped.
             HStack(spacing: 7) {
                 if let s = selectedIndex, s >= 0, s < sorted.count {
-                    Circle().fill(sorted[s].value.gradeColor).frame(width: 8, height: 8)
+                    Circle().fill(sorted[s].countsForAverage ? sorted[s].value.gradeColor : .blue).frame(width: 8, height: 8)
                     Text(sorted[s].value.italianGrade)
                         .font(.subheadline.weight(.bold))
                     Text("·").foregroundStyle(.tertiary)
@@ -764,7 +789,7 @@ private struct GradeChartView: View {
             .animation(.easeInOut(duration: 0.15), value: selectedIndex)
 
             Chart {
-                RuleMark(y: .value("Sufficienza", 6))
+                RuleMark(y: .value("Sufficienza", sufficientGrade))
                     .foregroundStyle(.secondary.opacity(0.25))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
 
@@ -775,7 +800,7 @@ private struct GradeChartView: View {
                         .foregroundStyle(lineColor)
 
                     PointMark(x: .value("n", i), y: .value("Voto", grade.value))
-                        .foregroundStyle(selectedIndex == i ? lineColor : lineColor.opacity(0.8))
+                        .foregroundStyle(grade.countsForAverage ? (selectedIndex == i ? lineColor : lineColor.opacity(0.8)) : Color.blue)
                         .symbolSize(selectedIndex == i ? 120 : 42)
                 }
 
@@ -785,16 +810,16 @@ private struct GradeChartView: View {
                         .lineStyle(StrokeStyle(lineWidth: 1))
                 }
             }
-            .chartYScale(domain: 1...10.4)
+            .chartYScale(domain: 1...(maxGrade + 0.4))
             .chartXScale(domain: -0.4 ... (Double(max(sorted.count - 1, 1)) + 0.4))
             .chartXSelection(value: $selectedIndex)
             .chartXAxis(.hidden)
             .chartYAxis {
-                AxisMarks(position: .leading, values: [4, 6, 8, 10]) { _ in
-                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.25))
+                AxisMarks(position: .leading) { _ in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.3))
                     AxisValueLabel()
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color(.label))
                 }
             }
             .animation(.easeOut(duration: 0.2), value: selectedIndex)
@@ -837,7 +862,7 @@ struct GradeRowView: View {
                                              : "Media della materia invariata")
                 }
                 Text(grade.value.italianGrade)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
                 Image(systemName: "chevron.right")
                     .font(.caption2)
@@ -885,10 +910,7 @@ struct GradeEntrySheet: View {
     private var isNew: Bool { grade == nil }
     private var period1End: Date? {
         if period1EndTimestamp > 0 { return Date(timeIntervalSince1970: period1EndTimestamp) }
-        var comps = Calendar.current.dateComponents([.year, .month], from: Date())
-        if (comps.month ?? 1) >= 9 { comps.year = (comps.year ?? 2024) + 1 }
-        comps.month = 1; comps.day = 31
-        return Calendar.current.date(from: comps)
+        return defaultPeriod1End(for: periodSystem)
     }
     private var periodSystem: PeriodSystem { PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri }
 
@@ -1096,10 +1118,12 @@ struct GradeEntrySheet: View {
 struct GradeValuePickerView: View {
     @Binding var value: Double
 
-    // Index 0 = 1.0, index 36 = 10.0 (step 0.25)
+    // Index 0 = 1.0, step 0.25, up to the configured maximum grade.
+    private var steps: Int { max(Int(((maxGrade - 1.0) / 0.25).rounded()), 1) }
+
     private var selectedIndex: Binding<Int> {
         Binding(
-            get: { Int(((value - 1.0) / 0.25).rounded()) },
+            get: { min(max(Int(((value - 1.0) / 0.25).rounded()), 0), steps) },
             set: { value = 1.0 + Double($0) * 0.25 }
         )
     }
@@ -1113,7 +1137,7 @@ struct GradeValuePickerView: View {
                 .animation(.easeInOut(duration: 0.1), value: value)
 
             Picker("", selection: selectedIndex) {
-                ForEach(0...36, id: \.self) { i in
+                ForEach(0...steps, id: \.self) { i in
                     let v = 1.0 + Double(i) * 0.25
                     Text(v.italianGrade).tag(i)
                 }

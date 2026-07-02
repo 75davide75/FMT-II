@@ -34,37 +34,45 @@ final class NotificationManager {
         }
     }
 
+    private let maxRemindersPerNote = 30
+
     func schedule(note: Note) {
         cancel(ids: [note.id])
-        guard note.reminder,
-              let dayStr = note.day, let day = DayId(rawValue: dayStr),
-              let time = note.time else { return }
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        guard parts.count == 2 else { return }
-
-        var comps = DateComponents()
-        comps.weekday = weekday(for: day)
-        comps.hour = parts[0]
-        comps.minute = parts[1]
-
-        let content = UNMutableNotificationContent()
-        content.title = "Diario"
         let title = note.displayTitle
-        content.body = title.isEmpty ? "Hai un promemoria" : title
-        content.sound = .default
+        for (i, r) in note.reminders.prefix(maxRemindersPerNote).enumerated() {
+            guard let day = r.dayId else { continue }
+            let parts = r.time.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 2 else { continue }
 
-        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
-        let request = UNNotificationRequest(identifier: note.id.uuidString, content: content, trigger: trigger)
-        center.add(request)
+            var comps = DateComponents()
+            comps.weekday = weekday(for: day)
+            comps.hour = parts[0]
+            comps.minute = parts[1]
+
+            let content = UNMutableNotificationContent()
+            content.title = "Diario"
+            content.body = title.isEmpty ? "Hai un promemoria" : title
+            content.sound = .default
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+            let request = UNNotificationRequest(identifier: "\(note.id.uuidString)#\(i)", content: content, trigger: trigger)
+            center.add(request)
+        }
     }
 
     func cancel(ids: Set<UUID>) {
-        center.removePendingNotificationRequests(withIdentifiers: ids.map(\.uuidString))
+        // Identifiers are "<noteID>#<index>"; remove the whole range synchronously
+        // (avoids the race of an async fetch removing freshly-scheduled ones).
+        var toRemove: [String] = []
+        for id in ids {
+            for i in 0..<maxRemindersPerNote { toRemove.append("\(id.uuidString)#\(i)") }
+        }
+        center.removePendingNotificationRequests(withIdentifiers: toRemove)
     }
 
     /// Used after a bulk import: clear and reschedule everything that needs it.
     func reschedule(notes: [Note]) {
         cancel(ids: Set(notes.map(\.id)))
-        for n in notes where n.reminder { schedule(note: n) }
+        for n in notes where !n.reminders.isEmpty { schedule(note: n) }
     }
 }

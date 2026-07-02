@@ -14,9 +14,23 @@ struct SettingsView: View {
     @AppStorage("periodSystem") private var periodSystemRaw = PeriodSystem.quadrimestri.rawValue
     @AppStorage("period1EndTimestamp") private var period1EndTimestamp: Double = 0
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
+    @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
+    @AppStorage("maxGrade") private var maxGrade: Double = 10
+    @AppStorage("appSectionRaw") private var appSectionRaw = AppSection.notes.rawValue
 
     @Binding var showFilePicker: Bool
     @Environment(\.dismiss) private var dismiss
+
+    /// Text-size override mirrored from the app root, re-applied here because a
+    /// sheet doesn't always inherit it. Capped at "Enorme".
+    private var overrideTypeSize: DynamicTypeSize? {
+        switch dynamicTypeLevel {
+        case 1: return .xLarge
+        case 2: return .xxLarge
+        case 3: return .xxxLarge
+        default: return nil
+        }
+    }
 
     @State private var showPDFViewer = false
     @State private var showClearConfirmation = false
@@ -60,11 +74,12 @@ struct SettingsView: View {
                 consultazioneSection
                 importOrarioSection
                 scheduleManagementSection
+                valutazioneSection
                 periodiSection
                 backupSection
-                dangerZoneSection
                 infoSection
                 supportSection
+                dangerZoneSection
             }
             .navigationTitle("Impostazioni")
             .navigationBarTitleDisplayMode(.inline)
@@ -82,6 +97,8 @@ struct SettingsView: View {
             .alert("Rimuovere l'orario?", isPresented: $showClearConfirmation) {
                 Button("Rimuovi", role: .destructive) {
                     store.clearSchedule()
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    dismiss()
                 }
                 Button("Annulla", role: .cancel) {}
             } message: {
@@ -89,13 +106,23 @@ struct SettingsView: View {
             }
             .alert("Cancellare tutto il diario?", isPresented: $showDeleteNotesConfirm) {
                 Button("Annulla", role: .cancel) {}
-                Button("Conferma", role: .destructive) { notesStore?.deleteAll() }
+                Button("Conferma", role: .destructive) {
+                    notesStore?.deleteAll()
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    appSectionRaw = AppSection.notes.rawValue
+                    dismiss()
+                }
             } message: {
                 Text("Tutte le voci del diario, archivio incluso, verranno eliminate. L'azione non è reversibile.")
             }
             .alert("Cancellare tutti i voti?", isPresented: $showDeleteGradesConfirm) {
                 Button("Annulla", role: .cancel) {}
-                Button("Conferma", role: .destructive) { gradesStore?.deleteAll() }
+                Button("Conferma", role: .destructive) {
+                    gradesStore?.deleteAll()
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    appSectionRaw = AppSection.grades.rawValue
+                    dismiss()
+                }
             } message: {
                 Text("Tutti i voti verranno eliminati. L'azione non è reversibile.")
             }
@@ -150,6 +177,7 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(preferredColorScheme)
+        .modifier(FixedTypeSize(size: overrideTypeSize))
     }
 
     private var appearanceSection: some View {
@@ -172,7 +200,6 @@ struct SettingsView: View {
                 Text("Grande").tag(1)
                 Text("Molto grande").tag(2)
                 Text("Enorme").tag(3)
-                Text("Massima").tag(4)
             } label: {
                 Label("Dimensione testo", systemImage: "textformat.size")
             }
@@ -240,17 +267,36 @@ struct SettingsView: View {
         }
     }
 
+    private var valutazioneSection: some View {
+        Section {
+            Stepper(value: $sufficientGrade, in: 1...(max(maxGrade - 1, 2)), step: 0.5) {
+                LabeledContent("Voto sufficiente", value: sufficientGrade.italianGrade)
+            }
+            Stepper(value: $maxGrade, in: (sufficientGrade + 1)...20, step: 1) {
+                LabeledContent("Voto massimo", value: maxGrade.italianGrade)
+            }
+        } header: {
+            Text("Valutazione")
+        } footer: {
+            Text("Personalizza la scala dei voti: la sufficienza minima e il voto massimo. Colori e obiettivi si adattano di conseguenza.")
+        }
+    }
+
     private var periodiSection: some View {
         Section {
             Picker("Sistema", selection: $periodSystemRaw) {
                 Text("Quadrimestri").tag(PeriodSystem.quadrimestri.rawValue)
                 Text("Trimestre + Pentamestre").tag(PeriodSystem.trimestre.rawValue)
             }
-            DatePicker("Fine \(period1Label)", selection: period1EndBinding, displayedComponents: .date)
+            MonthDayField(
+                timestamp: $period1EndTimestamp,
+                system: PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri,
+                label: "Fine \(period1Label)"
+            )
         } header: {
             Text("Periodi scolastici")
         } footer: {
-            Text("I voti vengono suddivisi in base alla data di fine del primo periodo.")
+            Text("I voti vengono suddivisi in base alla data di fine del primo periodo (solo giorno e mese: l'anno è automatico).")
         }
     }
 
@@ -408,6 +454,51 @@ struct SettingsView: View {
         display.timeStyle = .short
         display.locale = Locale(identifier: "it_IT")
         return display.string(from: date)
+    }
+}
+
+// MARK: - Month/Day picker (year inferred)
+
+/// Lets the user pick only a day + month; the year is inferred from the current
+/// school year (so it stays the same every year, as the user expects).
+private struct MonthDayField: View {
+    @Binding var timestamp: Double
+    let system: PeriodSystem
+    let label: String
+
+    private static let months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+                                 "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
+
+    private var date: Date {
+        timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : defaultPeriod1End(for: system)
+    }
+    private var month: Int { Calendar.current.component(.month, from: date) }
+    private var day: Int { Calendar.current.component(.day, from: date) }
+    private var daysInMonth: Int { daysIn(month: month, year: Calendar.current.component(.year, from: date)) }
+
+    var body: some View {
+        HStack {
+            Label(label, systemImage: "calendar")
+            Spacer()
+            Menu {
+                ForEach(1...daysInMonth, id: \.self) { d in
+                    Button("\(d)") { set(month: month, day: d) }
+                }
+            } label: {
+                Text("\(day)").fontWeight(.medium).foregroundStyle(.tint)
+            }
+            Menu {
+                ForEach(1...12, id: \.self) { m in
+                    Button(Self.months[m - 1]) { set(month: m, day: day) }
+                }
+            } label: {
+                Text(Self.months[month - 1]).fontWeight(.medium).foregroundStyle(.tint)
+            }
+        }
+    }
+
+    private func set(month: Int, day: Int) {
+        timestamp = schoolYearDate(month: month, day: day).timeIntervalSince1970
     }
 }
 

@@ -16,10 +16,14 @@ struct ScheduleBuilderView: View {
     @State private var slotMinutes: Int
     @State private var periodCount: Int
     @State private var includeSaturday: Bool
-    @State private var showSetup: Bool
+    @State private var showSetupSheet = false
+    @State private var showClassPrompt = false
+    @State private var classNameDraft = ""
     @State private var cell: CellTarget?
     @State private var addingClass = false
     @State private var newClassName = ""
+    @State private var renamingClass = false
+    @State private var renameDraft = ""
 
     private let timeColWidth: CGFloat = 48
     private let dayColWidth: CGFloat = 96
@@ -43,8 +47,6 @@ struct ScheduleBuilderView: View {
         } else {
             _slotMinutes = State(initialValue: 60)
         }
-        // Open setup automatically when starting from scratch (no class yet).
-        _showSetup = State(initialValue: (base.classes.first ?? "").isEmpty)
     }
 
     private var activeDays: [DayId] { includeSaturday ? dayOrder + [.saturday] : dayOrder }
@@ -54,9 +56,10 @@ struct ScheduleBuilderView: View {
     var body: some View {
         VStack(spacing: 0) {
             setupBar
-            Divider()
+            Divider().opacity(0.5)
             grid
         }
+        .background(builderBackground)
         .navigationTitle("Crea orario")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -71,7 +74,26 @@ struct ScheduleBuilderView: View {
                 .disabled(!canSave)
             }
         }
-        .onAppear(perform: rebuildPeriodsAndDays)
+        .onAppear {
+            rebuildPeriodsAndDays()
+            if selectedClass.isEmpty {
+                classNameDraft = ""
+                showClassPrompt = true
+            }
+        }
+        .sheet(isPresented: $showSetupSheet) { setupSheet }
+        .alert("Nome della classe", isPresented: $showClassPrompt) {
+            TextField("Es. 5GSA", text: $classNameDraft)
+            Button("OK") {
+                commitClassName()
+                // Required: if still empty, ask again.
+                if selectedClass.isEmpty {
+                    DispatchQueue.main.async { showClassPrompt = true }
+                }
+            }
+        } message: {
+            Text("Per quale classe stai creando l'orario? (obbligatorio)")
+        }
         .sheet(item: $cell) { target in
             CellEditorSheet(
                 subject: lesson(for: target)?.subject ?? "",
@@ -90,95 +112,134 @@ struct ScheduleBuilderView: View {
         } message: {
             Text("Crea l'orario anche per un'altra classe.")
         }
+        .alert("Rinomina classe", isPresented: $renamingClass) {
+            TextField("Nome classe", text: $renameDraft)
+            Button("Annulla", role: .cancel) {}
+            Button("Rinomina") { renameSelectedClass() }
+        } message: {
+            Text("Cambia il nome della classe selezionata: si aggiorna anche in tutte le sue lezioni.")
+        }
     }
 
-    // MARK: Setup bar
+    private func renameSelectedClass() {
+        let name = renameDraft.trimmingCharacters(in: .whitespaces)
+        let old = selectedClass
+        guard !name.isEmpty, name != old else { return }
+        if let idx = draft.classes.firstIndex(of: old) { draft.classes[idx] = name }
+        else if !draft.classes.contains(name) { draft.classes.append(name) }
+        for i in draft.lessons.indices where draft.lessons[i].className == old {
+            draft.lessons[i].className = name
+        }
+        selectedClass = name
+    }
+
+    // MARK: Setup bar (always visible)
 
     private var setupBar: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Menu {
-                    ForEach(draft.classes, id: \.self) { c in
-                        Button { selectedClass = c } label: {
-                            if c == selectedClass { Label(c.isEmpty ? "(senza nome)" : c, systemImage: "checkmark") }
-                            else { Text(c.isEmpty ? "(senza nome)" : c) }
-                        }
+        HStack(spacing: 10) {
+            Menu {
+                ForEach(draft.classes, id: \.self) { c in
+                    Button { selectedClass = c } label: {
+                        if c == selectedClass { Label(c.isEmpty ? "(senza nome)" : c, systemImage: "checkmark") }
+                        else { Text(c.isEmpty ? "(senza nome)" : c) }
                     }
-                    Divider()
-                    Button { addingClass = true } label: { Label("Aggiungi classe", systemImage: "plus") }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "graduationcap.fill")
-                        Text(selectedClass.isEmpty ? "Nome classe" : selectedClass).fontWeight(.semibold)
-                        Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                }
+                Divider()
+                if !selectedClass.isEmpty {
+                    Button { renameDraft = selectedClass; renamingClass = true } label: {
+                        Label("Rinomina classe", systemImage: "pencil")
                     }
-                    .foregroundStyle(selectedClass.isEmpty ? .secondary : .primary)
                 }
-
-                if selectedClass.isEmpty {
-                    TextField("Es. 5GSA", text: classNameBinding)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .multilineTextAlignment(.trailing)
+                Button { addingClass = true } label: { Label("Aggiungi classe", systemImage: "plus") }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "graduationcap.fill")
+                    Text(selectedClass.isEmpty ? "Classe" : selectedClass).fontWeight(.semibold)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
                 }
-
-                Spacer()
-                Button { withAnimation { showSetup.toggle() } } label: {
-                    Image(systemName: showSetup ? "chevron.up" : "slider.horizontal.3")
-                        .foregroundStyle(.secondary)
-                }
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .background(.regularMaterial, in: Capsule())
+                .foregroundStyle(selectedClass.isEmpty ? .secondary : .primary)
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
 
-            if showSetup {
-                VStack(spacing: 10) {
+            Spacer()
+
+            Button { showSetupSheet = true } label: {
+                Label("Impostazioni", systemImage: "slider.horizontal.3")
+                    .labelStyle(.iconOnly)
+                    .padding(9)
+                    .background(.regularMaterial, in: Circle())
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+    }
+
+    private var builderBackground: some View {
+        ZStack {
+            Color(.secondarySystemGroupedBackground)
+            LinearGradient(
+                colors: [Color.accentColor.opacity(0.10), .clear, Color.indigo.opacity(0.06)],
+                startPoint: .top, endPoint: .bottom
+            )
+        }
+        .ignoresSafeArea()
+    }
+
+    private var setupSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Ore") {
                     DatePicker("Inizio 1ª ora", selection: $firstStartDate, displayedComponents: .hourAndMinute)
                         .onChange(of: firstStartDate) { _, _ in rebuildPeriodsAndDays() }
                     Stepper("Ore al giorno: \(periodCount)", value: $periodCount, in: 1...12)
                         .onChange(of: periodCount) { _, _ in rebuildPeriodsAndDays() }
                     Stepper("Durata ora: \(slotMinutes) min", value: $slotMinutes, in: 30...90, step: 5)
                         .onChange(of: slotMinutes) { _, _ in rebuildPeriodsAndDays() }
+                }
+                Section("Giorni") {
                     Toggle("Includi sabato", isOn: $includeSaturday)
                         .onChange(of: includeSaturday) { _, _ in rebuildPeriodsAndDays() }
                 }
-                .font(.callout)
-                .padding(.horizontal, 16).padding(.bottom, 12)
+            }
+            .navigationTitle("Impostazioni orario")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button("Fine") { showSetupSheet = false } }
             }
         }
+        .presentationDetents([.medium])
     }
 
-    private var classNameBinding: Binding<String> {
-        Binding(
-            get: { selectedClass },
-            set: { newValue in
-                let old = selectedClass
-                selectedClass = newValue
-                // Rename the (empty) placeholder class and its lessons.
-                if let idx = draft.classes.firstIndex(of: old) { draft.classes[idx] = newValue }
-                for i in draft.lessons.indices where draft.lessons[i].className == old {
-                    draft.lessons[i].className = newValue
-                }
-            }
-        )
+    private func commitClassName() {
+        let name = classNameDraft.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let old = selectedClass
+        selectedClass = name
+        if let idx = draft.classes.firstIndex(of: old) { draft.classes[idx] = name }
+        else if !draft.classes.contains(name) { draft.classes.append(name) }
+        for i in draft.lessons.indices where draft.lessons[i].className == old {
+            draft.lessons[i].className = name
+        }
     }
 
     // MARK: Grid
 
     private var grid: some View {
         ScrollView([.horizontal, .vertical], showsIndicators: false) {
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Text("").frame(width: timeColWidth)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Color.clear.frame(width: timeColWidth, height: 30)
                     ForEach(activeDays, id: \.self) { day in
-                        Text(shortLabel(day)).font(.caption.bold())
-                            .frame(width: dayColWidth, height: 34)
+                        Text(shortLabel(day))
+                            .font(.caption.bold())
+                            .frame(width: dayColWidth, height: 30)
+                            .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
                     }
                 }
-                Divider()
                 ForEach(sortedPeriods) { period in
-                    HStack(spacing: 0) {
+                    HStack(spacing: 6) {
                         VStack(spacing: 1) {
-                            Text(period.startTime).font(.caption2.monospacedDigit().weight(.medium))
+                            Text(period.startTime).font(.caption2.monospacedDigit().weight(.semibold))
                             Text(period.endTime).font(.system(size: 9).monospacedDigit()).foregroundStyle(.secondary)
                         }
                         .frame(width: timeColWidth, height: rowHeight)
@@ -187,32 +248,40 @@ struct ScheduleBuilderView: View {
                             cellView(day: day, period: period)
                         }
                     }
-                    Divider().padding(.leading, timeColWidth)
                 }
             }
-            .padding(.bottom, 12)
+            .padding(18)
         }
     }
 
     private func cellView(day: DayId, period: Period) -> some View {
         let target = CellTarget(day: day, period: period.number)
         let l = lesson(for: target)
+        let filled = (l?.subject.isEmpty == false)
         return Button {
             cell = target
         } label: {
-            VStack(spacing: 1) {
-                if let l, !l.subject.isEmpty {
-                    Text(l.subject).font(.caption2.weight(.semibold)).lineLimit(1)
+            VStack(spacing: 2) {
+                if let l, filled {
+                    Text(l.subject).font(.caption2.weight(.bold))
+                        .lineLimit(2).multilineTextAlignment(.center)
                     if !l.teacher.isEmpty {
                         Text(l.teacher).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1)
                     }
                 } else {
-                    Image(systemName: "plus").font(.caption2).foregroundStyle(.quaternary)
+                    Image(systemName: "plus").font(.callout).foregroundStyle(.tertiary)
                 }
             }
             .frame(width: dayColWidth, height: rowHeight)
-            .background((l?.subject.isEmpty == false) ? Color.accentColor.opacity(0.12) : Color.clear)
-            .overlay(alignment: .trailing) { Rectangle().fill(Color(.separator)).frame(width: 0.5) }
+            .background(
+                filled ? Color.accentColor.opacity(0.16) : Color(.tertiarySystemGroupedBackground).opacity(0.5),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(filled ? Color.accentColor.opacity(0.35) : Color(.separator).opacity(0.4),
+                                  lineWidth: filled ? 1 : 0.5)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -224,9 +293,20 @@ struct ScheduleBuilderView: View {
 
     // MARK: Data helpers
 
+    private static let commonSubjects = [
+        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
+        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
+        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
+        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
+        "Diritto", "Economia", "Informatica", "Tecnologia",
+        "Scienze motorie", "Educazione fisica", "Educazione civica",
+        "Religione", "Musica", "Arte e immagine"
+    ]
+
     private var subjectPool: [String] {
         var seen = Set<String>(); var out: [String] = []
         for l in draft.lessons where !l.subject.isEmpty && seen.insert(l.subject.lowercased()).inserted { out.append(l.subject) }
+        for s in Self.commonSubjects where seen.insert(s.lowercased()).inserted { out.append(s) }
         return out
     }
 
@@ -332,6 +412,16 @@ private struct CellEditorSheet: View {
         return pool.filter { $0.lowercased().contains(q) && $0.lowercased() != q }.prefix(6).map { $0 }
     }
 
+    /// Subjects already associated with the entered teacher (a teacher may teach several).
+    private var teacherSubjects: [String] {
+        let t = teacher.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !t.isEmpty else { return [] }
+        return subjectTeachers
+            .filter { $0.value.lowercased() == t && $0.key.lowercased() != subject.trimmingCharacters(in: .whitespaces).lowercased() }
+            .map(\.key)
+            .sorted()
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -351,6 +441,15 @@ private struct CellEditorSheet: View {
                             if teacher.isEmpty, let t = subjectTeachers[s] { teacher = t }
                         } label: {
                             Label(s, systemImage: "arrow.turn.down.right").font(.callout)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    // If a teacher was entered first, offer the subjects they teach.
+                    ForEach(teacherSubjects, id: \.self) { s in
+                        Button { subject = s } label: {
+                            Label("\(s) · \(teacher)", systemImage: "person.fill")
+                                .font(.callout)
+                                .foregroundStyle(.tint)
                         }
                         .buttonStyle(.plain)
                     }
