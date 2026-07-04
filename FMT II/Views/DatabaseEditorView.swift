@@ -48,6 +48,7 @@ struct DatabaseEditorView: View {
             timeSlotsSection
             teachersSection.id("docenti")
             classesSection.id("classi")
+            subjectsSection
             lessonsSection
         }
         .scrollContentBackground(.hidden)
@@ -208,6 +209,40 @@ struct DatabaseEditorView: View {
             SettingsView.header("Classi · \(draft.classes.count)")
         } footer: {
             Text("Tocca una classe per rinominarla ovunque nell'orario.")
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    // MARK: Materie (corrispondenze docente ↔ materia)
+
+    private var subjectsSection: some View {
+        Section {
+            NavigationLink {
+                SubjectAssignmentView(draft: $draft)
+            } label: {
+                HStack(spacing: 11) {
+                    Image(systemName: "book.closed.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#F0ABFC")!, Color(hex: "#E879F9")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        )
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Materie per classe")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Corrispondenze docente ↔ materia")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } header: {
+            SettingsView.header("Materie")
+        } footer: {
+            Text("Assegna o correggi la materia di ogni ora, classe per classe: la materia inserita per un docente si propaga alle sue altre ore.")
         }
         .listRowBackground(Color.sectionCard)
     }
@@ -376,6 +411,154 @@ struct DatabaseEditorView: View {
         c.hour = parts.first ?? 8
         c.minute = parts.count > 1 ? parts[1] : 0
         return Calendar.current.date(from: c) ?? Date()
+    }
+}
+
+// MARK: - Materie per classe (corrispondenze docente ↔ materia)
+
+/// Modifica delle materie di ogni ora, classe per classe, presentata come il
+/// completamento dell'import parziale: scegli le classi, poi compila i campi
+/// con suggerimenti, invio-accetta-il-primo e propagazione per docente.
+struct SubjectAssignmentView: View {
+    @Binding var draft: ScheduleData
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedClasses: Set<String> = []
+    @State private var editing = false
+    @State private var edits: [String: String] = [:]      // lesson id -> materia
+    @State private var autoFilled: Set<String> = []
+    @State private var multiSubjectTeachers: Set<String> = []
+    @State private var pendingEdit: PendingSubjectEdit? = nil
+    @FocusState private var focusedLesson: String?
+
+    var body: some View {
+        ZStack {
+            AuroraBackground(section: .orario)
+            if editing {
+                editor
+            } else {
+                classPicker
+            }
+        }
+        .navigationTitle("Materie per classe")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: Step 1 — scelta delle classi (come nell'import parziale)
+
+    private var classPicker: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Corrispondenze docente ↔ materia", systemImage: "book.closed.fill")
+                        .font(.headline)
+                        .foregroundStyle(AuroraSection.orario.accent)
+                    Text("Scegli per quali classi assegnare o correggere le materie: le altre restano invariate.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18)
+                .auroraCard()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Classi da modificare")
+                        .font(.subheadline.weight(.semibold))
+                    FlowLayoutChips(items: draft.classes, selected: $selectedClasses)
+                    HStack {
+                        Button(selectedClasses.count == draft.classes.count ? "Nessuna" : "Tutte") {
+                            if selectedClasses.count == draft.classes.count {
+                                selectedClasses.removeAll()
+                            } else {
+                                selectedClasses = Set(draft.classes)
+                            }
+                        }
+                        .font(.footnote.weight(.medium))
+                        Spacer()
+                    }
+                }
+                .padding(18)
+                .auroraCard()
+
+                Button {
+                    // Parte dai valori attuali: i campi già compilati sono
+                    // modificabili come gli altri.
+                    edits = Dictionary(uniqueKeysWithValues: draft.lessons.map { ($0.id, $0.subject) })
+                    editing = true
+                } label: {
+                    Label("Modifica \(selectedClasses.count) class\(selectedClasses.count == 1 ? "e" : "i")",
+                          systemImage: "pencil")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .auroraProminent(.orario)
+                .disabled(selectedClasses.isEmpty)
+                .opacity(selectedClasses.isEmpty ? 0.45 : 1)
+            }
+            .padding(16)
+        }
+    }
+
+    // MARK: Step 2 — campi materia per classe
+
+    private var editor: some View {
+        List {
+            ForEach(draft.classes.filter { selectedClasses.contains($0) }, id: \.self) { cls in
+                SubjectCompletionSection(
+                    className: cls,
+                    lessons: lessons(for: cls),
+                    allLessons: draft.lessons,
+                    edits: $edits,
+                    autoFilled: $autoFilled,
+                    multiSubjectTeachers: $multiSubjectTeachers,
+                    pendingEdit: $pendingEdit,
+                    focusedLesson: $focusedLesson
+                )
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .modifier(MultiSubjectAlert(pendingEdit: $pendingEdit,
+                                    edits: $edits,
+                                    autoFilled: $autoFilled,
+                                    multiSubjectTeachers: $multiSubjectTeachers))
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                apply()
+            } label: {
+                Label("Applica", systemImage: "checkmark")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .auroraProminent(.orario)
+            .padding(16)
+        }
+    }
+
+    private func lessons(for cls: String) -> [Lesson] {
+        draft.lessons
+            .filter { $0.className == cls }
+            .sorted {
+                let d0 = weekOrder.firstIndex(of: $0.day) ?? 0
+                let d1 = weekOrder.firstIndex(of: $1.day) ?? 0
+                return d0 != d1 ? d0 < d1 : $0.period < $1.period
+            }
+    }
+
+    /// Applica le materie al draft dei Dati orario (si salvano davvero con il
+    /// tasto Salva della schermata precedente) e aggiorna le corrispondenze
+    /// docente → materia imparate.
+    private func apply() {
+        for i in draft.lessons.indices {
+            if let v = edits[draft.lessons[i].id]?.trimmingCharacters(in: .whitespaces) {
+                draft.lessons[i].subject = v
+            }
+        }
+        for l in draft.lessons where !l.teacher.isEmpty && !l.subject.isEmpty {
+            draft.subjectTeachers[l.subject] = l.teacher
+        }
+        dismiss()
     }
 }
 

@@ -21,11 +21,166 @@ func propagateSubject(edits: [String: String], autoFilled: Set<String>, lessons:
 
 /// Modifica in sospeso di un campo auto-compilato: chiede conferma prima di
 /// differenziare la materia di un docente.
-private struct PendingSubjectEdit: Identifiable {
+struct PendingSubjectEdit: Identifiable {
     let id = UUID()
     let lessonId: String
     let teacher: String
     let oldValue: String
+}
+
+/// Materie comuni alla maggior parte delle scuole italiane, proposte come
+/// suggerimenti nel completamento/modifica delle materie.
+let commonItalianSubjects = [
+    "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
+    "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
+    "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
+    "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
+    "Diritto", "Economia", "Informatica", "Tecnologia",
+    "Scienze motorie", "Educazione fisica", "Educazione civica",
+    "Religione", "Musica", "Arte e immagine"
+]
+
+/// Sezione (una classe) di campi materia: suggerimenti, invio che accetta il
+/// primo, propagazione per docente e conferma multi-materia. Riusata dal
+/// completamento import e dall'editor «Dati orario».
+struct SubjectCompletionSection: View {
+    let className: String
+    let lessons: [Lesson]              // lezioni della classe, ordinate
+    let allLessons: [Lesson]           // tutte, per propagare tra le classi
+    @Binding var edits: [String: String]
+    @Binding var autoFilled: Set<String>
+    @Binding var multiSubjectTeachers: Set<String>
+    @Binding var pendingEdit: PendingSubjectEdit?
+    @FocusState.Binding var focusedLesson: String?
+
+    var body: some View {
+        Section(className) {
+            ForEach(lessons) { lesson in
+                row(lesson)
+            }
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    @ViewBuilder
+    private func row(_ lesson: Lesson) -> some View {
+        let text = Binding(
+            get: { edits[lesson.id] ?? "" },
+            set: { edits[lesson.id] = $0 }
+        )
+        VStack(alignment: .trailing, spacing: 6) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(lesson.dayLabel) · \(lesson.startTime)")
+                        .font(.callout)
+                    Text(lesson.teacher)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                TextField("Materia", text: text)
+                    .multilineTextAlignment(.trailing)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.words)
+                    .frame(maxWidth: 150)
+                    .focused($focusedLesson, equals: lesson.id)
+                    .submitLabel(.done)
+                    // Il campo auto-compilato resta attenuato finché non viene
+                    // confermato o modificato dall'utente.
+                    .foregroundStyle(autoFilled.contains(lesson.id) ? .secondary : .primary)
+                    .onSubmit {
+                        var value = text.wrappedValue
+                        if let first = suggestions(for: value).first {
+                            value = first
+                            edits[lesson.id] = first
+                        }
+                        commit(value, for: lesson)
+                    }
+                    .onChange(of: edits[lesson.id] ?? "") { old, new in
+                        // Cambiare a mano un campo propagato chiede se il
+                        // docente insegna più di una materia.
+                        guard autoFilled.contains(lesson.id),
+                              new != old,
+                              focusedLesson == lesson.id,
+                              !multiSubjectTeachers.contains(lesson.teacher),
+                              pendingEdit == nil else { return }
+                        pendingEdit = PendingSubjectEdit(lessonId: lesson.id,
+                                                         teacher: lesson.teacher,
+                                                         oldValue: old)
+                    }
+            }
+            if focusedLesson == lesson.id {
+                let items = suggestions(for: edits[lesson.id] ?? "")
+                if !items.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(items, id: \.self) { s in
+                                Button {
+                                    edits[lesson.id] = s
+                                    commit(s, for: lesson)
+                                } label: {
+                                    Text(s)
+                                        .font(.caption)
+                                        .padding(.horizontal, 10).padding(.vertical, 5)
+                                        .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
+                                        .foregroundStyle(.primary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Suggerimenti: materie già inserite + materie comuni italiane.
+    private func suggestions(for text: String) -> [String] {
+        let q = text.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        var seen = Set<String>()
+        var pool: [String] = []
+        for s in edits.values.sorted() + commonItalianSubjects
+            where !s.isEmpty && seen.insert(s.lowercased()).inserted { pool.append(s) }
+        return pool.filter { $0.lowercased().contains(q) && $0.lowercased() != q }.prefix(6).map { $0 }
+    }
+
+    /// Conferma la materia di una lezione e la propaga alle altre ore dello
+    /// stesso docente.
+    private func commit(_ value: String, for lesson: Lesson) {
+        let v = value.trimmingCharacters(in: .whitespaces)
+        guard !v.isEmpty else { return }
+        autoFilled.remove(lesson.id)
+        guard !lesson.teacher.isEmpty else { return }
+        let out = propagateSubject(edits: edits, autoFilled: autoFilled, lessons: allLessons,
+                                   teacher: lesson.teacher, subject: v, sourceId: lesson.id)
+        edits = out.edits
+        autoFilled = out.autoFilled
+    }
+}
+
+/// Alert condiviso «insegna più di una materia?» per l'editor materie.
+struct MultiSubjectAlert: ViewModifier {
+    @Binding var pendingEdit: PendingSubjectEdit?
+    @Binding var edits: [String: String]
+    @Binding var autoFilled: Set<String>
+    @Binding var multiSubjectTeachers: Set<String>
+
+    func body(content: Content) -> some View {
+        content.alert(item: $pendingEdit) { p in
+            Alert(
+                title: Text("\(p.teacher) insegna più di una materia?"),
+                message: Text("Se sì, questa ora può avere una materia diversa; le altre ore del docente restano invariate."),
+                primaryButton: .default(Text("Sì")) {
+                    multiSubjectTeachers.insert(p.teacher)
+                    autoFilled.remove(p.lessonId)
+                },
+                secondaryButton: .cancel(Text("No")) {
+                    edits[p.lessonId] = p.oldValue
+                }
+            )
+        }
+    }
 }
 
 /// Presentata dopo un import parziale: spiega quale elemento manca e lascia
@@ -164,10 +319,21 @@ struct ImportReviewView: View {
                         .textInputAutocapitalization(.characters)
                     }
                     .listRowBackground(Color.sectionCard)
+                } else if missing == .subject {
+                    SubjectCompletionSection(
+                        className: cls,
+                        lessons: lessons(for: cls),
+                        allLessons: schedule.lessons,
+                        edits: $edits,
+                        autoFilled: $autoFilled,
+                        multiSubjectTeachers: $multiSubjectTeachers,
+                        pendingEdit: $pendingEdit,
+                        focusedLesson: $focusedLesson
+                    )
                 } else {
                     Section(cls) {
                         ForEach(lessons(for: cls)) { lesson in
-                            completionRow(lesson)
+                            teacherRow(lesson)
                         }
                     }
                     .listRowBackground(Color.sectionCard)
@@ -175,6 +341,10 @@ struct ImportReviewView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .modifier(MultiSubjectAlert(pendingEdit: $pendingEdit,
+                                    edits: $edits,
+                                    autoFilled: $autoFilled,
+                                    multiSubjectTeachers: $multiSubjectTeachers))
         .safeAreaInset(edge: .bottom) {
             Button {
                 apply()
@@ -189,129 +359,26 @@ struct ImportReviewView: View {
         }
     }
 
-    /// Riga di completamento: campo con suggerimenti (per le materie), invio
-    /// che accetta il primo suggerimento e propagazione per docente.
-    @ViewBuilder
-    private func completionRow(_ lesson: Lesson) -> some View {
-        let text = Binding(
-            get: { edits[lesson.id] ?? "" },
-            set: { edits[lesson.id] = $0 }
-        )
-        VStack(alignment: .trailing, spacing: 6) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(lesson.dayLabel) · \(lesson.startTime)")
-                        .font(.callout)
-                    Text(missing == .teacher ? lesson.subject : lesson.teacher)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                TextField(missing == .teacher ? "Docente" : "Materia", text: text)
-                    .multilineTextAlignment(.trailing)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(missing == .teacher ? .characters : .words)
-                    .frame(maxWidth: 150)
-                    .focused($focusedLesson, equals: lesson.id)
-                    .submitLabel(.done)
-                    // Il campo auto-compilato resta attenuato finché non viene
-                    // confermato o modificato dall'utente.
-                    .foregroundStyle(autoFilled.contains(lesson.id) ? .secondary : .primary)
-                    .onSubmit {
-                        var value = text.wrappedValue
-                        if missing == .subject, let first = subjectSuggestions(for: value).first {
-                            value = first
-                            edits[lesson.id] = first
-                        }
-                        if missing == .subject { commitSubject(value, for: lesson) }
-                    }
-                    .onChange(of: edits[lesson.id] ?? "") { old, new in
-                        // Cambiare a mano un campo propagato chiede se il
-                        // docente insegna più di una materia.
-                        guard missing == .subject,
-                              autoFilled.contains(lesson.id),
-                              new != old,
-                              focusedLesson == lesson.id,
-                              !multiSubjectTeachers.contains(lesson.teacher),
-                              pendingEdit == nil else { return }
-                        pendingEdit = PendingSubjectEdit(lessonId: lesson.id,
-                                                         teacher: lesson.teacher,
-                                                         oldValue: old)
-                    }
+    /// Riga semplice per il completamento dei docenti mancanti.
+    private func teacherRow(_ lesson: Lesson) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(lesson.dayLabel) · \(lesson.startTime)")
+                    .font(.callout)
+                Text(lesson.subject)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            if missing == .subject, focusedLesson == lesson.id {
-                let suggestions = subjectSuggestions(for: edits[lesson.id] ?? "")
-                if !suggestions.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(suggestions, id: \.self) { s in
-                                Button {
-                                    edits[lesson.id] = s
-                                    commitSubject(s, for: lesson)
-                                } label: {
-                                    Text(s)
-                                        .font(.caption)
-                                        .padding(.horizontal, 10).padding(.vertical, 5)
-                                        .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
-                                        .foregroundStyle(.primary)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-            }
+            Spacer()
+            TextField("Docente", text: Binding(
+                get: { edits[lesson.id] ?? "" },
+                set: { edits[lesson.id] = $0 }
+            ))
+            .multilineTextAlignment(.trailing)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.characters)
+            .frame(maxWidth: 150)
         }
-        .alert(item: $pendingEdit) { p in
-            Alert(
-                title: Text("\(p.teacher) insegna più di una materia?"),
-                message: Text("Se sì, questa ora può avere una materia diversa; le altre ore del docente restano invariate."),
-                primaryButton: .default(Text("Sì")) {
-                    multiSubjectTeachers.insert(p.teacher)
-                    autoFilled.remove(p.lessonId)
-                },
-                secondaryButton: .cancel(Text("No")) {
-                    edits[p.lessonId] = p.oldValue
-                    focusedLesson = nil
-                }
-            )
-        }
-    }
-
-    // MARK: Autocomplete materie
-
-    private static let commonSubjects = [
-        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-        "Diritto", "Economia", "Informatica", "Tecnologia",
-        "Scienze motorie", "Educazione fisica", "Educazione civica",
-        "Religione", "Musica", "Arte e immagine"
-    ]
-
-    /// Suggerimenti: materie già inserite + materie comuni italiane.
-    private func subjectSuggestions(for text: String) -> [String] {
-        let q = text.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return [] }
-        var seen = Set<String>()
-        var pool: [String] = []
-        for s in edits.values.sorted() + Self.commonSubjects
-            where !s.isEmpty && seen.insert(s.lowercased()).inserted { pool.append(s) }
-        return pool.filter { $0.lowercased().contains(q) && $0.lowercased() != q }.prefix(6).map { $0 }
-    }
-
-    /// Conferma la materia di una lezione e la propaga alle altre ore dello
-    /// stesso docente.
-    private func commitSubject(_ value: String, for lesson: Lesson) {
-        let v = value.trimmingCharacters(in: .whitespaces)
-        guard !v.isEmpty else { return }
-        autoFilled.remove(lesson.id)
-        guard !lesson.teacher.isEmpty else { return }
-        let out = propagateSubject(edits: edits, autoFilled: autoFilled, lessons: schedule.lessons,
-                                   teacher: lesson.teacher, subject: v, sourceId: lesson.id)
-        edits = out.edits
-        autoFilled = out.autoFilled
     }
 
     private func lessons(for cls: String) -> [Lesson] {
@@ -360,7 +427,7 @@ struct ImportReviewView: View {
 }
 
 /// Chips selezionabili disposti a bandiera.
-private struct FlowLayoutChips: View {
+struct FlowLayoutChips: View {
     let items: [String]
     @Binding var selected: Set<String>
 
