@@ -270,24 +270,29 @@ private struct GradesSummaryCard: View {
     let period2Avg: Double?
     let period1Label: String
     let period2Label: String
-    @ScaledMetric private var ring: CGFloat = 84
+    @ScaledMetric private var ring: CGFloat = 96
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.08), lineWidth: 9)
+                    .stroke(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08),
+                            lineWidth: 10)
                 if let avg = overall {
+                    // Anello a gradiente conico proporzionato alla scala voti
+                    // (design 2c).
+                    let fraction = min(avg / maxGrade, 1.0)
                     Circle()
-                        .trim(from: 0, to: min(avg / 10.0, 1.0))
+                        .trim(from: 0, to: fraction)
                         .stroke(
                             AngularGradient(
                                 colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
                                 center: .center,
                                 startAngle: .degrees(-90),
-                                endAngle: .degrees(-90 + 360 * (avg / 10.0))
+                                endAngle: .degrees(-90 + 360 * fraction)
                             ),
-                            style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                            style: StrokeStyle(lineWidth: 10, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
                         .animation(.easeOut(duration: 0.6), value: avg)
@@ -300,7 +305,7 @@ private struct GradesSummaryCard: View {
                         .contentTransition(.numericText())
                         .animation(.snappy, value: overall)
                     Text("MEDIA")
-                        .font(.system(size: 8.5, weight: .bold))
+                        .font(.system(size: 8.5, weight: .heavy))
                         .foregroundStyle(.secondary)
                         .tracking(1.6)
                 }
@@ -313,37 +318,40 @@ private struct GradesSummaryCard: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .padding(16)
-        .auroraCard(radius: 16)
+        .padding(14)
+        .auroraCard(radius: 22)
     }
 }
 
 private struct PeriodBarRow: View {
     let label: String
     let avg: Double?
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(label)
-                    .font(.caption)
+                    .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(avg?.italianGrade ?? "N/D")
-                    .font(.caption.weight(.bold))
+                    .font(.system(size: 13, weight: .heavy))
                     .foregroundStyle(avg?.gradeColor ?? Color(.tertiaryLabel))
                     .contentTransition(.numericText())
                     .animation(.snappy, value: avg)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 7)
+                    Capsule()
+                        .fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
+                        .frame(height: 7)
                     if let avg {
                         Capsule()
                             .fill(LinearGradient(
                                 colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
                                 startPoint: .leading, endPoint: .trailing))
-                            .frame(width: max(geo.size.width * (avg / 10.0), 0), height: 7)
+                            .frame(width: max(geo.size.width * min(avg / maxGrade, 1.0), 0), height: 7)
                             .animation(.easeOut(duration: 0.5), value: avg)
                     }
                 }
@@ -358,7 +366,7 @@ private struct PeriodBarRow: View {
 private struct RecentGradesRow: View {
     let grades: [Grade]
     var onSeeAll: (() -> Void)? = nil
-    @ScaledMetric private var bubble: CGFloat = 50
+    @ScaledMetric private var bubble: CGFloat = 46
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -528,6 +536,7 @@ struct SubjectDetailView: View {
     @State private var didInitTarget = false
     @State private var motivation: String = ""
     @State private var showColorPicker = false
+    @Environment(\.colorScheme) private var scheme
     // Local mirrors of the grading scale so the view refreshes when it changes.
     @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
     @AppStorage("maxGrade") private var maxGrade: Double = 10
@@ -577,100 +586,46 @@ struct SubjectDetailView: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                HStack(spacing: 6) {
-                    AuroraChip(text: subject, color: store.color(for: subject))
-                    if let t = subjectTeacher {
-                        AuroraChip(text: t, color: Color(hex: "#60A5FA")!, icon: "person.fill")
-                    }
-                    Spacer()
-                }
-                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
-            if grades.count >= 2 {
-                Section {
-                    GradeChartView(grades: grades, tint: store.color(for: subject))
-                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
-            }
-
-            Section("Statistiche") {
-                if let avg = store.average(for: subject) {
-                    averageRow("Media", avg)
-                }
-                if let avg = store.average(for: subject, period: 1, periodBoundary: period1End) {
-                    averageRow(periodLabel1, avg)
-                }
-                if let avg = store.average(for: subject, period: 2, periodBoundary: period1End) {
-                    averageRow(periodLabel2, avg)
-                }
-            }
-            .listRowBackground(Color.sectionCard)
-
-            Section("Obiettivo") {
-                Menu {
-                    ForEach(targetOptions, id: \.self) { t in
-                        Button {
-                            targetAverage = t
-                        } label: {
-                            if t == targetAverage {
-                                Label(t.italianGrade, systemImage: "checkmark")
-                            } else {
-                                Text(t.italianGrade)
-                            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                // Titolo grande + chip conteggio e docente (design 2d).
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(subject)
+                        .font(.system(size: 32, weight: .heavy))
+                        .kerning(-0.6)
+                    HStack(spacing: 6) {
+                        AuroraChip(text: "\(grades.count) vot\(grades.count == 1 ? "o" : "i")",
+                                   color: store.color(for: subject))
+                        if let t = subjectTeacher {
+                            AuroraChip(text: t, color: Color(hex: "#60A5FA")!, icon: "person.fill")
                         }
                     }
-                } label: {
-                    HStack {
-                        Label("Media obiettivo", systemImage: "target")
-                        Spacer()
-                        Text(targetAverage.italianGrade)
-                            .font(.system(.body, design: .rounded, weight: .bold))
-                            .foregroundStyle(.tint)
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
                 }
-                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 2)
 
-                goalResultRow
+                if grades.count >= 2 {
+                    GradeChartView(grades: grades, tint: store.color(for: subject))
+                }
+
+                statsCard
+                goalCard
 
                 if !motivation.isEmpty {
                     Text(motivation)
-                        .font(.caption)
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
+                        .padding(.horizontal, 22)
                 }
-            }
-            .listRowBackground(Color.sectionCard)
 
-            Section("Voti (\(grades.count))") {
-                ForEach(grades.reversed()) { grade in
-                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade))
-                        .contentShape(Rectangle())
-                        .onTapGesture { gradeToEdit = grade }
-                        .contextMenu {
-                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
-                            Button(role: .destructive) {
-                                store.delete(ids: [grade.id])
-                            } label: { Label("Elimina", systemImage: "trash") }
-                        }
-                }
-                .onDelete { offsets in
-                    let ids = Set(offsets.map { grades.reversed()[$0].id })
-                    store.delete(ids: ids)
-                }
+                gradesListCard
             }
-            .listRowBackground(Color.sectionCard)
+            .padding(.vertical, 12)
         }
         .id("scale-\(sufficientGrade)-\(maxGrade)")
-        .navigationTitle(subject)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .gradientPageBackground(top: store.color(for: subject), bottom: store.color(for: subject))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -700,45 +655,201 @@ struct SubjectDetailView: View {
         .sensoryFeedback(.success, trigger: reachedGoal)
     }
 
+    // MARK: Card statistiche (design 2d: righe con hairline)
+
+    private var statItems: [(label: String, value: Double)] {
+        var items: [(String, Double)] = []
+        if let a = store.average(for: subject) { items.append(("Media", a)) }
+        if let a = store.average(for: subject, period: 1, periodBoundary: period1End) { items.append((periodLabel1, a)) }
+        if let a = store.average(for: subject, period: 2, periodBoundary: period1End) { items.append((periodLabel2, a)) }
+        return items
+    }
+
+    @ViewBuilder
+    private var statsCard: some View {
+        if !statItems.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(Array(statItems.enumerated()), id: \.offset) { i, item in
+                    if i > 0 { hairline }
+                    HStack {
+                        Text(item.label)
+                            .font(.system(size: 14.5, weight: .semibold))
+                        Spacer()
+                        Text(item.value.italianGrade)
+                            .font(.system(size: 17, weight: .heavy))
+                            .foregroundStyle(item.value.gradeColor)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: item.value)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 13)
+                }
+            }
+            .auroraCard(radius: 22)
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: Card obiettivo (design 2d: stepper nella card + esito)
+
+    private var goalCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "target")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(hex: "#A5B4FC")!)
+                    .frame(width: 26)
+                Text("Media obiettivo")
+                    .font(.system(size: 14.5, weight: .semibold))
+                Spacer()
+                HStack(spacing: 10) {
+                    stepButton("minus") {
+                        targetAverage = max(sufficientGrade, targetAverage - 0.5)
+                    }
+                    Text(targetAverage.italianGrade)
+                        .font(.system(size: 16, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#7CB3FF")!)
+                        .frame(minWidth: 26)
+                        .contentTransition(.numericText())
+                        .animation(.snappy, value: targetAverage)
+                    stepButton("plus") {
+                        targetAverage = min(maxGrade, targetAverage + 0.5)
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.11) : Color.black.opacity(0.08), lineWidth: 1))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            hairline
+
+            goalResultRow
+                .padding(.horizontal, 14)
+                .padding(.vertical, 13)
+        }
+        .auroraCard(radius: 22)
+        .padding(.horizontal, 16)
+    }
+
+    private func stepButton(_ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundStyle(scheme == .dark ? Color(hex: "#C7D2FF")! : .primary)
+                .frame(width: 24, height: 24)
+                .background(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var hairline: some View {
+        Rectangle()
+            .fill(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 14)
+    }
+
+    /// "+1,5" / "-0,5" con la virgola italiana, senza decimali inutili.
+    private func deltaText(_ delta: Double) -> String {
+        let sign = delta >= 0 ? "+" : "−"
+        let v = abs(delta)
+        let text = v.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(v))
+            : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
+        return sign + text
+    }
+
     @ViewBuilder
     private var goalResultRow: some View {
         switch goal(for: targetAverage) {
         case .reached:
-            Label("Obiettivo raggiunto 🎉", systemImage: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+            HStack(spacing: 10) {
+                goalIcon("checkmark", tint: Color(hex: "#34D399")!)
+                Text("Obiettivo raggiunto")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
+                Spacer()
+                if let avg = store.average(for: subject) {
+                    Text("\(deltaText(avg - targetAverage)) sopra")
+                        .font(.system(size: 11.5, weight: .bold))
+                        .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 3)
+                        .background(Color(hex: "#34D399")!.opacity(0.12), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color(hex: "#34D399")!.opacity(0.28), lineWidth: 1))
+                }
+            }
         case .impossibleTen:
-            Label("Per il massimo servono solo voti pieni", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+            HStack(spacing: 10) {
+                goalIcon("exclamationmark.triangle.fill", tint: .orange)
+                Text("Per il massimo servono solo voti pieni")
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundStyle(.orange)
+                Spacer()
+            }
         case .needsOne(let v):
-            HStack(spacing: 5) {
+            HStack(spacing: 10) {
+                goalIcon("arrow.up.right", tint: Color(hex: "#7CB3FF")!)
                 Text("Ti basta un voto da")
+                    .font(.system(size: 14.5, weight: .semibold))
                 Text(v.italianGrade)
-                    .font(.system(.body, design: .rounded, weight: .bold))
+                    .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(v.gradeColor)
+                Spacer()
             }
         case .needsMany(let k):
-            HStack(spacing: 5) {
+            HStack(spacing: 10) {
+                goalIcon("arrow.up.right", tint: Color(hex: "#7CB3FF")!)
                 Text("Ti servono circa")
+                    .font(.system(size: 14.5, weight: .semibold))
                 Text("\(k)")
-                    .font(.system(.body, design: .rounded, weight: .bold))
-                    .foregroundStyle(.tint)
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundStyle(Color(hex: "#7CB3FF")!)
                 Text("voti da \(maxGrade.italianGrade)")
+                    .font(.system(size: 14.5, weight: .semibold))
+                Spacer()
             }
         }
     }
 
-    @ViewBuilder
-    private func averageRow(_ label: String, _ avg: Double) -> some View {
-        LabeledContent {
-            Text(avg.italianGrade)
-                .font(.system(size: 17, weight: .heavy))
-                .foregroundStyle(avg.gradeColor)
-                .contentTransition(.numericText())
-                .animation(.snappy, value: avg)
-        } label: {
-            Text(label)
-                .font(.system(size: 14.5, weight: .semibold))
+    private func goalIcon(_ symbol: String, tint: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundStyle(tint)
+            .frame(width: 26, height: 26)
+            .background(tint.opacity(0.15), in: Circle())
+            .overlay(Circle().strokeBorder(tint.opacity(0.35), lineWidth: 1))
+    }
+
+    // MARK: Card elenco voti
+
+    private var gradesListCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SettingsView.header("Voti · \(grades.count)")
+                .padding(.leading, 6)
+            VStack(spacing: 0) {
+                let ordered = Array(grades.reversed())
+                ForEach(Array(ordered.enumerated()), id: \.element.id) { i, grade in
+                    if i > 0 { hairline }
+                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                        .onTapGesture { gradeToEdit = grade }
+                        .contextMenu {
+                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
+                            Button(role: .destructive) {
+                                store.delete(ids: [grade.id])
+                            } label: { Label("Elimina", systemImage: "trash") }
+                        }
+                }
+            }
+            .auroraCard(radius: 22)
         }
+        .padding(.horizontal, 16)
     }
 }
 
