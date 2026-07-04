@@ -56,33 +56,43 @@ struct GradesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isActive {
+                // Stesso bottone ⋯ in tutte e tre le sezioni.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showGradeEntry = true } label: { Image(systemName: "plus") }
-                        .accessibilityLabel("Aggiungi voto")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if !store.grades.isEmpty {
-                        NavigationLink {
-                            SubjectsListView(
-                                store: store,
-                                period1End: period1End,
-                                periodSystem: periodSystem,
-                                periodLabel1: periodLabel1,
-                                periodLabel2: periodLabel2,
-                                schedule: scheduleStore.schedule
-                            )
-                        } label: {
-                            Image(systemName: "list.bullet.below.rectangle")
+                    Menu {
+                        if !store.grades.isEmpty {
+                            Button { showAllSubjects = true } label: {
+                                Label("Materie", systemImage: "list.bullet.below.rectangle")
+                            }
                         }
-                        .accessibilityLabel("Elenco materie")
+                        Button { showSettings = true } label: {
+                            Label("Impostazioni", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
+                    .accessibilityLabel("Altre azioni")
                 }
-                if scheduleStore.schedule == nil {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                            .accessibilityLabel("Impostazioni")
-                    }
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // FAB "+" come nel Diario, con il gradiente della sezione Voti.
+            if isActive {
+                Button { showGradeEntry = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 58, height: 58)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#8B5CF6")!, Color(hex: "#F472B6")!, Color(hex: "#F8A87E")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: Circle()
+                        )
+                        .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                        .shadow(color: Color(hex: "#C4459E")!.opacity(0.55), radius: 15, y: 7)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 26)
+                .accessibilityLabel("Aggiungi voto")
             }
         }
         .sheet(isPresented: $showGradeEntry) {

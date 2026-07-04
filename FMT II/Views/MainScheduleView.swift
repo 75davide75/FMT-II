@@ -201,23 +201,33 @@ struct MainScheduleView: View {
 
     // MARK: - Toolbar
 
+    // Stesso bottone ⋯ in tutte e tre le sezioni: dentro, le azioni della
+    // sezione più le Impostazioni condivise.
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            if let url = exportURL {
-                ShareLink(
-                    item: url,
-                    preview: SharePreview(
-                        "Orario \(schedule.sourceName)",
-                        image: Image(systemName: "calendar.badge.clock")
-                    )
-                ) {
-                    Image(systemName: "square.and.arrow.up")
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                if let url = exportURL {
+                    ShareLink(
+                        item: url,
+                        preview: SharePreview(
+                            "Orario \(schedule.sourceName)",
+                            image: Image(systemName: "calendar.badge.clock")
+                        )
+                    ) {
+                        Label("Condividi orario", systemImage: "square.and.arrow.up")
+                    }
                 }
+                Button { dbEditTarget = nil; showDBDisclaimer = true } label: {
+                    Label("Dati orario", systemImage: "slider.horizontal.3")
+                }
+                Button { showSettings = true } label: {
+                    Label("Impostazioni", systemImage: "gearshape")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
-            Button { showSettings = true } label: {
-                Image(systemName: "gearshape")
-            }
+            .accessibilityLabel("Altre azioni")
         }
     }
 
