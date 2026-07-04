@@ -24,6 +24,11 @@ struct ScheduleBuilderView: View {
     @State private var newClassName = ""
     @State private var renamingClass = false
     @State private var renameDraft = ""
+    // Zoom del foglio (design 3d): stato condiviso col controllo − / + e con
+    // la minimappa.
+    @State private var zoom: CGFloat = 1
+    @State private var visibleRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+    @Environment(\.colorScheme) private var scheme
 
     private let timeColWidth: CGFloat = 48
     private let dayColWidth: CGFloat = 96
@@ -56,22 +61,35 @@ struct ScheduleBuilderView: View {
     var body: some View {
         VStack(spacing: 0) {
             setupBar
-            Divider().opacity(0.5)
-            grid
+            sheetGrid
         }
-        .background(builderBackground)
+        .background(AuroraBackground(section: .orario))
         .navigationTitle("Crea orario")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button("Annulla") { dismiss() } }
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Salva") {
+                // Salva ben visibile, pill a gradiente Orario (design 3d).
+                Button {
                     onSave(applyManualEdits(draft))
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     dismiss()
+                } label: {
+                    Text("Salva")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 7)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: Capsule()
+                        )
+                        .shadow(color: Color(hex: "#3884F6")!.opacity(canSave ? 0.45 : 0), radius: 9, y: 4)
                 }
-                .fontWeight(.semibold)
+                .buttonStyle(.plain)
                 .disabled(!canSave)
+                .opacity(canSave ? 1 : 0.4)
             }
         }
         .onAppear {
@@ -154,17 +172,45 @@ struct ScheduleBuilderView: View {
                 }
                 Button { addingClass = true } label: { Label("Aggiungi classe", systemImage: "plus") }
             } label: {
-                HStack(spacing: 6) {
+                // Pill classe con bordo a gradiente Orario (design 3d).
+                HStack(spacing: 8) {
                     Image(systemName: "graduationcap.fill")
-                    Text(selectedClass.isEmpty ? "Classe" : selectedClass).fontWeight(.semibold)
-                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                        .font(.caption)
+                        .foregroundStyle(Color(hex: "#7DD3FC")!)
+                    Text(selectedClass.isEmpty ? "Classe" : selectedClass)
+                        .font(.system(size: 15, weight: .heavy))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.bold())
+                        .foregroundStyle(Color(hex: "#7DD3FC")!)
                 }
-                .padding(.horizontal, 12).padding(.vertical, 7)
-                .background(.regularMaterial, in: Capsule())
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(colors: [Color(hex: "#38BDF8")!.opacity(0.7),
+                                                    Color(hex: "#4E7CF6")!.opacity(0.7)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 1.2
+                        )
+                )
                 .foregroundStyle(selectedClass.isEmpty ? .secondary : .primary)
             }
 
             Spacer()
+
+            // Hint d'uso del foglio (design 3d).
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color(hex: "#7DD3FC")!)
+                Text("Pizzica per lo zoom")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 11).padding(.vertical, 6)
+            .background(.white.opacity(scheme == .dark ? 0.06 : 0.5), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(scheme == .dark ? 0.10 : 0.6), lineWidth: 1))
 
             Button { showSetupSheet = true } label: {
                 Label("Impostazioni", systemImage: "slider.horizontal.3")
@@ -174,17 +220,6 @@ struct ScheduleBuilderView: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
-    }
-
-    private var builderBackground: some View {
-        ZStack {
-            Color(.secondarySystemGroupedBackground)
-            LinearGradient(
-                colors: [AuroraSection.orario.tintA.opacity(0.22), .clear, AuroraSection.orario.tintB.opacity(0.14)],
-                startPoint: .top, endPoint: .bottom
-            )
-        }
-        .ignoresSafeArea()
     }
 
     private var setupSheet: some View {
@@ -236,36 +271,138 @@ struct ScheduleBuilderView: View {
         }
     }
 
-    // MARK: Grid
+    // MARK: Grid (foglio zoomabile, design 3d)
 
-    private var grid: some View {
-        ScrollView([.horizontal, .vertical], showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 6) {
+    /// Il "foglio": griglia dentro una card glass, con pinch-zoom e pan.
+    /// In basso a sinistra il controllo zoom; in basso a destra la minimappa
+    /// per orientarsi, visibile solo quando il foglio è zoomato.
+    private var sheetGrid: some View {
+        ZoomableSheetView(zoom: $zoom, visibleRect: $visibleRect) {
+            gridContent
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .auroraCard(radius: 22)
+        .overlay(alignment: .bottomLeading) {
+            zoomControl.padding(12)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if zoom > 1.02 {
+                minimap.padding(12)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: zoom > 1.02)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+    }
+
+    private var gridContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Color.clear.frame(width: timeColWidth, height: 30)
+                ForEach(activeDays, id: \.self) { day in
+                    Text(shortLabel(day).uppercased())
+                        .font(.system(size: 11, weight: .bold))
+                        .kerning(0.4)
+                        .foregroundStyle(scheme == .dark ? Color(hex: "#DCE7FF")! : .primary)
+                        .frame(width: dayColWidth, height: 30)
+                        .background(
+                            scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(.white.opacity(scheme == .dark ? 0.10 : 0.4), lineWidth: 1))
+                }
+            }
+            ForEach(sortedPeriods) { period in
                 HStack(spacing: 6) {
-                    Color.clear.frame(width: timeColWidth, height: 30)
+                    VStack(spacing: 1) {
+                        Text(period.startTime)
+                            .font(.caption2.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(period.endTime)
+                            .font(.system(size: 9).monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(width: timeColWidth, height: rowHeight)
+
                     ForEach(activeDays, id: \.self) { day in
-                        Text(shortLabel(day))
-                            .font(.caption.bold())
-                            .frame(width: dayColWidth, height: 30)
-                            .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
+                        cellView(day: day, period: period)
                     }
                 }
-                ForEach(sortedPeriods) { period in
-                    HStack(spacing: 6) {
-                        VStack(spacing: 1) {
-                            Text(period.startTime).font(.caption2.monospacedDigit().weight(.semibold))
-                            Text(period.endTime).font(.system(size: 9).monospacedDigit()).foregroundStyle(.secondary)
-                        }
-                        .frame(width: timeColWidth, height: rowHeight)
+            }
+        }
+        .padding(18)
+    }
 
-                        ForEach(activeDays, id: \.self) { day in
-                            cellView(day: day, period: period)
+    /// Controllo zoom «− 100% +» in pill glass scura.
+    private var zoomControl: some View {
+        HStack(spacing: 10) {
+            Button {
+                withAnimation { zoom = max(0.5, ((zoom - 0.25) * 4).rounded() / 4) }
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 11, weight: .heavy))
+                    .frame(width: 26, height: 26)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+            Text("\(Int((zoom * 100).rounded()))%")
+                .font(.system(size: 12.5, weight: .bold))
+                .monospacedDigit()
+            Button {
+                withAnimation { zoom = min(2, ((zoom + 0.25) * 4).rounded() / 4) }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .heavy))
+                    .frame(width: 26, height: 26)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color(hex: "#DCE7FF")!)
+        .padding(.horizontal, 7).padding(.vertical, 5)
+        .background(Color(hex: "#0A0E1C")!.opacity(0.72), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.13), lineWidth: 1))
+        .shadow(color: .black.opacity(0.45), radius: 13, y: 5)
+    }
+
+    /// Minimappa: proporzioni del foglio con la finestra visibile evidenziata,
+    /// per orientarsi quando si è zoomati.
+    private var minimap: some View {
+        let mapW: CGFloat = 82, mapH: CGFloat = 60
+        let clamped = CGRect(x: min(max(visibleRect.minX, 0), 1),
+                             y: min(max(visibleRect.minY, 0), 1),
+                             width: visibleRect.width,
+                             height: visibleRect.height)
+        return ZStack(alignment: .topLeading) {
+            // Texture a cellette del foglio.
+            Grid(horizontalSpacing: 3, verticalSpacing: 3) {
+                ForEach(0..<3, id: \.self) { r in
+                    GridRow {
+                        ForEach(0..<6, id: \.self) { c in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(.white.opacity((r + c).isMultiple(of: 3) ? 0.14 : 0.08))
                         }
                     }
                 }
             }
-            .padding(18)
+            .padding(6)
+
+            // Finestra visibile.
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color(hex: "#7DD3FC")!, lineWidth: 1.6)
+                .shadow(color: Color(hex: "#7DD3FC")!.opacity(0.45), radius: 6)
+                .frame(width: max(14, mapW * clamped.width),
+                       height: max(10, mapH * clamped.height))
+                .offset(x: min(mapW * clamped.minX, mapW - max(14, mapW * clamped.width)),
+                        y: min(mapH * clamped.minY, mapH - max(10, mapH * clamped.height)))
+                .animation(.linear(duration: 0.08), value: clamped)
         }
+        .frame(width: mapW, height: mapH)
+        .background(Color(hex: "#0A0E1C")!.opacity(0.75), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(.white.opacity(0.13), lineWidth: 1))
+        .shadow(color: .black.opacity(0.45), radius: 13, y: 5)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
 
     private func cellView(day: DayId, period: Period) -> some View {
