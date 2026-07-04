@@ -9,6 +9,9 @@ struct ZoomableSheetView<Content: View>: UIViewRepresentable {
     @Binding var visibleRect: CGRect
     var minZoom: CGFloat = 0.5
     var maxZoom: CGFloat = 2
+    /// Vero mentre l'utente sta pizzicando: il contenuto può usarlo per non
+    /// scambiare l'appoggio delle due dita per un tap.
+    var isPinching: Binding<Bool>? = nil
     @ViewBuilder var content: () -> Content
 
     func makeUIView(context: Context) -> UIScrollView {
@@ -37,6 +40,7 @@ struct ZoomableSheetView<Content: View>: UIViewRepresentable {
     }
 
     func updateUIView(_ scroll: UIScrollView, context: Context) {
+        context.coordinator.parent = self   // binding sempre aggiornati
         context.coordinator.host?.rootView = content()
         context.coordinator.linkGesturesIfNeeded(in: scroll)
         // Zoom pilotato dai bottoni − / +; mai durante il pinch dell'utente.
@@ -76,11 +80,17 @@ struct ZoomableSheetView<Content: View>: UIViewRepresentable {
 
         func scrollViewWillBeginZooming(_ s: UIScrollView, with view: UIView?) {
             isInteracting = true
+            DispatchQueue.main.async { self.parent.isPinching?.wrappedValue = true }
         }
 
         func scrollViewDidEndZooming(_ s: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
             isInteracting = false
             DispatchQueue.main.async { self.parent.zoom = scale }
+            // Piccola coda: copre il tap "ritardato" della cella partito
+            // mentre il pinch stava iniziando.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.parent.isPinching?.wrappedValue = false
+            }
         }
 
         func scrollViewDidZoom(_ s: UIScrollView) { publish(s) }

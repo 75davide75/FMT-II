@@ -27,6 +27,7 @@ struct ScheduleBuilderView: View {
     // la minimappa.
     @State private var zoom: CGFloat = 1
     @State private var visibleRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+    @State private var isPinching = false
     @Environment(\.colorScheme) private var scheme
 
     private let timeColWidth: CGFloat = 48
@@ -60,6 +61,7 @@ struct ScheduleBuilderView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
+                builderHeader
                 setupBar
                 sheetGrid
             }
@@ -70,34 +72,9 @@ struct ScheduleBuilderView: View {
             }
         }
         .background(AuroraBackground(section: .orario))
-        .navigationTitle("Crea orario")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) { Button("Annulla") { dismiss() } }
-            ToolbarItem(placement: .topBarTrailing) {
-                // Salva ben visibile, pill a gradiente Orario (design 3d).
-                Button {
-                    onSave(applyManualEdits(draft))
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    dismiss()
-                } label: {
-                    Text("Salva")
-                        .font(.system(size: 13.5, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 7)
-                        .background(
-                            LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing),
-                            in: Capsule()
-                        )
-                        .shadow(color: Color(hex: "#3884F6")!.opacity(canSave ? 0.45 : 0), radius: 9, y: 4)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSave)
-                .opacity(canSave ? 1 : 0.4)
-            }
-        }
+        // Header custom (design 3d): la toolbar di sistema aggiungerebbe la
+        // sua capsula glass attorno a Salva, creando un doppio bordo.
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             rebuildPeriodsAndDays()
         }
@@ -212,11 +189,60 @@ struct ScheduleBuilderView: View {
         .padding(.horizontal, 16).padding(.vertical, 10)
     }
 
+    // MARK: Header (Annulla / titolo / Salva a gradiente, design 3d)
+
+    private var builderHeader: some View {
+        ZStack {
+            Text("Crea orario")
+                .font(.system(size: 16, weight: .bold))
+            HStack {
+                Button { dismiss() } label: {
+                    Text("Annulla")
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(scheme == .dark ? Color(hex: "#DCE4FF")! : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 9)
+                        .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                        .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Button {
+                    onSave(applyManualEdits(draft))
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    dismiss()
+                } label: {
+                    Text("Salva")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 9)
+                        .background(orarioGradient, in: Capsule())
+                        .shadow(color: Color(hex: "#3884F6")!.opacity(canSave ? 0.45 : 0), radius: 9, y: 4)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+                .opacity(canSave ? 1 : 0.4)
+                .animation(.easeInOut(duration: 0.4), value: canSave)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 12)
+        .padding(.bottom, 2)
+    }
+
     // MARK: Nome classe obbligatorio (overlay bloccante)
 
     private var classNameOverlay: some View {
         ZStack {
-            Color.black.opacity(scheme == .dark ? 0.45 : 0.25).ignoresSafeArea()
+            // Sfondo sfocato + velo: la griglia dietro non deve trasparire
+            // dentro la card.
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+            Color.black.opacity(scheme == .dark ? 0.35 : 0.15).ignoresSafeArea()
             VStack(spacing: 14) {
                 Image(systemName: "graduationcap.fill")
                     .font(.system(size: 22, weight: .semibold))
@@ -279,7 +305,17 @@ struct ScheduleBuilderView: View {
                 }
             }
             .padding(22)
-            .auroraCard(radius: 22)
+            .background {
+                // Card opaca: gradiente scuro pieno (bianco pieno in chiaro).
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(scheme == .dark
+                          ? AnyShapeStyle(LinearGradient(colors: [Color(hex: "#1A1E36")!, Color(hex: "#111426")!],
+                                                         startPoint: .top, endPoint: .bottom))
+                          : AnyShapeStyle(Color.white))
+            }
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(.white.opacity(scheme == .dark ? 0.14 : 0.6), lineWidth: 1))
+            .shadow(color: .black.opacity(0.45), radius: 24, y: 10)
             .padding(.horizontal, 28)
         }
     }
@@ -490,7 +526,7 @@ struct ScheduleBuilderView: View {
     /// In basso a sinistra il controllo zoom; in basso a destra la minimappa
     /// per orientarsi, visibile solo quando il foglio è zoomato.
     private var sheetGrid: some View {
-        ZoomableSheetView(zoom: $zoom, visibleRect: $visibleRect) {
+        ZoomableSheetView(zoom: $zoom, visibleRect: $visibleRect, isPinching: $isPinching) {
             gridContent
         }
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -623,7 +659,13 @@ struct ScheduleBuilderView: View {
         let l = lesson(for: target)
         let filled = (l?.subject.isEmpty == false)
         return Button {
-            cell = target
+            // Anti-pinch: se stanno arrivando due dita, il "tap" della prima
+            // non deve aprire la cella. Piccola attesa e verifica.
+            guard !isPinching else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                guard !isPinching else { return }
+                cell = target
+            }
         } label: {
             VStack(spacing: 2) {
                 if let l, filled {
