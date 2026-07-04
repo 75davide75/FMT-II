@@ -959,6 +959,15 @@ struct NoteEditorSheet: View {
         return s.periods.map { $0.startTime } + [last.endTime]
     }
 
+    /// Binding sicuro per la data: se nel frattempo è stata azzerata, il get
+    /// risponde con oggi invece di crashare.
+    private var noteDateBinding: Binding<Date> {
+        Binding(
+            get: { noteDate ?? Calendar.current.startOfDay(for: Date()) },
+            set: { noteDate = Calendar.current.startOfDay(for: $0) }
+        )
+    }
+
     /// Bridges the optional "HH:mm" string to a Date for a full 24h picker.
     private var timeDateBinding: Binding<Date> {
         Binding(
@@ -1292,8 +1301,11 @@ struct NoteEditorSheet: View {
         VStack(spacing: 0) {
             // Giorno — data completa, azzerabile.
             fieldRow(icon: "calendar", tint: Color(hex: "#93C5FD")!, label: "Giorno") {
-                if let binding = Binding($noteDate) {
-                    DatePicker("", selection: binding, displayedComponents: .date)
+                if noteDate != nil {
+                    // Binding con fallback: `Binding($noteDate)` force-unwrappa
+                    // e crashava quando si toglieva la data col picker ancora
+                    // vivo nella stessa transazione.
+                    DatePicker("", selection: noteDateBinding, displayedComponents: .date)
                         .labelsHidden()
                     clearButton { noteDate = nil }
                 } else {
