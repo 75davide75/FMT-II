@@ -7,7 +7,7 @@ struct SettingsView: View {
     @ObservedObject var store: ScheduleStore
     var notesStore: NotesStore? = nil
     var gradesStore: GradesStore? = nil
-    @AppStorage("appearanceMode") private var appearanceMode = "auto"
+    @AppStorage("appearanceMode") private var appearanceMode = "dark"   // scuro di default al primo avvio
     @AppStorage("useLiveTime") private var useLiveTime = true
     @AppStorage("manualDayRaw") private var manualDayRaw = "monday"
     @AppStorage("manualTime") private var manualTime = "08:10"
@@ -623,23 +623,42 @@ private struct DangerZoneView: View {
 // MARK: - Chi sono
 
 struct AboutAppView: View {
+    @Environment(\.colorScheme) private var scheme
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 28) {
-                Spacer().frame(height: 20)
+            VStack(spacing: 20) {
+                Spacer().frame(height: 8)
+
+                // Badge a gradiente col saluto, in linea col resto dell'app.
                 Text("CIAO ☺️")
-                    .font(.system(size: 64, weight: .bold))
-                    .multilineTextAlignment(.center)
+                    .font(.system(size: 52, weight: .heavy))
+                    .kerning(-1)
+                    .padding(.top, 12)
+
+                Text("developed by davide 😗")
+                    .font(.system(size: 11, weight: .bold))
+                    .kerning(0.5)
+                    .foregroundStyle(scheme == .dark ? Color(hex: "#C4B5FD")! : Color(hex: "#7C3AED")!)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(Color(hex: "#A78BFA")!.opacity(0.13), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color(hex: "#A78BFA")!.opacity(0.28), lineWidth: 1))
+
                 Text("Innanzitutto grazie, perché stai leggendo questa sezione — cosa che non fa mai nessuno. Sono uno studente che ha appena finito di fare la maturità e ha tanto tempo libero. Una cosa che ho odiato durante gli anni delle superiori è non ricordarmi mai l'orario: volevo inventare un modo per consultare qualunque orario velocemente, senza impazzire a trovare la propria sezione. Questo è il mio miglior tentativo, almeno per ora. Grazie per aver provato la mia prima applicazione.")
-                    .font(.body)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
+                    .lineSpacing(3)
+                    .padding(20)
+                    .auroraCard(radius: 22)
+
                 Spacer()
             }
-            .padding(24)
+            .padding(20)
             .frame(maxWidth: .infinity)
         }
+        .background { AuroraBackground(section: .neutral) }
         .navigationTitle("Chi sono")
         .navigationBarTitleDisplayMode(.inline)
     }

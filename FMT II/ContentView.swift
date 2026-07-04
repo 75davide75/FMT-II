@@ -16,7 +16,7 @@ struct ContentView: View {
     @StateObject private var store = ScheduleStore()
     @StateObject private var notesStore = NotesStore()
     @StateObject private var gradesStore = GradesStore()
-    @AppStorage("appearanceMode") private var appearanceMode = "auto"
+    @AppStorage("appearanceMode") private var appearanceMode = "dark"   // scuro di default al primo avvio
     @AppStorage("useLiveTime") private var useLiveTime = true
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
