@@ -17,7 +17,6 @@ struct ScheduleBuilderView: View {
     @State private var periodCount: Int
     @State private var includeSaturday: Bool
     @State private var showSetupSheet = false
-    @State private var showClassPrompt = false
     @State private var classNameDraft = ""
     @State private var cell: CellTarget?
     @State private var addingClass = false
@@ -59,9 +58,16 @@ struct ScheduleBuilderView: View {
     private var canSave: Bool { !selectedClass.trimmingCharacters(in: .whitespaces).isEmpty && !draft.lessons.isEmpty }
 
     var body: some View {
-        VStack(spacing: 0) {
-            setupBar
-            sheetGrid
+        ZStack {
+            VStack(spacing: 0) {
+                setupBar
+                sheetGrid
+            }
+            // Nome classe obbligatorio: finché manca, un velo bloccante copre
+            // il builder e non si può fare altro che dargli un nome o uscire.
+            if selectedClass.isEmpty {
+                classNameOverlay
+            }
         }
         .background(AuroraBackground(section: .orario))
         .navigationTitle("Crea orario")
@@ -94,26 +100,8 @@ struct ScheduleBuilderView: View {
         }
         .onAppear {
             rebuildPeriodsAndDays()
-            if selectedClass.isEmpty {
-                classNameDraft = ""
-                showClassPrompt = true
-            }
         }
         .sheet(isPresented: $showSetupSheet) { setupSheet }
-        .alert("Nome della classe", isPresented: $showClassPrompt) {
-            TextField("Es. 5GSA", text: $classNameDraft)
-            // Obbligatorio: o si dà un nome alla classe, o si esce dal builder.
-            Button("Annulla", role: .cancel) { dismiss() }
-            Button("OK") {
-                commitClassName()
-                // Required: if still empty, ask again.
-                if selectedClass.isEmpty {
-                    DispatchQueue.main.async { showClassPrompt = true }
-                }
-            }
-        } message: {
-            Text("Per quale classe stai creando l'orario? (obbligatorio)")
-        }
         .sheet(item: $cell) { target in
             CellEditorSheet(
                 subject: lesson(for: target)?.subject ?? "",
@@ -151,6 +139,8 @@ struct ScheduleBuilderView: View {
             draft.lessons[i].className = name
         }
         selectedClass = name
+        renameDraft = ""
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
     // MARK: Setup bar (always visible)
@@ -222,41 +212,264 @@ struct ScheduleBuilderView: View {
         .padding(.horizontal, 16).padding(.vertical, 10)
     }
 
-    private var setupSheet: some View {
-        NavigationStack {
-            Form {
-                Section("Classe") {
-                    LabeledContent("Classe selezionata", value: selectedClass.isEmpty ? "—" : selectedClass)
-                    Button {
-                        renameDraft = selectedClass
-                        showSetupSheet = false
-                        // L'alert può comparire solo quando lo sheet è chiuso.
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { renamingClass = true }
-                    } label: {
-                        Label("Rinomina classe", systemImage: "pencil")
+    // MARK: Nome classe obbligatorio (overlay bloccante)
+
+    private var classNameOverlay: some View {
+        ZStack {
+            Color.black.opacity(scheme == .dark ? 0.45 : 0.25).ignoresSafeArea()
+            VStack(spacing: 14) {
+                Image(systemName: "graduationcap.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(
+                        LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: Circle()
+                    )
+                    .shadow(color: Color(hex: "#3884F6")!.opacity(0.45), radius: 10, y: 5)
+
+                Text("Per quale classe è l'orario?")
+                    .font(.system(size: 17, weight: .bold))
+                Text("Il nome della classe è obbligatorio per iniziare; potrai rinominarla dalle Impostazioni orario.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                TextField("Es. 5GSA", text: $classNameDraft)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.characters)
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: 17, weight: .bold))
+                    .padding(.vertical, 10)
+                    .background(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(scheme == .dark ? 0.12 : 0.4), lineWidth: 1))
+                    .submitLabel(.done)
+                    .onSubmit { commitClassName() }
+
+                HStack(spacing: 10) {
+                    Button { dismiss() } label: {
+                        Text("Annulla")
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                            .overlay(Capsule().strokeBorder(.white.opacity(scheme == .dark ? 0.12 : 0.3), lineWidth: 1))
                     }
-                    .disabled(selectedClass.isEmpty)
-                }
-                Section("Ore") {
-                    DatePicker("Inizio 1ª ora", selection: $firstStartDate, displayedComponents: .hourAndMinute)
-                        .onChange(of: firstStartDate) { _, _ in rebuildPeriodsAndDays() }
-                    Stepper("Ore al giorno: \(periodCount)", value: $periodCount, in: 1...12)
-                        .onChange(of: periodCount) { _, _ in rebuildPeriodsAndDays() }
-                    Stepper("Durata ora: \(slotMinutes) min", value: $slotMinutes, in: 30...90, step: 5)
-                        .onChange(of: slotMinutes) { _, _ in rebuildPeriodsAndDays() }
-                }
-                Section("Giorni") {
-                    Toggle("Includi sabato", isOn: $includeSaturday)
-                        .onChange(of: includeSaturday) { _, _ in rebuildPeriodsAndDays() }
+                    .buttonStyle(.plain)
+
+                    Button { commitClassName() } label: {
+                        Text("Inizia")
+                            .font(.system(size: 13.5, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                                in: Capsule()
+                            )
+                            .shadow(color: Color(hex: "#3884F6")!.opacity(0.4), radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(classNameDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .opacity(classNameDraft.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
                 }
             }
-            .navigationTitle("Impostazioni orario")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button("Fine") { showSetupSheet = false } }
+            .padding(22)
+            .auroraCard(radius: 22)
+            .padding(.horizontal, 28)
+        }
+    }
+
+    // MARK: Impostazioni orario (foglio in stile Aurora)
+
+    private let orarioGradient = LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    private var setupSheet: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Text("Impostazioni orario")
+                    .font(.system(size: 16, weight: .bold))
+                HStack {
+                    Spacer()
+                    Button { showSetupSheet = false } label: {
+                        Text("Fine")
+                            .font(.system(size: 12.5, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 7)
+                            .background(orarioGradient, in: Capsule())
+                            .shadow(color: Color(hex: "#3884F6")!.opacity(0.45), radius: 7, y: 3)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    // Classe: nome attuale + rinomina inline.
+                    settingsCard {
+                        settingsRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: "Classe") {
+                            Text(selectedClass.isEmpty ? "—" : selectedClass)
+                                .font(.system(size: 14, weight: .heavy))
+                                .foregroundStyle(entityLabelColor(Color(hex: "#6EE7B7")!, scheme))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(Color(hex: "#6EE7B7")!.opacity(0.12), in: Capsule())
+                                .overlay(Capsule().strokeBorder(Color(hex: "#6EE7B7")!.opacity(0.26), lineWidth: 1))
+                        }
+                        settingsHairline
+                        settingsRow(icon: "pencil", tint: Color(hex: "#93C5FD")!, label: "Rinomina") {
+                            TextField("Nuovo nome", text: $renameDraft)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.characters)
+                                .multilineTextAlignment(.trailing)
+                                .font(.system(size: 13))
+                                .frame(maxWidth: 130)
+                                .submitLabel(.done)
+                                .onSubmit { renameSelectedClass() }
+                            Button {
+                                renameSelectedClass()
+                            } label: {
+                                Text("OK")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 5)
+                                    .background(orarioGradient, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(renameDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .opacity(renameDraft.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
+                        }
+                    }
+
+                    // Ore: inizio, numero e durata.
+                    settingsCard {
+                        settingsRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: "Inizio 1ª ora") {
+                            DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                        }
+                        settingsHairline
+                        settingsRow(icon: "number", tint: Color(hex: "#93C5FD")!, label: "Ore al giorno") {
+                            stepperPill(value: "\(periodCount)",
+                                        minus: { periodCount = max(1, periodCount - 1) },
+                                        plus: { periodCount = min(12, periodCount + 1) })
+                        }
+                        settingsHairline
+                        settingsRow(icon: "timer", tint: Color(hex: "#C4B5FD")!, label: "Durata ora") {
+                            stepperPill(value: "\(slotMinutes) min",
+                                        minus: { slotMinutes = max(30, slotMinutes - 5) },
+                                        plus: { slotMinutes = min(90, slotMinutes + 5) })
+                        }
+                    }
+
+                    // Giorni.
+                    settingsCard {
+                        settingsRow(icon: "calendar", tint: Color(hex: "#F0ABFC")!, label: "Includi sabato") {
+                            Toggle("", isOn: $includeSaturday)
+                                .labelsHidden()
+                                .tint(Color(hex: "#4E7CF6")!)
+                        }
+                    }
+
+                    Text("Le fasce orarie si ricalcolano da inizio e durata; rinominando la classe si aggiornano anche tutte le sue lezioni.")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .padding(.horizontal, 4)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+                .padding(.bottom, 26)
             }
         }
-        .presentationDetents([.medium])
+        .background {
+            if scheme == .dark {
+                LinearGradient(colors: [Color(hex: "#14172A")!, Color(hex: "#0C0E1A")!],
+                               startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+            } else {
+                Color(.systemGroupedBackground).ignoresSafeArea()
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationCornerRadius(30)
+        .presentationDragIndicator(.visible)
+        .onAppear { renameDraft = "" }
+        .onChange(of: firstStartDate) { _, _ in rebuildPeriodsAndDays() }
+        .onChange(of: periodCount) { _, _ in rebuildPeriodsAndDays() }
+        .onChange(of: slotMinutes) { _, _ in rebuildPeriodsAndDays() }
+        .onChange(of: includeSaturday) { _, _ in rebuildPeriodsAndDays() }
+    }
+
+    @ViewBuilder
+    private func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(scheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.75),
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(scheme == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.07), lineWidth: 1))
+    }
+
+    private func settingsRow<Content: View>(icon: String, tint: Color, label: String,
+                                            @ViewBuilder trailing: () -> Content) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 28, height: 28)
+                .background(tint.opacity(0.13), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(tint.opacity(0.28), lineWidth: 1))
+            Text(label).font(.system(size: 14, weight: .semibold))
+            Spacer()
+            trailing()
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 9)
+    }
+
+    private var settingsHairline: some View {
+        Rectangle()
+            .fill(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 51)
+    }
+
+    private func stepperPill(value: String, minus: @escaping () -> Void, plus: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Button(action: minus) {
+                Image(systemName: "minus")
+                    .font(.system(size: 11, weight: .heavy))
+                    .frame(width: 24, height: 24)
+                    .background(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06), in: Circle())
+            }
+            Text(value)
+                .font(.system(size: 14, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(Color(hex: "#7CB3FF")!)
+                .frame(minWidth: 30)
+                .contentTransition(.numericText())
+            Button(action: plus) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .heavy))
+                    .frame(width: 24, height: 24)
+                    .background(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06), in: Circle())
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+        .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.11) : Color.black.opacity(0.08), lineWidth: 1))
     }
 
     private func commitClassName() {
