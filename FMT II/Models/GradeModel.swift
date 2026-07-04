@@ -61,29 +61,46 @@ enum GradeType: String, Codable, CaseIterable {
     case oral = "oral"
     case written = "written"
     case practical = "practical"
+    case giustifica = "giustifica"
 
     var label: String {
         switch self {
-        case .oral:      return "Orale"
-        case .written:   return "Scritto"
-        case .practical: return "Pratico"
+        case .oral:       return "Orale"
+        case .written:    return "Scritto"
+        case .practical:  return "Pratico"
+        case .giustifica: return "Giustifica"
         }
     }
 
     var icon: String {
         switch self {
-        case .oral:      return "bubble.left.fill"
-        case .written:   return "pencil.line"
-        case .practical: return "hand.raised.fill"
+        case .oral:       return "bubble.left.fill"
+        case .written:    return "pencil.line"
+        case .practical:  return "hand.raised.fill"
+        case .giustifica: return "g.circle.fill"
         }
     }
 
     var color: Color {
         switch self {
-        case .oral:      return .blue
-        case .written:   return .purple
-        case .practical: return .orange
+        case .oral:       return .blue
+        case .written:    return .purple
+        case .practical:  return .orange
+        case .giustifica: return .gray
         }
+    }
+}
+
+extension Grade {
+    /// La giustifica non è un voto numerico: si mostra come "G", non fa media
+    /// e non ha peso.
+    var isGiustifica: Bool { type == .giustifica }
+
+    var displayValue: String { isGiustifica ? "G" : value.italianGrade }
+
+    var displayColor: Color {
+        if isGiustifica { return .gray }
+        return countsForAverage ? value.gradeColor : .blue
     }
 }
 

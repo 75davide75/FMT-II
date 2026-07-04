@@ -237,10 +237,10 @@ private struct GradeHomeRow: View {
             }
             Spacer()
             HStack(alignment: .center, spacing: 8) {
-                Text(grade.value.italianGrade)
+                Text(grade.displayValue)
                     .font(.system(size: 26, weight: .heavy))
                     .kerning(-0.5)
-                    .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
+                    .foregroundStyle(grade.displayColor)
                     .monospacedDigit()
                     .frame(minWidth: 46, alignment: .trailing)
                 // Cerchietto trend (design 2c)
@@ -388,7 +388,7 @@ private struct RecentGradesRow: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(grades) { grade in
-                        let c = grade.countsForAverage ? grade.value.gradeColor : .blue
+                        let c = grade.displayColor
                         VStack(spacing: 5) {
                             ZStack {
                                 Circle()
@@ -397,7 +397,7 @@ private struct RecentGradesRow: View {
                                 Circle()
                                     .stroke(c.opacity(0.30), lineWidth: 1.5)
                                     .frame(width: bubble, height: bubble)
-                                Text(grade.value.italianGrade)
+                                Text(grade.displayValue)
                                     .font(.system(.footnote, design: .rounded, weight: .bold))
                                     .foregroundStyle(c)
                             }
@@ -925,7 +925,8 @@ private struct GradeChartView: View {
 
     var tint: Color = Color(hex: "#60A5FA")!
 
-    private var sorted: [Grade] { grades.sorted { $0.date < $1.date } }
+    // Le giustifiche non hanno valore numerico: fuori dal grafico.
+    private var sorted: [Grade] { grades.filter { !$0.isGiustifica }.sorted { $0.date < $1.date } }
     @State private var selectedIndex: Int?
     @Environment(\.colorScheme) private var scheme
 
@@ -1093,9 +1094,9 @@ struct GradeRowView: View {
                                              : trend == .declined ? "Ha abbassato la media della materia"
                                              : "Media della materia invariata")
                 }
-                Text(grade.value.italianGrade)
+                Text(grade.displayValue)
                     .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
+                    .foregroundStyle(grade.displayColor)
                 Image(systemName: "chevron.right")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -1190,6 +1191,7 @@ struct GradeEntrySheet: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             Form {
                 Section("Materia") {
                     TextField(
@@ -1216,6 +1218,7 @@ struct GradeEntrySheet: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .id("materia")
 
                 Section("Professore") {
                     TextField("Es. ROSSI", text: $teacher)
@@ -1238,8 +1241,11 @@ struct GradeEntrySheet: View {
                     }
                 }
 
-                Section("Voto") {
-                    GradeValuePickerView(value: $value)
+                // La giustifica non è un voto: niente valore da scegliere.
+                if type != .giustifica {
+                    Section("Voto") {
+                        GradeValuePickerView(value: $value)
+                    }
                 }
 
                 Section {
@@ -1250,27 +1256,31 @@ struct GradeEntrySheet: View {
                     }
                     DatePicker("Data", selection: $date, displayedComponents: .date)
                 } footer: {
-                    Text("Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo.")
+                    Text(type == .giustifica
+                         ? "La giustifica viene registrata come «G»: non ha voto, non ha peso e non fa media."
+                         : "Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo.")
                 }
 
-                Section {
-                    Toggle(isOn: $countsForAverage) {
-                        Label("Fa media", systemImage: "function")
-                    }
-                    if countsForAverage {
-                        HStack {
-                            Label("Peso", systemImage: "scalemass")
-                            Spacer()
-                            Text("\(Int((weight * 100).rounded()))%")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
+                if type != .giustifica {
+                    Section {
+                        Toggle(isOn: $countsForAverage) {
+                            Label("Fa media", systemImage: "function")
                         }
-                        Slider(value: $weight, in: 0...1, step: 0.05)
+                        if countsForAverage {
+                            HStack {
+                                Label("Peso", systemImage: "scalemass")
+                                Spacer()
+                                Text("\(Int((weight * 100).rounded()))%")
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: $weight, in: 0...1, step: 0.05)
+                        }
+                    } footer: {
+                        Text(countsForAverage
+                             ? "Il peso determina quanto incide nella media ponderata."
+                             : "Il voto verrà mostrato in blu e non conterà nella media.")
                     }
-                } footer: {
-                    Text(countsForAverage
-                         ? "Il peso determina quanto incide nella media ponderata."
-                         : "Il voto verrà mostrato in blu e non conterà nella media.")
                 }
 
                 Section("Annotazione") {
@@ -1304,13 +1314,20 @@ struct GradeEntrySheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Salva") {
                         guard !subject.trimmingCharacters(in: .whitespaces).isEmpty else {
-                            withAnimation { subjectError = true }
+                            // Il campo materia torna in vista anche da fine
+                            // pagina, così è chiaro cosa manca.
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+                                subjectError = true
+                                proxy.scrollTo("materia", anchor: .top)
+                            }
+                            UINotificationFeedbackGenerator().notificationOccurred(.error)
                             return
                         }
                         save()
                     }
                     .fontWeight(.semibold)
                 }
+            }
             }
         }
         .onAppear { setupInitialState() }
@@ -1339,6 +1356,11 @@ struct GradeEntrySheet: View {
         g.note = note.trimmingCharacters(in: .whitespaces)
         g.weight = weight
         g.countsForAverage = countsForAverage
+        if type == .giustifica {
+            // Nessun voto e nessun peso: la "G" non entra mai nella media.
+            g.countsForAverage = false
+            g.weight = 1.0
+        }
         if isNew { store.add(g) } else { store.update(g) }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
@@ -1360,13 +1382,31 @@ struct GradeValuePickerView: View {
         )
     }
 
+    private var isMax: Bool { value >= maxGrade - 0.001 }
+
     var body: some View {
         HStack(spacing: 0) {
-            Text(value.italianGrade)
-                .font(.system(size: 38, weight: .bold, design: .rounded))
-                .foregroundStyle(value.gradeColor)
-                .frame(width: 72, alignment: .center)
-                .animation(.easeInOut(duration: 0.1), value: value)
+            VStack(spacing: 3) {
+                // Stelline quando è il voto massimo della scala.
+                if isMax {
+                    HStack(spacing: 2) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Image(systemName: "sparkle")
+                                .font(.system(size: i == 1 ? 12 : 8, weight: .bold))
+                                .foregroundStyle(Color(hex: "#FBBF24")!)
+                                .shadow(color: Color(hex: "#FBBF24")!.opacity(0.8), radius: 3)
+                        }
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                Text(value.italianGrade)
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .foregroundStyle(value.gradeColor)
+            }
+            .frame(width: 72, alignment: .center)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isMax)
+            .animation(.easeInOut(duration: 0.1), value: value)
+            .sensoryFeedback(.success, trigger: isMax)
 
             Picker("", selection: selectedIndex) {
                 ForEach(0...steps, id: \.self) { i in
