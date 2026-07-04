@@ -91,12 +91,17 @@ struct Note: Identifiable, Codable {
 
     var dayId: DayId? { day.flatMap { DayId(rawValue: $0) } }
 
-    /// Migrazione: nota vecchia con solo giorno settimanale → prossima
-    /// occorrenza di quel giorno come data di calendario.
+    /// Migrazione: ogni nota ha una data. Nota vecchia con solo giorno
+    /// settimanale → prossima occorrenza di quel giorno; senza nemmeno il
+    /// giorno → data di creazione.
     func migratingDate(from now: Date = Date()) -> Note {
-        guard date == nil, let d = dayId else { return self }
+        guard date == nil else { return self }
         var n = self
-        n.date = nextOccurrence(of: d, from: now)
+        if let d = dayId {
+            n.date = nextOccurrence(of: d, from: now)
+        } else {
+            n.date = Calendar.current.startOfDay(for: createdAt)
+        }
         return n
     }
 
@@ -193,10 +198,10 @@ class NotesStore: ObservableObject {
     private func load() {
         guard let data = try? Data(contentsOf: storageURL),
               let decoded = try? JSONDecoder().decode([Note].self, from: data) else { return }
-        // Migrazione una tantum: le note con solo giorno settimanale ricevono
-        // la data della prossima occorrenza di quel giorno.
+        // Migrazione una tantum: ogni nota riceve una data (prossima
+        // occorrenza del giorno settimanale, o la data di creazione).
         notes = decoded.map { $0.migratingDate() }
-        if decoded.contains(where: { $0.date == nil && $0.dayId != nil }) { save() }
+        if decoded.contains(where: { $0.date == nil }) { save() }
     }
 
     private func save() {

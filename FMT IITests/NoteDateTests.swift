@@ -36,8 +36,11 @@ final class NoteDateTests: XCTestCase {
         XCTAssertEqual(Calendar.current.component(.day, from: migrated.date!), 10)
     }
 
-    func testNoteWithoutWeekdayStaysUndated() {
-        let n = Note()
-        XCTAssertNil(n.migratingDate(from: saturday).date)
+    func testNoteWithoutWeekdayFallsBackToCreationDate() {
+        var n = Note()
+        n.createdAt = saturday
+        let migrated = n.migratingDate(from: saturday)
+        XCTAssertNotNil(migrated.date)
+        XCTAssertTrue(Calendar.current.isDate(migrated.date!, inSameDayAs: saturday))
     }
 }

@@ -344,21 +344,18 @@ struct NotesListView: View {
     private var notesByDate: [NoteDateGroup] {
         let cal = Calendar.current
         var groups: [Date: [Note]] = [:]
-        var noDate: [Note] = []
         for note in displayNotes {
-            if let d = note.date { groups[cal.startOfDay(for: d), default: []].append(note) }
-            else { noDate.append(note) }
+            // Ogni nota ha una data: quella scelta, altrimenti quella di
+            // creazione.
+            let d = note.date ?? note.createdAt
+            groups[cal.startOfDay(for: d), default: []].append(note)
         }
-        var result: [NoteDateGroup] = groups.keys.sorted().map { day in
+        return groups.keys.sorted().map { day in
             NoteDateGroup(id: "d-\(Int(day.timeIntervalSince1970))",
                           label: dateGroupLabel(day),
                           date: day,
                           notes: groups[day]!.sorted { ($0.time ?? "") < ($1.time ?? "") })
         }
-        if !noDate.isEmpty {
-            result.append(NoteDateGroup(id: "nodate", label: "Senza data", date: nil, notes: noDate))
-        }
-        return result
     }
 
     private func dateGroupLabel(_ day: Date) -> String {
@@ -592,7 +589,9 @@ struct NotesListView: View {
         .overlay(alignment: .bottomTrailing) {
             // FAB "+" con gradiente (design 1a).
             if isActive && !showArchive && !isSelecting {
-                Button { noteContext = NoteCreationContext() } label: {
+                // La nuova nota nasce nel giorno su cui ci si trova nella
+                // striscia (oppure oggi).
+                Button { noteContext = NoteCreationContext(date: selectedStripDate ?? Calendar.current.startOfDay(for: Date())) } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 21, weight: .bold))
                         .foregroundStyle(.white)
@@ -1255,7 +1254,7 @@ struct NoteEditorSheet: View {
     private func setupInitialState() {
         if let note = context.existingNote {
             attributedText = note.attributedText
-            noteDate = note.date
+            noteDate = note.date ?? Calendar.current.startOfDay(for: note.createdAt)
             time = note.time
             teacherTag = note.teacherTag ?? ""
             classTag = note.classTag ?? ""
