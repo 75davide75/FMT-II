@@ -38,6 +38,7 @@ struct ZoomableSheetView<Content: View>: UIViewRepresentable {
 
     func updateUIView(_ scroll: UIScrollView, context: Context) {
         context.coordinator.host?.rootView = content()
+        context.coordinator.linkGesturesIfNeeded(in: scroll)
         // Zoom pilotato dai bottoni − / +; mai durante il pinch dell'utente.
         if abs(scroll.zoomScale - zoom) > 0.01, !context.coordinator.isInteracting {
             scroll.setZoomScale(zoom, animated: true)
@@ -50,8 +51,26 @@ struct ZoomableSheetView<Content: View>: UIViewRepresentable {
         var parent: ZoomableSheetView
         var host: UIHostingController<Content>?
         var isInteracting = false
+        private var linkedRecognizers = Set<ObjectIdentifier>()
 
         init(_ parent: ZoomableSheetView) { self.parent = parent }
+
+        /// I tap del contenuto SwiftUI (le celle) devono aspettare il
+        /// fallimento del pinch: altrimenti appoggiando due dita capita che
+        /// il tocco venga preso come tap su una casella invece che come zoom.
+        /// (Il pinch fallisce al touch-up di un tocco singolo, quindi i tap
+        /// normali non subiscono ritardi percepibili.)
+        func linkGesturesIfNeeded(in scroll: UIScrollView) {
+            guard let pinch = scroll.pinchGestureRecognizer,
+                  let recognizers = host?.view.gestureRecognizers else { return }
+            for r in recognizers where r !== pinch {
+                let id = ObjectIdentifier(r)
+                if !linkedRecognizers.contains(id) {
+                    r.require(toFail: pinch)
+                    linkedRecognizers.insert(id)
+                }
+            }
+        }
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? { host?.view }
 
