@@ -35,12 +35,23 @@ struct DatabaseEditorView: View {
     var body: some View {
         ScrollViewReader { proxy in
         List {
+            Section {
+                AuroraTitle(
+                    title: "Dati orario",
+                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · \(draft.lessons.count) lezioni · \(draft.teachers.count) docenti · \(draft.classes.count) classi"
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+            }
             timeSlotsSection
             teachersSection.id("docenti")
             classesSection.id("classi")
             lessonsSection
         }
-        .navigationTitle("Modifica database")
+        .scrollContentBackground(.hidden)
+        .background { AuroraBackground(section: .orario) }
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -100,73 +111,104 @@ struct DatabaseEditorView: View {
 
     private var timeSlotsSection: some View {
         Section {
-            DatePicker("Inizio 1ª ora", selection: $firstStartDate, displayedComponents: .hourAndMinute)
-                .onChange(of: firstStartDate) { _, _ in recomputePeriods() }
-            Stepper("Durata: \(slotMinutes) min", value: $slotMinutes, in: 30...90, step: 5)
-                .onChange(of: slotMinutes) { _, _ in recomputePeriods() }
-            ForEach(sortedPeriods) { p in
-                HStack {
-                    Text("\(p.number)ª ora").foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(p.startTime)–\(p.endTime)").monospacedDigit()
-                }
-                .font(.callout)
+            HStack {
+                Text("Inizio 1ª ora").font(.system(size: 14.5, weight: .semibold))
+                Spacer()
+                DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .onChange(of: firstStartDate) { _, _ in recomputePeriods() }
             }
+            Stepper(value: $slotMinutes, in: 30...90, step: 5) {
+                HStack {
+                    Text("Durata lezione").font(.system(size: 14.5, weight: .semibold))
+                    Spacer()
+                    Text("\(slotMinutes) min")
+                        .font(.system(size: 14, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#7CB3FF")!)
+                }
+            }
+            .onChange(of: slotMinutes) { _, _ in recomputePeriods() }
+            // Fasce calcolate, come chip (design 3e)
+            ChipFlowLayout(spacing: 6) {
+                ForEach(sortedPeriods) { p in
+                    Text("\(p.number)ª · \(p.startTime)–\(p.endTime)")
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(.white.opacity(0.06), in: Capsule())
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+                }
+            }
+            .padding(.vertical, 2)
         } header: {
-            Text("Fasce orarie")
+            SettingsView.header("Fasce orarie")
         } footer: {
-            Text("Le ore vengono calcolate a partire dall'inizio e dalla durata.")
+            Text("Calcolate da inizio e durata — nessun inserimento manuale.")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     // MARK: Docenti
 
     private var teachersSection: some View {
         Section {
-            ForEach(draft.teachers, id: \.self) { teacher in
+            entityChips(draft.teachers, kind: .teacher, addLabel: "Aggiungi")
+        } header: {
+            SettingsView.header("Docenti · \(draft.teachers.count)")
+        } footer: {
+            Text("Tocca un docente per rinominarlo ovunque nell'orario.")
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    /// Chip colorati per docenti/classi + chip "Aggiungi" tratteggiato (3e).
+    private func entityChips(_ items: [String], kind: ItemKind, addLabel: String) -> some View {
+        ChipFlowLayout(spacing: 7) {
+            ForEach(items, id: \.self) { name in
                 Button {
-                    rename = RenameTarget(kind: .teacher, current: teacher)
+                    rename = RenameTarget(kind: kind, current: name)
                 } label: {
-                    HStack {
-                        Text(teacher).foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "pencil").font(.caption).foregroundStyle(.tertiary)
-                    }
+                    Text(name)
+                        .font(.system(size: 11.5, weight: .bold))
+                        .kerning(0.3)
+                        .foregroundStyle(entityTint(name).blended(with: .white, by: 0.45))
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(entityTint(name).opacity(0.13), in: Capsule())
+                        .overlay(Capsule().strokeBorder(entityTint(name).opacity(0.28), lineWidth: 1))
                 }
+                .buttonStyle(.plain)
             }
             Button {
-                rename = RenameTarget(kind: .teacher, current: "")
+                rename = RenameTarget(kind: kind, current: "")
             } label: {
-                Label("Aggiungi docente", systemImage: "plus")
+                HStack(spacing: 4) {
+                    Image(systemName: "plus").font(.system(size: 10, weight: .bold))
+                    Text(addLabel).font(.system(size: 11.5, weight: .bold))
+                }
+                .foregroundStyle(Color(hex: "#7DD3FC")!)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .overlay(Capsule().strokeBorder(Color(hex: "#7DD3FC")!.opacity(0.4),
+                                                style: StrokeStyle(lineWidth: 1.4, dash: [4, 3])))
             }
-        } header: {
-            Text("Docenti (\(draft.teachers.count))")
+            .buttonStyle(.plain)
         }
+        .padding(.vertical, 4)
     }
 
     // MARK: Classi
 
     private var classesSection: some View {
         Section {
-            ForEach(draft.classes, id: \.self) { cls in
-                Button {
-                    rename = RenameTarget(kind: .class_, current: cls)
-                } label: {
-                    HStack {
-                        Text(cls).foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "pencil").font(.caption).foregroundStyle(.tertiary)
-                    }
-                }
-            }
-            Button {
-                rename = RenameTarget(kind: .class_, current: "")
-            } label: {
-                Label("Aggiungi classe", systemImage: "plus")
-            }
+            entityChips(draft.classes, kind: .class_, addLabel: "Aggiungi")
         } header: {
-            Text("Classi (\(draft.classes.count))")
+            SettingsView.header("Classi · \(draft.classes.count)")
+        } footer: {
+            Text("Tocca una classe per rinominarla ovunque nell'orario.")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     // MARK: Lezioni
@@ -178,7 +220,7 @@ struct DatabaseEditorView: View {
                 .filter { $0.day == day }
                 .sorted { minutesFromMidnight($0.startTime) < minutesFromMidnight($1.startTime) }
             if !lessons.isEmpty {
-                Section(dayLabels[day] ?? day.rawValue) {
+                Section {
                     ForEach(lessons) { lesson in
                         Button {
                             lessonEdit = LessonEditTarget(lesson: lesson)
@@ -190,25 +232,55 @@ struct DatabaseEditorView: View {
                         let ids = offsets.map { lessons[$0].id }
                         draft.lessons.removeAll { ids.contains($0.id) }
                     }
+                } header: {
+                    SettingsView.header(dayLabels[day] ?? day.rawValue)
                 }
+                .listRowBackground(Color.sectionCard)
             }
         }
         Section {
             Button {
                 lessonEdit = LessonEditTarget(lesson: nil)
             } label: {
-                Label("Aggiungi lezione", systemImage: "plus")
+                HStack(spacing: 11) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        )
+                        .shadow(color: Color(hex: "#3884F6")!.opacity(0.4), radius: 5, y: 2)
+                    Text("Aggiungi lezione")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
             }
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     private func lessonRow(_ lesson: Lesson) -> some View {
-        HStack(spacing: 10) {
-            Text(lesson.startTime).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(lesson.className).font(.callout.weight(.medium)).foregroundStyle(.primary)
-                Text(lesson.teacher).font(.caption).foregroundStyle(.secondary)
-            }
+        let display = lesson.subject.isEmpty ? lesson.teacher : lesson.subject
+        return HStack(spacing: 10) {
+            Text(lesson.startTime)
+                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                .foregroundStyle(Color(hex: "#93C5FD")!)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#60A5FA")!.opacity(0.13), in: Capsule())
+            Text(lesson.className)
+                .font(.system(size: 11.5, weight: .bold))
+                .foregroundStyle(entityTint(lesson.className).blended(with: .white, by: 0.45))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 3)
+                .background(entityTint(lesson.className).opacity(0.13), in: Capsule())
+            Text(display)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
             Spacer()
             Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
         }

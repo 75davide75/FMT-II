@@ -8,11 +8,13 @@ struct NoteCreationContext: Identifiable {
     var time: String?
     var teacherTag: String?
     var classTag: String?
+    var subjectTag: String?
 
-    init(day: DayId? = nil, time: String? = nil, teacherTag: String? = nil, classTag: String? = nil) {
+    init(day: DayId? = nil, time: String? = nil, teacherTag: String? = nil, classTag: String? = nil, subjectTag: String? = nil) {
         self.existingNote = nil
         self.day = day; self.time = time
         self.teacherTag = teacherTag; self.classTag = classTag
+        self.subjectTag = subjectTag
     }
 
     init(existingNote: Note) {
@@ -21,6 +23,7 @@ struct NoteCreationContext: Identifiable {
         self.time = existingNote.time
         self.teacherTag = existingNote.teacherTag
         self.classTag = existingNote.classTag
+        self.subjectTag = existingNote.subjectTag
     }
 }
 

@@ -178,7 +178,7 @@ struct ScheduleBuilderView: View {
         ZStack {
             Color(.secondarySystemGroupedBackground)
             LinearGradient(
-                colors: [Color.accentColor.opacity(0.10), .clear, Color.indigo.opacity(0.06)],
+                colors: [AuroraSection.orario.tintA.opacity(0.22), .clear, AuroraSection.orario.tintB.opacity(0.14)],
                 startPoint: .top, endPoint: .bottom
             )
         }
@@ -263,25 +263,37 @@ struct ScheduleBuilderView: View {
         } label: {
             VStack(spacing: 2) {
                 if let l, filled {
-                    Text(l.subject).font(.caption2.weight(.bold))
+                    let tint = entityTint(l.subject)
+                    Text(l.subject)
+                        .font(.system(size: 10.5, weight: .heavy))
+                        .kerning(0.3)
+                        .foregroundStyle(tint.blended(with: .white, by: 0.45))
                         .lineLimit(2).multilineTextAlignment(.center)
                     if !l.teacher.isEmpty {
                         Text(l.teacher).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1)
                     }
                 } else {
-                    Image(systemName: "plus").font(.callout).foregroundStyle(.tertiary)
+                    Image(systemName: "plus")
+                        .font(.callout)
+                        .foregroundStyle(Color(hex: "#94B7FF")!.opacity(0.5))
                 }
             }
             .frame(width: dayColWidth, height: rowHeight)
             .background(
-                filled ? Color.accentColor.opacity(0.16) : Color(.tertiarySystemGroupedBackground).opacity(0.5),
-                in: RoundedRectangle(cornerRadius: 10)
+                filled ? entityTint(l?.subject ?? "").opacity(0.16) : Color.white.opacity(0.02),
+                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(filled ? Color.accentColor.opacity(0.35) : Color(.separator).opacity(0.4),
-                                  lineWidth: filled ? 1 : 0.5)
-            )
+            .overlay {
+                if filled {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(entityTint(l?.subject ?? "").opacity(0.32), lineWidth: 1)
+                } else {
+                    // Cella libera: bordo tratteggiato (design 3d)
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Color(hex: "#94B7FF")!.opacity(0.24),
+                                      style: StrokeStyle(lineWidth: 1.4, dash: [5, 4]))
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

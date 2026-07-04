@@ -7,6 +7,10 @@ final class ScheduleStore: ObservableObject {
     @Published var isImporting = false
     @Published var errorMessage: String? = nil
     @Published var isPDFUnsupported = false
+    /// Set after a partial import: the missing element the user can complete.
+    @Published var pendingCompletion: ScheduleField? = nil
+    /// Set when a PDF is rejected: the reason shown along with the manual-creation offer.
+    @Published var rejection: ScheduleRejectReason? = nil
 
     private let storageKey = "findmyteacher.schedule"
     private let encoder = JSONEncoder()
@@ -31,18 +35,24 @@ final class ScheduleStore: ObservableObject {
     }
 
     private func _importPDF(data: Data, name: String) async {
-        do {
-            let parsed = try parseSchedulePDF(data: data, sourceName: name)
-            if parsed.lessons.isEmpty {
-                isPDFUnsupported = true
-                return
-            }
+        let outcome = await Task.detached(priority: .userInitiated) {
+            importSchedulePDF(data: data, sourceName: name)
+        }.value
+
+        switch outcome {
+        case .complete(let parsed):
             let normalized = normalizeScheduleTimes(parsed)
             schedule = normalized
             persist(normalized)
             savePDF(data: data)
-        } catch {
-            isPDFUnsupported = true
+        case .partial(let parsed, let missing):
+            let normalized = normalizeScheduleTimes(parsed)
+            schedule = normalized
+            persist(normalized)
+            savePDF(data: data)
+            pendingCompletion = missing
+        case .rejected(let reason):
+            rejection = reason
         }
     }
 

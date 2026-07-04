@@ -42,6 +42,13 @@ struct FMT_IIApp: App {
         }
     }
 
+    init() {
+        // Segmented control nello stile Aurora: pill selezionata tinta di blu.
+        let seg = UISegmentedControl.appearance()
+        seg.selectedSegmentTintColor = UIColor(red: 0.306, green: 0.486, blue: 0.965, alpha: 1)
+        seg.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

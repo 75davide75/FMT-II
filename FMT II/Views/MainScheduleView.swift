@@ -13,6 +13,8 @@ struct MainScheduleView: View {
     var gradesStore: GradesStore? = nil
 
     @AppStorage("useLiveTime") private var useLiveTime = true
+    // Cambia quando l'utente personalizza i colori: forza il refresh delle tinte.
+    @AppStorage("entityColorsVersion") private var entityColorsVersion = 0
     @AppStorage("manualDayRaw") private var manualDayRaw = "monday"
     @AppStorage("manualTime") private var manualTime = "08:10"
 
@@ -43,21 +45,33 @@ struct MainScheduleView: View {
         useLiveTime ? timeFromDate(clock) : manualTime
     }
 
+    /// Materie distinte nell'orario (vista adattiva quando mancano i docenti).
+    var scheduleSubjects: [String] {
+        Array(Set(schedule.lessons.map { $0.subject }.filter { !$0.isEmpty }))
+            .sorted { $0.compare($1, locale: Locale(identifier: "it")) == .orderedAscending }
+    }
+
+    /// Vista adattiva: docenti riconosciuti -> filtro classe/docente;
+    /// solo materie riconosciute -> filtro materia/classe.
+    var usesSubjectEntities: Bool { schedule.teachers.isEmpty && !scheduleSubjects.isEmpty }
+
+    var entityList: [String] { usesSubjectEntities ? scheduleSubjects : schedule.teachers }
+
     var selectedTeacher: String? {
-        resolveTeacher(schedule.teachers, query: teacherQuery)
+        resolveTeacher(entityList, query: teacherQuery)
     }
 
     var filteredTeachers: [String] {
         let q = teacherQuery.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return schedule.teachers }
-        return schedule.teachers.filter { $0.lowercased().contains(q) }
+        guard !q.isEmpty else { return entityList }
+        return entityList.filter { $0.lowercased().contains(q) }
     }
 
     var targetLessons: [Lesson] {
         schedule.lessons.filter { lesson in
             targetMode == .class_
                 ? lesson.className == selectedClass
-                : selectedTeacher.map { lesson.teacher == $0 } ?? false
+                : selectedTeacher.map { usesSubjectEntities ? lesson.subject == $0 : lesson.teacher == $0 } ?? false
         }
     }
 
@@ -88,22 +102,24 @@ struct MainScheduleView: View {
 
     var exportURL: URL? { store.exportScheduleURL() }
 
+    /// "5GSA · Giovedì · 13:00" — sottotitolo del titolo grande (design 3a).
+    var orarioSubtitle: String {
+        let target = targetMode == .class_ ? selectedClass : (selectedTeacher ?? "—")
+        let day = schedule.days.first { $0.id == activeDay }?.label ?? "Weekend"
+        return "\(target) · \(day) · \(activeTime)"
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-                // Subtle gradient header
-                LinearGradient(
-                    colors: [Color.accentColor.opacity(0.10), .clear],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .frame(height: 220)
-                .ignoresSafeArea()
-
                 ScrollView {
                     VStack(spacing: 14) {
+                        AuroraTitle(title: "Orario", subtitle: orarioSubtitle)
+                            .padding(.top, 2)
                         statusStrip
                         controlPanel
                         if viewMode != .week { timeIndicator }
 
+                        let _ = entityColorsVersion
                         switch viewMode {
                         case .now:
                             NowView(
@@ -115,7 +131,7 @@ struct MainScheduleView: View {
                                 schoolTimes: schoolTimes,
                                 onOpenWeek: { withAnimation { viewMode = .week } },
                                 onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
+                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
                             )
                         case .day:
                             DayView(
@@ -126,7 +142,7 @@ struct MainScheduleView: View {
                                 dayId: dayForDayView,
                                 onOpenCounterpart: openCounterpartDay,
                                 onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
+                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
                             )
                         case .week:
                             WeekView(
@@ -135,7 +151,7 @@ struct MainScheduleView: View {
                                 targetMode: targetMode,
                                 targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
                                 onOpenCounterpart: openCounterpartWeek,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
+                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
                             )
                         }
                     }
@@ -143,7 +159,6 @@ struct MainScheduleView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .background(Color(.secondarySystemGroupedBackground).ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { if isActive { toolbarContent } }
@@ -220,7 +235,10 @@ struct MainScheduleView: View {
                 }
                 .buttonStyle(.plain)
                 Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
-                    StatPill(icon: "person.fill", value: "\(schedule.teachers.count)", label: "docenti", color: .orange)
+                    StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
+                             value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
+                             label: usesSubjectEntities ? "materie" : "docenti",
+                             color: .orange)
                 }
                 .buttonStyle(.plain)
 
@@ -236,7 +254,7 @@ struct MainScheduleView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
-                    .background(.regularMaterial, in: Capsule())
+                    .auroraCard(radius: 999)
                 }
                 .buttonStyle(.plain)
             }
@@ -246,124 +264,101 @@ struct MainScheduleView: View {
 
     // MARK: - Control panel
 
-    var panelAccent: Color { targetMode == .class_ ? .blue : .orange }
+    var panelAccent: Color { targetMode == .class_ ? AuroraSection.orario.tintB : AuroraSection.orario.tintA }
 
     var controlPanel: some View {
         VStack(spacing: 10) {
-            Picker("Tipo", selection: $targetMode.animation()) {
-                Label("Classe", systemImage: "graduationcap").tag(TargetMode.class_)
-                Label("Docente", systemImage: "person").tag(TargetMode.teacher)
-            }
-            .pickerStyle(.segmented)
+            AuroraSegmented(
+                options: [(TargetMode.class_, "Classe"),
+                          (TargetMode.teacher, usesSubjectEntities ? "Materia" : "Docente")],
+                selection: $targetMode.animation()
+            )
 
-            if targetMode == .class_ {
-                HStack {
-                    Image(systemName: "graduationcap.fill")
-                        .foregroundStyle(panelAccent)
-                        .frame(width: 24)
-                    Picker("Classe", selection: $selectedClass) {
-                        ForEach(schedule.classes, id: \.self) { Text($0).tag($0) }
+            // Altezza identica nei due stati e dissolvenza incrociata:
+            // niente "scalino" quando si passa da classe a docente.
+            ZStack {
+                if targetMode == .class_ {
+                    HStack {
+                        Image(systemName: "graduationcap.fill")
+                            .foregroundStyle(panelAccent)
+                            .frame(width: 24)
+                        Picker("Classe", selection: $selectedClass) {
+                            ForEach(schedule.classes, id: \.self) { Text($0).tag($0) }
+                        }
+                        .tint(.primary)
                     }
-                    .tint(.primary)
+                    .frame(height: 26)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(panelAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(panelAccent.opacity(0.25), lineWidth: 1))
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                } else {
+                    TeacherPickerField(
+                        query: $teacherQuery,
+                        focused: _teacherFieldFocused,
+                        showMenu: $showTeacherMenu,
+                        filteredTeachers: filteredTeachers,
+                        selectedTeacher: selectedTeacher,
+                        onSelect: { teacher in teacherQuery = teacher; showTeacherMenu = false },
+                        accentColor: panelAccent,
+                        placeholder: usesSubjectEntities ? "Es. MATEMATICA" : "Es. GRECO"
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(panelAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(panelAccent.opacity(0.25), lineWidth: 1))
-            } else {
-                TeacherPickerField(
-                    query: $teacherQuery,
-                    focused: _teacherFieldFocused,
-                    showMenu: $showTeacherMenu,
-                    filteredTeachers: filteredTeachers,
-                    selectedTeacher: selectedTeacher,
-                    onSelect: { teacher in teacherQuery = teacher; showTeacherMenu = false },
-                    accentColor: panelAccent
-                )
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.9), value: targetMode)
 
-            Picker("Vista", selection: $viewMode) {
-                Label("Adesso", systemImage: "clock").tag(ViewMode.now)
-                Label("Giorno", systemImage: "calendar.day.timeline.left").tag(ViewMode.day)
-                Label("Settimana", systemImage: "calendar").tag(ViewMode.week)
-            }
-            .pickerStyle(.segmented)
+            AuroraSegmented(
+                options: [(ViewMode.now, "Adesso"), (ViewMode.day, "Giorno"), (ViewMode.week, "Settimana")],
+                selection: $viewMode
+            )
         }
         .padding(14)
-        .background {
-            RoundedRectangle(cornerRadius: 18)
-                .fill(.regularMaterial)
-                .overlay {
-                    LinearGradient(
-                        colors: [panelAccent.opacity(0.10), panelAccent.opacity(0.03)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(panelAccent.opacity(0.20), lineWidth: 1)
-                }
-        }
+        .auroraCard(radius: 18, strokeTint: panelAccent)
         .animation(.easeInOut(duration: 0.25), value: targetMode)
     }
 
     // MARK: - Time indicator (compact)
 
     var timeIndicator: some View {
-        HStack(spacing: 10) {
-            Image(systemName: useLiveTime ? "clock.arrow.circlepath" : "clock.badge.xmark")
-                .foregroundStyle(useLiveTime ? .green : .orange)
-                .font(.subheadline)
-
-            if viewMode == .day {
-                let dayLabel = schedule.days.first { $0.id == dayForDayView }?.label ?? ""
-                Text(dayLabel)
-                    .font(.subheadline.weight(.medium))
-            } else {
-                let currentDayLabel = schedule.days.first { $0.id == activeDay }?.label ?? (useLiveTime ? "Weekend" : "—")
-                if useLiveTime {
-                    Text(currentDayLabel)
-                        .font(.subheadline.weight(.medium))
-                    Text("·")
-                    Text(activeTime)
-                        .font(.subheadline.monospacedDigit())
-                } else {
-                    Text(currentDayLabel)
-                        .font(.subheadline.weight(.medium))
-                    Text("·")
-                    Text(activeTime)
-                        .font(.subheadline.monospacedDigit())
-                }
-            }
+        let dayLabel = viewMode == .day
+            ? (schedule.days.first { $0.id == dayForDayView }?.label ?? "")
+            : (schedule.days.first { $0.id == activeDay }?.label ?? (useLiveTime ? "Weekend" : "—"))
+        return HStack(spacing: 8) {
+            Text("\(dayLabel) · \(activeTime)")
+                .font(.system(size: 13, weight: .semibold))
 
             Spacer()
 
             Button {
                 showQuickTimePicker = true
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: useLiveTime ? "clock.arrow.circlepath" : "pencil")
-                        .font(.caption2)
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(useLiveTime ? Color(hex: "#34D399")! : .orange)
+                        .frame(width: 5, height: 5)
+                        .shadow(color: (useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.9), radius: 3.5)
                     Text(useLiveTime ? "Live" : "Manuale")
-                        .font(.caption.weight(.medium))
+                        .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(useLiveTime ? .green : .orange)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background((useLiveTime ? Color.green : Color.orange).opacity(0.12), in: Capsule())
+                .foregroundStyle(useLiveTime ? Color(hex: "#6EE7B7")! : .orange)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 3)
+                .background((useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.12), in: Capsule())
+                .overlay(Capsule().strokeBorder((useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.28), lineWidth: 1))
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 1))
     }
 
     // MARK: - Actions
 
-    func addNoteContext(day: DayId? = nil, time: String? = nil, teacher: String? = nil, cls: String? = nil) {
-        noteContext = NoteCreationContext(day: day, time: time, teacherTag: teacher, classTag: cls)
+    func addNoteContext(day: DayId? = nil, time: String? = nil, teacher: String? = nil, cls: String? = nil, subject: String? = nil) {
+        noteContext = NoteCreationContext(day: day, time: time, teacherTag: teacher, classTag: cls, subjectTag: subject)
     }
 
     func jumpToLessonTime(day: DayId, time: String) {
@@ -375,15 +370,19 @@ struct MainScheduleView: View {
 
     func openCounterpartDay(_ lesson: Lesson) {
         manualDayRaw = lesson.day.rawValue
-        withAnimation { viewMode = .day }
-        if targetMode == .class_ { targetMode = .teacher; teacherQuery = lesson.teacher }
-        else { targetMode = .class_; selectedClass = lesson.className }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+            viewMode = .day
+            if targetMode == .class_ { targetMode = .teacher; teacherQuery = usesSubjectEntities ? lesson.subject : lesson.teacher }
+            else { targetMode = .class_; selectedClass = lesson.className }
+        }
     }
 
     func openCounterpartWeek(_ lesson: Lesson) {
-        withAnimation { viewMode = .week }
-        if targetMode == .class_ { targetMode = .teacher; teacherQuery = lesson.teacher }
-        else { targetMode = .class_; selectedClass = lesson.className }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+            viewMode = .week
+            if targetMode == .class_ { targetMode = .teacher; teacherQuery = usesSubjectEntities ? lesson.subject : lesson.teacher }
+            else { targetMode = .class_; selectedClass = lesson.className }
+        }
     }
 }
 
@@ -408,7 +407,7 @@ struct StatPill: View {
         .font(.caption)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(.regularMaterial, in: Capsule())
+        .auroraCard(radius: 999)
     }
 }
 
@@ -422,6 +421,7 @@ struct TeacherPickerField: View {
     let selectedTeacher: String?
     let onSelect: (String) -> Void
     var accentColor: Color = .orange
+    var placeholder: String = "Es. GRECO"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -429,7 +429,7 @@ struct TeacherPickerField: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(accentColor)
                     .frame(width: 24)
-                TextField("Es. GRECO", text: $query)
+                TextField(placeholder, text: $query)
                     .focused($focused)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.characters)

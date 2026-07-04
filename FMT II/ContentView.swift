@@ -121,14 +121,29 @@ struct ContentView: View {
                     }
             }
         }
-        .alert("PDF non supportato", isPresented: $store.isPDFUnsupported) {
-            Button("Annulla", role: .cancel) { store.isPDFUnsupported = false }
+        .alert("Import non riuscito", isPresented: Binding(
+            get: { store.rejection != nil },
+            set: { if !$0 { store.rejection = nil } }
+        )) {
+            Button("Crea orario manualmente") {
+                store.rejection = nil
+                showBuilder = true
+            }
             Button("Prova un altro PDF") {
-                store.isPDFUnsupported = false
+                store.rejection = nil
                 showFilePicker = true
             }
+            Button("Annulla", role: .cancel) { store.rejection = nil }
         } message: {
-            Text("Non è stato possibile leggere l'orario. Il formato potrebbe non essere compatibile.")
+            Text("\(store.rejection?.message ?? "") Puoi creare l'orario manualmente.")
+        }
+        .sheet(isPresented: Binding(
+            get: { store.pendingCompletion != nil },
+            set: { if !$0 { store.pendingCompletion = nil } }
+        )) {
+            if let missing = store.pendingCompletion {
+                ImportReviewView(store: store, missing: missing, onOpenBuilder: { showBuilder = true })
+            }
         }
         .alert("Errore", isPresented: Binding(
             get: { store.errorMessage != nil },
@@ -140,6 +155,24 @@ struct ContentView: View {
         }
         .onAppear {
             if hasSeenTutorial { hasCompletedOnboarding = true }
+            // A freddo la classe selezionata è vuota: riparti dalla
+            // predefinita, altrimenti l'Orario mostra solo ore libere.
+            if selectedClass.isEmpty, let s = store.schedule {
+                selectedClass = resolveDefaultClass(s.classes, current: selectedClass)
+            }
+            // Hook di test: consente di pilotare un import PDF dal simulatore
+            // (usato per demo/verifiche; inattivo in produzione).
+            if let path = ProcessInfo.processInfo.environment["FMT_IMPORT_PDF"],
+               let data = FileManager.default.contents(atPath: path) {
+                Task {
+                    await store.importFile(data: data, name: (path as NSString).lastPathComponent)
+                    if let s = store.schedule {
+                        selectedClass = resolveDefaultClass(s.classes, current: selectedClass)
+                        appSectionRaw = AppSection.schedule.rawValue
+                        hasCompletedOnboarding = true
+                    }
+                }
+            }
         }
         .onChange(of: store.schedule) { _, newSchedule in
             if let s = newSchedule {
@@ -171,8 +204,17 @@ struct ContentView: View {
         let activeIndex = indexBinding.wrappedValue
 
         NavigationStack {
-            SectionPager(count: sections.count, index: indexBinding, progress: $pagerProgress) { i in
-                pageView(for: sections[i], isActive: i == activeIndex)
+            ZStack {
+                // Sfondo unico: le aurore delle sezioni dissolvono l'una
+                // nell'altra seguendo il pager (design 3a).
+                AuroraCrossfadeBackground(
+                    sections: sections.map(\.aurora),
+                    progress: pagerProgress
+                )
+                SectionPager(count: sections.count, index: indexBinding, progress: $pagerProgress) { i in
+                    pageView(for: sections[i], isActive: i == activeIndex)
+                        .modifier(SectionEntrance(distance: CGFloat(i) - pagerProgress))
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -185,6 +227,7 @@ struct ContentView: View {
                     .modifier(FixedTypeSize(size: overrideTypeSize))
                 }
             }
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: appSectionRaw)
         }
     }
@@ -247,25 +290,20 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // Same backdrop as the tutorial, so the crossfade looks like a
-            // continuous gradient rather than a hard cut.
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.12), .clear, Color.purple.opacity(0.10)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Stesso sfondo aurora del tutorial, così la dissolvenza resta continua.
+            AuroraBackground(section: .neutral)
 
             VStack(spacing: 32) {
                 Spacer()
 
                 ZStack {
                     Circle()
-                        .fill(Color.accentColor.opacity(0.12))
+                        .fill(AuroraSection.neutral.gradient)
+                        .opacity(0.22)
                         .frame(width: 110, height: 110)
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 46))
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(AuroraSection.neutral.gradient)
                 }
 
                 VStack(spacing: 8) {
@@ -290,11 +328,11 @@ struct WelcomeView: View {
                         .font(.headline)
                         .padding(.horizontal, 28)
                         .padding(.vertical, 14)
-                        .background(Color.accentColor, in: Capsule())
+                        .background(AuroraSection.neutral.gradient, in: Capsule())
                         .foregroundStyle(.white)
                 }
                 .disabled(isImporting)
-                .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
+                .shadow(color: AuroraSection.neutral.tintB.opacity(0.35), radius: 8, y: 4)
 
                 if let onCreate {
                     Button(action: onCreate) {
@@ -302,8 +340,8 @@ struct WelcomeView: View {
                             .font(.headline)
                             .padding(.horizontal, 28)
                             .padding(.vertical, 14)
-                            .background(Color.accentColor.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.tint)
+                            .background(AuroraSection.neutral.tintB.opacity(0.16), in: Capsule())
+                            .foregroundStyle(AuroraSection.neutral.accent)
                     }
                 }
 

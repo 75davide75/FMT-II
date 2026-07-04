@@ -70,17 +70,16 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 appearanceSection
-                accessibilitySection
-                consultazioneSection
+                orarioSection
                 importOrarioSection
-                scheduleManagementSection
                 valutazioneSection
-                periodiSection
                 backupSection
-                infoSection
                 supportSection
+                infoSection
                 dangerZoneSection
             }
+            .scrollContentBackground(.hidden)
+            .background { AuroraBackground(section: .neutral) }
             .navigationTitle("Impostazioni")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -180,69 +179,125 @@ struct SettingsView: View {
         .modifier(FixedTypeSize(size: overrideTypeSize))
     }
 
-    private var appearanceSection: some View {
-        Section {
-            Picker("Modalità", selection: $appearanceMode) {
-                Label("Automatica", systemImage: "circle.lefthalf.filled").tag("auto")
-                Label("Chiara", systemImage: "sun.max").tag("light")
-                Label("Scura", systemImage: "moon.fill").tag("dark")
-            }
-            .pickerStyle(.inline)
-        } header: {
-            Text("Aspetto")
+    /// Header di sezione in maiuscoletto indaco (design 3e).
+    static func header(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10.5, weight: .heavy))
+            .kerning(1)
+            .foregroundStyle(Color(hex: "#A5B4FC")!)
+            .textCase(nil)
+    }
+
+    /// Etichetta con icona su badge sfumato, stile Impostazioni iOS.
+    static func row(_ title: String, icon: String, _ hexColor: String) -> some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    LinearGradient(colors: [Color(hex: hexColor)!.blended(with: .white, by: 0.18), Color(hex: hexColor)!],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                )
+            Text(title)
         }
     }
 
-    private var accessibilitySection: some View {
+    private var appearanceSection: some View {
         Section {
+            Picker(selection: $appearanceMode) {
+                Text("Automatico").tag("auto")
+                Text("Chiaro").tag("light")
+                Text("Scuro").tag("dark")
+            } label: {
+                Self.row("Tema", icon: "circle.lefthalf.filled", "#8B5CF6")
+            }
             Picker(selection: $dynamicTypeLevel) {
                 Text("Automatica").tag(0)
                 Text("Grande").tag(1)
                 Text("Molto grande").tag(2)
                 Text("Enorme").tag(3)
             } label: {
-                Label("Dimensione testo", systemImage: "textformat.size")
+                Self.row("Dimensione testo", icon: "textformat.size", "#4E7CF6")
+            }
+            if let schedule = store.schedule {
+                NavigationLink {
+                    EntityColorsView(schedule: schedule)
+                } label: {
+                    Self.row("Colori di classi e docenti", icon: "paintpalette.fill", "#F472B6")
+                }
             }
         } header: {
-            Text("Accessibilità")
+            Self.header("Aspetto")
         } footer: {
-            Text("Ingrandisce tutti i testi dell'app per una lettura più comoda.")
+            Text(store.schedule != nil
+                 ? "Scegli un colore per ogni classe, docente o materia: lo ritrovi nella settimana, nel giorno e nel builder."
+                 : "")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     @ViewBuilder
-    private var consultazioneSection: some View {
-        Section {
-            Toggle(isOn: $useLiveTime) {
-                Label("Usa ora corrente", systemImage: "clock.arrow.circlepath")
-            }
-            if !useLiveTime {
-                if let schedule = store.schedule {
+    private var orarioSection: some View {
+        if let schedule = store.schedule {
+            Section {
+                LabeledContent {
+                    Text(schedule.sourceName).lineLimit(1).truncationMode(.middle)
+                } label: {
+                    Self.row("Sorgente", icon: "doc.fill", "#38BDF8")
+                }
+                LabeledContent {
+                    Text("\(schedule.lessons.count) lezioni · \(schedule.classes.count) classi · \(schedule.teachers.count) docenti")
+                } label: {
+                    Self.row("Contenuto", icon: "square.grid.3x3.fill", "#4E7CF6")
+                }
+                Toggle(isOn: $useLiveTime) {
+                    Self.row("Usa ora corrente", icon: "clock.arrow.circlepath", "#34D399")
+                }
+                if !useLiveTime {
                     Picker(selection: manualDay) {
                         ForEach(schedule.days) { day in
                             Text(day.label).tag(day.id)
                         }
                     } label: {
-                        Label("Giorno", systemImage: "calendar")
+                        Self.row("Giorno", icon: "calendar", "#2DD4BF")
                     }
-                }
-                if !schoolTimes.isEmpty {
-                    Picker(selection: $manualTime) {
-                        ForEach(schoolTimes, id: \.self) { time in
-                            Text(time).tag(time)
+                    if !schoolTimes.isEmpty {
+                        Picker(selection: $manualTime) {
+                            ForEach(schoolTimes, id: \.self) { time in
+                                Text(time).tag(time)
+                            }
+                        } label: {
+                            Self.row("Ora", icon: "clock", "#60A5FA")
                         }
-                    } label: {
-                        Label("Ora", systemImage: "clock")
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.menu)
                 }
+                if store.schedule?.edited == true {
+                    Button { showBuilder = true } label: {
+                        Self.row("Modifica orario", icon: "square.and.pencil", "#FB923C")
+                            .foregroundStyle(.primary)
+                    }
+                }
+                if store.savedPDFURL != nil {
+                    Button { showPDFViewer = true } label: {
+                        Self.row("PDF originale", icon: "doc.text.magnifyingglass", "#A78BFA")
+                            .foregroundStyle(.primary)
+                    }
+                }
+                Button { showDBDisclaimer = true } label: {
+                    Self.row("Dati orario", icon: "slider.horizontal.3", "#F59E0B")
+                        .foregroundStyle(.primary)
+                }
+            } header: {
+                Self.header("Orario")
+            } footer: {
+                Text(useLiveTime
+                     ? "Con l'ora corrente attiva, la vista Adesso segue l'orologio del dispositivo."
+                     : "Giorno e ora fissati manualmente per consultare un momento specifico.")
             }
-        } header: {
-            Text("Orario di consultazione")
-        } footer: {
-            Text(useLiveTime
-                 ? "Viene usata l'ora del dispositivo, aggiornata ogni 30 secondi."
-                 : "Imposta manualmente il giorno e l'ora per visualizzare le lezioni in un momento specifico.")
+            .listRowBackground(Color.sectionCard)
         }
     }
 
@@ -254,39 +309,47 @@ struct SettingsView: View {
                     dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFilePicker = true }
                 } label: {
-                    Label("Importa orario PDF", systemImage: "square.and.arrow.up")
+                    Self.row("Importa orario PDF", icon: "square.and.arrow.up", "#38BDF8")
+                        .foregroundStyle(.primary)
                 }
                 Button { showBuilder = true } label: {
-                    Label("Crea il mio orario", systemImage: "square.and.pencil")
+                    Self.row("Crea il mio orario", icon: "square.and.pencil", "#4E7CF6")
+                        .foregroundStyle(.primary)
                 }
             } header: {
-                Text("Orario scolastico")
+                Self.header("Orario")
             } footer: {
                 Text("Importa il PDF dell'orario, oppure crealo a mano.")
             }
+            .listRowBackground(Color.sectionCard)
         }
     }
 
     private var valutazioneSection: some View {
         Section {
             Stepper(value: $sufficientGrade, in: 1...(max(maxGrade - 1, 2)), step: 0.5) {
-                LabeledContent("Voto sufficiente", value: sufficientGrade.italianGrade)
+                HStack {
+                    Self.row("Voto sufficiente", icon: "checkmark.seal.fill", "#34D399")
+                    Spacer()
+                    Text(sufficientGrade.italianGrade)
+                        .font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#6EE7B7")!)
+                }
             }
             Stepper(value: $maxGrade, in: (sufficientGrade + 1)...20, step: 1) {
-                LabeledContent("Voto massimo", value: maxGrade.italianGrade)
+                HStack {
+                    Self.row("Voto massimo", icon: "star.fill", "#FBBF24")
+                    Spacer()
+                    Text(maxGrade.italianGrade)
+                        .font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#FCD34D")!)
+                }
             }
-        } header: {
-            Text("Valutazione")
-        } footer: {
-            Text("Personalizza la scala dei voti: la sufficienza minima e il voto massimo. Colori e obiettivi si adattano di conseguenza.")
-        }
-    }
-
-    private var periodiSection: some View {
-        Section {
-            Picker("Sistema", selection: $periodSystemRaw) {
+            Picker(selection: $periodSystemRaw) {
                 Text("Quadrimestri").tag(PeriodSystem.quadrimestri.rawValue)
                 Text("Trimestre + Pentamestre").tag(PeriodSystem.trimestre.rawValue)
+            } label: {
+                Self.row("Periodi", icon: "calendar.badge.clock", "#8B5CF6")
             }
             MonthDayField(
                 timestamp: $period1EndTimestamp,
@@ -294,34 +357,41 @@ struct SettingsView: View {
                 label: "Fine \(period1Label)"
             )
         } header: {
-            Text("Periodi scolastici")
+            Self.header("Voti")
         } footer: {
-            Text("I voti vengono suddivisi in base alla data di fine del primo periodo (solo giorno e mese: l'anno è automatico).")
+            Text("Scala dei voti e periodi: colori, obiettivi e medie si adattano subito. La fine del primo periodo usa solo giorno e mese.")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     private var infoSection: some View {
-        Section("Informazioni") {
+        Section {
             LabeledContent("Versione", value: appVersion)
             LabeledContent("Sviluppatore", value: "Davide Sogos")
+        } header: {
+            Self.header("Informazioni")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     private var supportSection: some View {
-        Section("Supporto") {
+        Section {
             NavigationLink { TutorialView() } label: {
-                Label("Tutorial", systemImage: "graduationcap")
+                Self.row("Tutorial", icon: "graduationcap.fill", "#4E7CF6")
             }
             NavigationLink { ManualView() } label: {
-                Label("Manuale", systemImage: "book")
+                Self.row("Manuale", icon: "book.fill", "#8B5CF6")
             }
             NavigationLink { BugReportView() } label: {
-                Label("Segnala un problema", systemImage: "exclamationmark.bubble")
+                Self.row("Segnala un problema", icon: "exclamationmark.bubble.fill", "#FB923C")
             }
             NavigationLink { AboutAppView() } label: {
-                Label("Chi sono", systemImage: "person.circle")
+                Self.row("Chi sono", icon: "person.fill", "#F472B6")
             }
+        } header: {
+            Self.header("Supporto")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     @ViewBuilder
@@ -330,55 +400,22 @@ struct SettingsView: View {
             Section {
                 if let backupURL {
                     ShareLink(item: backupURL) {
-                        Label("Esporta backup", systemImage: "square.and.arrow.up")
+                        Self.row("Esporta backup", icon: "square.and.arrow.up", "#38BDF8")
+                            .foregroundStyle(.primary)
                     }
                 }
                 Button {
                     showImporter = true
                 } label: {
-                    Label("Importa backup", systemImage: "square.and.arrow.down")
+                    Self.row("Importa backup", icon: "square.and.arrow.down", "#34D399")
+                        .foregroundStyle(.primary)
                 }
             } header: {
-                Text("Backup")
+                Self.header("Dati e backup")
             } footer: {
-                Text("Esporta diario e voti in un file, o importane uno per ripristinarli.")
+                Text("Un unico file con orario, diario e voti: esportalo per sicurezza o per passare a un altro dispositivo.")
             }
-        }
-    }
-
-    @ViewBuilder
-    private var scheduleManagementSection: some View {
-        if let schedule = store.schedule {
-            Section {
-                LabeledContent("Sorgente", value: schedule.sourceName)
-                LabeledContent("Lezioni", value: schedule.lessons.count.formatted())
-                LabeledContent("Classi", value: schedule.classes.count.formatted())
-                LabeledContent("Docenti", value: schedule.teachers.count.formatted())
-                if let from = schedule.startsFrom {
-                    LabeledContent("Valido dal", value: from)
-                }
-                LabeledContent("Importato il", value: formattedDate(schedule.importedAt))
-            } header: {
-                Text("Orario caricato")
-            }
-
-            Section {
-                if store.schedule?.edited == true {
-                    Button { showBuilder = true } label: {
-                        Label("Modifica orario", systemImage: "square.and.pencil")
-                    }
-                }
-                if store.savedPDFURL != nil {
-                    Button { showPDFViewer = true } label: {
-                        Label("Visualizza PDF originale", systemImage: "doc.text.magnifyingglass")
-                    }
-                }
-                Button { showDBDisclaimer = true } label: {
-                    Label("Modifica database", systemImage: "slider.horizontal.3")
-                }
-            } header: {
-                Text("Azioni")
-            }
+            .listRowBackground(Color.sectionCard)
         }
     }
 
@@ -778,4 +815,152 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: PDFView, context: Context) {}
+}
+
+
+// MARK: - Colori personalizzati (classi, docenti, materie)
+
+private struct EntityColorTarget: Identifiable {
+    let id = UUID()
+    let name: String
+}
+
+struct EntityColorsView: View {
+    let schedule: ScheduleData
+    @AppStorage("entityColorsVersion") private var version = 0
+    @State private var editing: EntityColorTarget?
+
+    private var subjects: [String] {
+        Array(Set(schedule.lessons.map { $0.subject }.filter { !$0.isEmpty }))
+            .sorted { $0.compare($1, locale: Locale(identifier: "it")) == .orderedAscending }
+    }
+
+    var body: some View {
+        List {
+            let _ = version   // refresh quando cambia un colore
+            if !schedule.classes.isEmpty {
+                Section {
+                    ForEach(schedule.classes, id: \.self) { colorRow($0) }
+                } header: { SettingsView.header("Classi · \(schedule.classes.count)") }
+                .listRowBackground(Color.sectionCard)
+            }
+            if !schedule.teachers.isEmpty {
+                Section {
+                    ForEach(schedule.teachers, id: \.self) { colorRow($0) }
+                } header: { SettingsView.header("Docenti · \(schedule.teachers.count)") }
+                .listRowBackground(Color.sectionCard)
+            }
+            if !subjects.isEmpty {
+                Section {
+                    ForEach(subjects, id: \.self) { colorRow($0) }
+                } header: { SettingsView.header("Materie · \(subjects.count)") }
+                .listRowBackground(Color.sectionCard)
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background { AuroraBackground(section: .neutral) }
+        .navigationTitle("Colori")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editing) { target in
+            EntityColorPickerSheet(name: target.name)
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func colorRow(_ name: String) -> some View {
+        Button { editing = EntityColorTarget(name: name) } label: {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(entityGradient(name))
+                    .frame(width: 24, height: 24)
+                    .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                Text(name)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if hasEntityColorOverride(name) {
+                    Text("Personalizzato")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+}
+
+/// Griglia di colori per un singolo nome, con ritorno all'automatico.
+struct EntityColorPickerSheet: View {
+    let name: String
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("entityColorsVersion") private var version = 0
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 14), count: 6)
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    let _ = version
+                    // Anteprima dell'etichetta con il colore attuale
+                    HStack(spacing: 8) {
+                        Text(name)
+                            .font(.system(size: 12, weight: .bold))
+                            .kerning(0.2)
+                            .foregroundStyle(entityTint(name).blended(with: .white, by: 0.45))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(entityTint(name).opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(entityTint(name).opacity(0.30), lineWidth: 1))
+                    }
+                    .padding(.top, 6)
+
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(entityPalette.indices, id: \.self) { i in
+                            let c = entityPalette[i]
+                            let isCurrent = entityTint(name).hexString == c.hexString
+                            Button {
+                                setEntityColor(c, for: name)
+                            } label: {
+                                Circle()
+                                    .fill(LinearGradient(colors: [c.blended(with: .white, by: 0.2), c],
+                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .frame(width: 42, height: 42)
+                                    .overlay {
+                                        if isCurrent {
+                                            Image(systemName: "checkmark")
+                                                .font(.subheadline.bold())
+                                                .foregroundStyle(.white)
+                                        }
+                                    }
+                                    .overlay(Circle().strokeBorder(.white.opacity(isCurrent ? 0.7 : 0.15), lineWidth: isCurrent ? 2 : 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+
+                    if hasEntityColorOverride(name) {
+                        Button {
+                            setEntityColor(nil, for: name)
+                        } label: {
+                            Label("Usa colore automatico", systemImage: "wand.and.stars")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+                .padding(18)
+            }
+            .background { AuroraBackground(section: .neutral) }
+            .navigationTitle(name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fine") { dismiss() }.fontWeight(.semibold)
+                }
+            }
+        }
+    }
 }

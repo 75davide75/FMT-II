@@ -48,13 +48,8 @@ struct TutorialView: View {
 
     var body: some View {
         ZStack {
-            // Soft grey + tinted gradient so the page bounce never reveals black.
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.12), .clear, Color.purple.opacity(0.10)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Sfondo aurora del design system (continuo con la Welcome).
+            AuroraBackground(section: .neutral)
 
             VStack(spacing: 0) {
                 TabView(selection: $currentPage) {
@@ -78,8 +73,7 @@ struct TutorialView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                        .foregroundStyle(.white)
+                        .auroraProminent(.neutral)
                 }
 
                 Button("Salta", action: handleFinish)

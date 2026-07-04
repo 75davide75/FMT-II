@@ -185,7 +185,9 @@ func normalizeScheduleTimes(_ schedule: ScheduleData) -> ScheduleData {
         let startTime = period?.startTime ?? periodToStartTime(lesson.period)
         let endTime = period?.endTime ?? addMinutes(startTime, 60)
         return Lesson(
-            id: lessonId(lesson.className, lesson.day, startTime, lesson.teacher),
+            // Subject-only lessons (teacher unknown) key the id on the subject,
+            // like applyManualEdits, so ids stay unique.
+            id: lessonId(lesson.className, lesson.day, startTime, lesson.teacher.isEmpty ? lesson.subject : lesson.teacher),
             className: lesson.className,
             teacher: lesson.teacher,
             day: lesson.day,
@@ -193,20 +195,15 @@ func normalizeScheduleTimes(_ schedule: ScheduleData) -> ScheduleData {
             period: lesson.period,
             startTime: startTime,
             endTime: endTime,
-            sourcePage: lesson.sourcePage
+            sourcePage: lesson.sourcePage,
+            subject: lesson.subject
         )
     }
 
-    return ScheduleData(
-        id: schedule.id,
-        sourceName: schedule.sourceName,
-        importedAt: schedule.importedAt,
-        startsFrom: schedule.startsFrom,
-        days: schedule.days,
-        periods: periods,
-        classes: schedule.classes,
-        teachers: schedule.teachers,
-        lessons: lessons,
-        warnings: schedule.warnings
-    )
+    // Copy so the fields that don't change (days, classes, subjectTeachers, …)
+    // survive: rebuilding from scratch silently dropped `subject` data.
+    var result = schedule
+    result.periods = periods
+    result.lessons = lessons
+    return result
 }

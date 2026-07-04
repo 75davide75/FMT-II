@@ -36,6 +36,14 @@ extension View {
 // MARK: - Section titles
 
 extension AppSection {
+    var aurora: AuroraSection {
+        switch self {
+        case .schedule: return .orario
+        case .notes:    return .diario
+        case .grades:   return .voti
+        }
+    }
+
     var title: String {
         switch self {
         case .schedule: return "Orario"
@@ -48,9 +56,9 @@ extension AppSection {
     /// gives an at-a-glance cue of which section you're on.
     var accent: Color {
         switch self {
-        case .schedule: return .blue
-        case .notes:    return .indigo
-        case .grades:   return .purple
+        case .schedule: return AuroraSection.orario.accent
+        case .notes:    return AuroraSection.diario.accent
+        case .grades:   return AuroraSection.voti.accent
         }
     }
 }
@@ -173,23 +181,23 @@ struct GlassSectionBar: View {
         let clamped = min(max(progress, 0), maxIdx)
 
         ZStack(alignment: .leading) {
-            // Sliding Liquid Glass pill
-            pill
+            // Pill che scivola, con lo spettro che scorre (3a)
+            pill(clamped: clamped, maxIdx: maxIdx)
                 .frame(width: segWidth - inset * 2, height: height - inset * 2)
                 .offset(x: clamped * segWidth + inset)
-                .animation(.easeInOut(duration: 0.25), value: tint)
 
             // Labels
             HStack(spacing: 0) {
                 ForEach(titles.indices, id: \.self) { i in
+                    let active = abs(clamped - CGFloat(i)) < 0.5
                     Text(titles[i])
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.primary)
+                        .font(.footnote.weight(active ? .bold : .semibold))
+                        .foregroundStyle(active ? Color.white : .primary)
                         .opacity(labelOpacity(for: i, progress: clamped))
                         .frame(width: segWidth, height: height)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
+                            withAnimation(.spring(response: 0.52, dampingFraction: 0.9)) {
                                 index = i
                             }
                         }
@@ -197,22 +205,31 @@ struct GlassSectionBar: View {
             }
         }
         .frame(width: segWidth * CGFloat(titles.count), height: height)
-        .animation(.spring(response: 0.45, dampingFraction: 0.88), value: index)
+        .padding(4)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(.white.opacity(0.11), lineWidth: 1))
+        .animation(.spring(response: 0.52, dampingFraction: 0.9), value: index)
     }
 
+    /// Pill con il gradiente-spettro completo che scorre con il progresso:
+    /// "il pill del selettore scivola e il suo gradiente scorre lungo lo
+    /// spettro" (design 3a).
     @ViewBuilder
-    private var pill: some View {
-        if #available(iOS 26.0, *) {
-            Capsule()
-                .fill(tint.opacity(0.22))
-                .glassEffect(.regular.interactive(), in: Capsule())
-        } else {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(tint.opacity(0.20)))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.7))
-                .shadow(color: .black.opacity(0.10), radius: 4, y: 2)
-        }
+    private func pill(clamped: CGFloat, maxIdx: CGFloat) -> some View {
+        let pillW = segWidth - inset * 2
+        let windowFraction = maxIdx > 0 ? clamped / maxIdx : 0
+        let gradientW = pillW * 3
+        Capsule()
+            .fill(.clear)
+            .overlay(
+                LinearGradient(colors: auroraSpectrum, startPoint: .leading, endPoint: .trailing)
+                    .frame(width: gradientW)
+                    .offset(x: -windowFraction * (gradientW - pillW) + (gradientW - pillW) / 2)
+            )
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.30), lineWidth: 0.8))
+            .shadow(color: Color(hex: "#6960F6")!.opacity(0.5), radius: 9, y: 3)
     }
 
     /// Nearest segment is fully opaque; neighbours fade toward 0.5 as the pill

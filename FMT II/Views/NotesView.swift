@@ -86,6 +86,211 @@ struct NotesListView: View {
         }
     }
 
+    @State private var jumpToDay: DayId? = nil
+    @State private var selectedStripDay: DayId? = nil
+
+    /// Sottotitolo del titolo grande: "5 impegni · 1 verifica".
+    private var diarioSubtitle: String {
+        let n = displayNotes.count
+        let verifiche = displayNotes.filter { $0.taskType == NoteTaskType.verifica.rawValue }.count
+        var parts = ["\(n) impegn\(n == 1 ? "o" : "i")"]
+        if verifiche > 0 { parts.append("\(verifiche) verific\(verifiche == 1 ? "a" : "he")") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Il primo gruppo con note a partire dal giorno dato in avanti nella
+    /// settimana, altrimenti l'ultimo precedente.
+    private func nextGroup(after day: DayId) -> (label: String, dayId: DayId?, notes: [Note])? {
+        guard let start = weekOrder.firstIndex(of: day) else { return nil }
+        let ordered = notesByDay.filter { $0.dayId != nil }
+        for candidate in weekOrder[start...] {
+            if let g = ordered.first(where: { $0.dayId == candidate }) { return g }
+        }
+        for candidate in weekOrder[..<start].reversed() {
+            if let g = ordered.first(where: { $0.dayId == candidate }) { return g }
+        }
+        return notesByDay.first
+    }
+
+    /// Tipi presenti in un giorno (puntini della striscia settimana, max 3).
+    private func dayDots(_ day: DayId) -> [Color] {
+        var seen = Set<String>()
+        var colors: [Color] = []
+        for n in visibleBase where n.dayId == day {
+            let key = n.taskType ?? "nota"
+            guard seen.insert(key).inserted else { continue }
+            colors.append(n.taskType.flatMap(NoteTaskType.init(rawValue:))?.auroraColor ?? plainNoteColor)
+        }
+        return Array(colors.prefix(3))
+    }
+
+    /// Header del Diario (design 1a): titolo grande, striscia settimana con
+    /// puntini per tipo, filtri rapidi sempre visibili.
+    private var diarioHeader: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            AuroraTitle(title: showArchive ? "Archivio" : "Diario",
+                        subtitle: diarioSubtitle)
+                .padding(.top, 2)
+
+            // Striscia della settimana, scorrevole: tocca una data per
+            // saltare alle note di quel giorno.
+            ScrollViewReader { stripProxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 7) {
+                        ForEach(weekOrder, id: \.self) { day in
+                            weekTile(day)
+                                .id(day)
+                        }
+                    }
+                    .padding(.vertical, 1)
+                }
+                .onChange(of: selectedStripDay) { _, day in
+                    guard let day else { return }
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
+                        stripProxy.scrollTo(day, anchor: .center)
+                    }
+                }
+            }
+
+            // Filtri rapidi Verifiche / Compiti / Interrogazioni.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    quickFilter(nil, label: "Tutti")
+                    ForEach(NoteTaskType.allCases) { t in
+                        quickFilter(t, label: t.label == "Compito" ? "Compiti"
+                                              : t.label == "Verifica" ? "Verifiche"
+                                              : "Interrogazioni")
+                    }
+                }
+            }
+        }
+    }
+
+    private func weekTile(_ day: DayId) -> some View {
+        let isToday = day == todayDayId()
+        // Evidenziata è la data selezionata; in assenza di selezione, oggi.
+        let isActiveTile = (selectedStripDay ?? todayDayId()) == day
+        let cal = Calendar.current
+        let today = Date()
+        let weekdayIdx = weekOrder.firstIndex(of: todayDayId()) ?? 0
+        let dayIdx = weekOrder.firstIndex(of: day) ?? 0
+        let date = cal.date(byAdding: .day, value: dayIdx - weekdayIdx, to: today) ?? today
+        let dots = dayDots(day)
+
+        return Button {
+            selectedStripDay = day
+            jumpToDay = day
+        } label: {
+            VStack(spacing: 2) {
+                Text(String((dayLabels[day] ?? "").prefix(3)).uppercased())
+                    .font(.system(size: 10, weight: isActiveTile ? .heavy : .bold))
+                    .kerning(0.8)
+                    .foregroundStyle(isActiveTile ? .white.opacity(0.85) : Color.secondary)
+                Text("\(cal.component(.day, from: date))")
+                    .font(.system(size: 16, weight: isActiveTile ? .heavy : .bold))
+                    .foregroundStyle(isActiveTile ? .white : .primary)
+                HStack(spacing: 3) {
+                    if dots.isEmpty {
+                        Circle().fill(.clear).frame(width: 4, height: 4)
+                    } else {
+                        ForEach(dots.indices, id: \.self) { i in
+                            Circle().fill(dots[i]).frame(width: 4, height: 4)
+                        }
+                    }
+                }
+                .frame(height: 4)
+            }
+            .frame(width: 52)
+            .padding(.vertical, 8)
+            .background {
+                if isActiveTile {
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .fill(LinearGradient(colors: [Color(hex: "#4E7CF6")!, Color(hex: "#8B5CF6")!],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .shadow(color: Color(hex: "#685CF6")!.opacity(0.5), radius: 10, y: 4)
+                } else {
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .fill(.white.opacity(0.05))
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .strokeBorder(
+                    // Oggi resta riconoscibile anche quando è selezionata
+                    // un'altra data.
+                    isActiveTile ? .white.opacity(0.28)
+                        : (isToday ? Color(hex: "#8B5CF6")!.opacity(0.55) : .white.opacity(0.08)),
+                    lineWidth: isToday && !isActiveTile ? 1.4 : 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func quickFilter(_ type: NoteTaskType?, label: String) -> some View {
+        let active = taskFilter == type
+        return Button {
+            withAnimation { taskFilter = type }
+        } label: {
+            Text(label)
+                .font(.system(size: 12, weight: active ? .bold : .semibold))
+                .foregroundStyle(
+                    type == nil
+                        ? (active ? Color(hex: "#0B1024")! : Color.primary.opacity(0.75))
+                        : type!.auroraColor.blended(with: .white, by: active ? 0 : 0.35)
+                )
+                .padding(.horizontal, 13)
+                .padding(.vertical, 6)
+                .background {
+                    if type == nil && active {
+                        Capsule().fill(Color(hex: "#F0F4FF")!.opacity(0.92))
+                    } else if let t = type {
+                        Capsule().fill(t.auroraColor.opacity(active ? 0.30 : 0.12))
+                    } else {
+                        Capsule().fill(.white.opacity(0.06))
+                    }
+                }
+                .overlay(Capsule().strokeBorder(
+                    type == nil
+                        ? .white.opacity(active ? 0.6 : 0.10)
+                        : type!.auroraColor.opacity(active ? 0.55 : 0.26),
+                    lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Header di giorno: pill OGGI sfumata + nome + conteggio (design 1a).
+    private func dayHeader(_ group: (label: String, dayId: DayId?, notes: [Note])) -> some View {
+        HStack(spacing: 8) {
+            if group.dayId == todayDayId() {
+                Text("OGGI")
+                    .font(.system(size: 10.5, weight: .heavy))
+                    .kerning(0.8)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 3)
+                    .background(
+                        LinearGradient(colors: [Color(hex: "#4E7CF6")!, Color(hex: "#8B5CF6")!],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: Capsule()
+                    )
+                    .shadow(color: Color(hex: "#6D5EF6")!.opacity(0.45), radius: 6, y: 2)
+            }
+            Text(group.label)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.primary)
+            Spacer()
+            Text("\(group.notes.count) impegn\(group.notes.count == 1 ? "o" : "i")")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(.white.opacity(0.07), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 1)
+        .textCase(nil)
+    }
+
     private var searchBar: some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
@@ -135,19 +340,20 @@ struct NotesListView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.10), .clear],
-                startPoint: .top, endPoint: .bottom
-            )
-            .frame(height: 220)
-            .ignoresSafeArea()
+                VStack(spacing: 0) {
+                    // Header fisso: titolo, striscia date e filtri restano
+                    // sempre visibili; sotto scorre solo l'elenco.
+                    diarioHeader
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
 
-                if displayNotes.isEmpty {
-                    emptyState
-                } else {
+                    if displayNotes.isEmpty {
+                        emptyState
+                    } else {
+                    ScrollViewReader { proxy in
                     List {
                         ForEach(notesByDay, id: \.label) { group in
-                            Section(group.label) {
+                            Section {
                                 ForEach(group.notes) { note in
                                     NoteRowSelectable(
                                         note: note,
@@ -202,17 +408,39 @@ struct NotesListView: View {
                                             withAnimation { store.delete(ids: [note.id]) }
                                         } label: { Label("Elimina", systemImage: "trash") }
                                     }
-                                    .listRowBackground(rowBackground(for: note))
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                                 }
+                            } header: {
+                                dayHeader(group)
                             }
+                            .id(group.label)
                         }
+                        Color.clear.frame(height: 80)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
                     .scrollContentBackground(.hidden)
                     .animation(.default, value: displayNotes.count)
+                    .onChange(of: jumpToDay) { _, day in
+                        guard let day else { return }
+                        // Giorno esatto se ha note, altrimenti il primo giorno
+                        // successivo con note (poi il precedente).
+                        let target = notesByDay.first { $0.dayId == day }
+                            ?? nextGroup(after: day)
+                        if let target {
+                            withAnimation(.spring(response: 0.55, dampingFraction: 0.9)) {
+                                proxy.scrollTo(target.label, anchor: .top)
+                            }
+                        }
+                        jumpToDay = nil
+                    }
+                    }
+                    }
                 }
             }
-            .background(Color.sectionPage.ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -239,14 +467,6 @@ struct NotesListView: View {
                             .fontWeight(.semibold)
                         }
                     } else {
-                        ToolbarItem(id: "compose", placement: .topBarTrailing) {
-                            if !showArchive {
-                                Button { noteContext = NoteCreationContext() } label: {
-                                    Image(systemName: "square.and.pencil")
-                                }
-                                .accessibilityLabel("Nuova voce di diario")
-                            }
-                        }
                         ToolbarItem(id: "menu", placement: .topBarTrailing) {
                             Menu {
                                 Button {
@@ -311,6 +531,7 @@ struct NotesListView: View {
                 }
             }
             .sensoryFeedback(.selection, trigger: isSelecting)
+            .sensoryFeedback(.impact(weight: .light), trigger: selectedStripDay)
             .sensoryFeedback(.selection, trigger: tagFilter)
             .sensoryFeedback(.impact(weight: .light), trigger: selectedIds)
             .sensoryFeedback(.impact(flexibility: .soft), trigger: displayNotes.count)
@@ -328,6 +549,7 @@ struct NotesListView: View {
                     searchQuery = ""
                     tagFilter = nil
                     taskFilter = nil
+                    selectedStripDay = nil
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -335,6 +557,27 @@ struct NotesListView: View {
                     selectionActionBar
                 }
             }
+        .overlay(alignment: .bottomTrailing) {
+            // FAB "+" con gradiente (design 1a).
+            if isActive && !showArchive && !isSelecting {
+                Button { noteContext = NoteCreationContext() } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 58, height: 58)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#4E7CF6")!, Color(hex: "#8B5CF6")!, Color(hex: "#A78BFA")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: Circle()
+                        )
+                        .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                        .shadow(color: Color(hex: "#685CF6")!.opacity(0.55), radius: 15, y: 7)
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 26)
+                .accessibilityLabel("Nuova voce di diario")
+            }
+        }
         .sheet(item: $noteContext) { ctx in
             NoteEditorSheet(store: store, context: ctx, schedule: schedule, subjects: gradesStore?.subjects ?? [])
         }
@@ -389,10 +632,10 @@ struct NotesListView: View {
                     .padding(.horizontal, 40)
             } else {
                 ZStack {
-                    Circle().fill(Color.indigo.opacity(0.12)).frame(width: 110, height: 110)
+                    Circle().fill(AuroraSection.diario.gradient).opacity(0.22).frame(width: 110, height: 110)
                     Image(systemName: showArchive ? "archivebox" : "book.closed")
                         .font(.system(size: 44))
-                        .foregroundStyle(.indigo)
+                        .foregroundStyle(AuroraSection.diario.accent)
                 }
                 Text(showArchive ? "Archivio vuoto" : "Diario vuoto")
                     .font(.title3.bold())
@@ -519,36 +762,87 @@ private struct NoteRowView: View {
         return note.createdAt.formatted(date: .abbreviated, time: .omitted).lowercased().contains(q)
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(note.displayTitle)
-                .font(.body.weight(.semibold))
-                .lineLimit(1)
+    private var barGradient: LinearGradient {
+        taskType?.auroraGradient ?? plainNoteGradient
+    }
 
-            HStack(spacing: 5) {
-                Text(note.createdAt, format: .dateTime.day().month(.abbreviated))
-                    .foregroundStyle(dateMatches ? Color.green : Color.secondary)
-                    .fontWeight(dateMatches ? .semibold : .regular)
+    private var isVerifica: Bool { taskType == .verifica }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Barra laterale sfumata per tipo (design 1a)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(barGradient)
+                .frame(width: 4)
+                .frame(maxHeight: .infinity)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(note.displayTitle)
+                        .font(.system(size: 16, weight: .semibold))
+                        .kerning(-0.2)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
+                    Text(note.createdAt, format: .dateTime.day().month(.abbreviated))
+                        .font(.system(size: 10.5, weight: .heavy))
+                        .kerning(0.6)
+                        .foregroundStyle(dateMatches ? Color(hex: "#6EE7B7")! : (isVerifica ? Color(hex: "#FDA4AF")! : .secondary))
+                }
                 if !note.displayPreview.isEmpty {
                     Text(note.displayPreview)
-                        .foregroundStyle(.tertiary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-            }
-            .font(.caption)
-
-            if hasTags {
-                HStack(spacing: 6) {
-                    if let tt = taskType { TagChip(text: tt.label, icon: tt.icon, tint: tt.color) }
-                    if let time = note.time { TagChip(text: time, icon: "clock", tint: timeMatches ? .green : .secondary) }
-                    if let subject = note.subjectTag { TagChip(text: subject, icon: "book.closed.fill", tint: .purple) }
-                    if let teacher = note.teacherTag { TagChip(text: teacher, icon: "person.fill", tint: .blue) }
-                    if let cls = note.classTag { TagChip(text: cls, icon: "graduationcap.fill", tint: .orange) }
+                if hasTags {
+                    ChipFlowLayout(spacing: 6) {
+                        if let tt = taskType {
+                            AuroraChip(text: tt.label, color: tt.auroraColor)
+                        }
+                        if let subject = note.subjectTag {
+                            AuroraChip(text: subject, color: subjectColor(subject))
+                        }
+                        if let time = note.time {
+                            AuroraChip(text: time, color: timeMatches ? Color(hex: "#34D399")! : Color(hex: "#94A3C8")!, icon: "clock")
+                        }
+                        if let teacher = note.teacherTag {
+                            AuroraChip(text: teacher, color: Color(hex: "#60A5FA")!, icon: "person.fill")
+                        }
+                        if let cls = note.classTag {
+                            AuroraChip(text: cls, color: Color(hex: "#FB923C")!, icon: "graduationcap.fill")
+                        }
+                        if !note.reminders.isEmpty || note.reminder {
+                            AuroraChip(text: "Promemoria", color: Color(hex: "#34D399")!, icon: "bell.fill")
+                        }
+                    }
                 }
-                .padding(.top, 1)
             }
         }
-        .padding(.vertical, 3)
+        .padding(EdgeInsets(top: 13, leading: 12, bottom: 13, trailing: 14))
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(cardFill)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(isVerifica ? Color(hex: "#FB7185")!.opacity(0.32) : .white.opacity(0.13), lineWidth: 1)
+        )
+        .shadow(color: isVerifica ? Color(red: 0.47, green: 0.08, blue: 0.16).opacity(0.22) : .black.opacity(0.20),
+                radius: 14, y: 6)
+    }
+
+    @Environment(\.colorScheme) private var scheme
+
+    private var cardFill: LinearGradient {
+        if isVerifica {
+            return LinearGradient(colors: [Color(hex: "#FB7185")!.opacity(scheme == .dark ? 0.13 : 0.16),
+                                           .white.opacity(scheme == .dark ? 0.05 : 0.7)],
+                                  startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+        return LinearGradient(colors: scheme == .dark
+                                ? [.white.opacity(0.10), .white.opacity(0.045)]
+                                : [.white.opacity(0.92), .white.opacity(0.65)],
+                              startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 
@@ -909,6 +1203,7 @@ struct NoteEditorSheet: View {
             time = context.time
             teacherTag = context.teacherTag ?? ""
             classTag = context.classTag ?? ""
+            subjectTag = context.subjectTag ?? ""
         }
     }
 

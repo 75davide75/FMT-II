@@ -18,6 +18,7 @@ struct GradesView: View {
     @AppStorage("maxGrade") private var maxGrade: Double = 10
 
     @State private var showGradeEntry = false
+    @State private var showAllSubjects = false
     @State private var gradeToEdit: Grade? = nil
     @State private var showSettings = false
     @State private var openSubject: String? = nil
@@ -34,18 +35,15 @@ struct GradesView: View {
         store.grades.sorted { $0.date > $1.date }
     }
 
+    private var votiSubtitle: String {
+        "\(periodLabel2) · \(store.grades.count) vot\(store.grades.count == 1 ? "o" : "i")"
+    }
+
     var body: some View {
         // Touch the grading scale so the whole list re-renders (and recomputes
         // grade colours) when the sufficient/max grade changes elsewhere.
         let _ = sufficientGrade + maxGrade
         ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [Color.accentColor.opacity(0.10), .clear],
-                startPoint: .top, endPoint: .bottom
-            )
-            .frame(height: 220)
-            .ignoresSafeArea()
-
             Group {
                 if store.grades.isEmpty {
                     emptyState
@@ -54,7 +52,6 @@ struct GradesView: View {
                 }
             }
         }
-        .background(Color.sectionPage.ignoresSafeArea())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -94,6 +91,16 @@ struct GradesView: View {
         .sheet(item: $gradeToEdit) { grade in
             GradeEntrySheet(store: store, grade: grade, schedule: scheduleStore.schedule)
         }
+        .navigationDestination(isPresented: $showAllSubjects) {
+            SubjectsListView(
+                store: store,
+                period1End: period1End,
+                periodSystem: periodSystem,
+                periodLabel1: periodLabel1,
+                periodLabel2: periodLabel2,
+                schedule: scheduleStore.schedule
+            )
+        }
         .navigationDestination(item: $openSubject) { subject in
             SubjectDetailView(
                 subject: subject,
@@ -114,10 +121,10 @@ struct GradesView: View {
         VStack(spacing: 18) {
             Spacer()
             ZStack {
-                Circle().fill(Color.purple.opacity(0.12)).frame(width: 110, height: 110)
+                Circle().fill(AuroraSection.voti.gradient).opacity(0.22).frame(width: 110, height: 110)
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 46))
-                    .foregroundStyle(.purple)
+                    .foregroundStyle(AuroraSection.voti.accent)
             }
             VStack(spacing: 8) {
                 Text("Ancora nessun voto")
@@ -136,6 +143,12 @@ struct GradesView: View {
     private var gradesList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
+                // L'id lega le righe alla scala voti: cambiandola in
+                // Impostazioni i colori suff./insuff. si aggiornano subito.
+                let _ = (sufficientGrade, maxGrade)
+                AuroraTitle(title: "Voti", subtitle: votiSubtitle)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 2)
                 GradesSummaryCard(
                     overall: store.overallAverage(),
                     period1Avg: store.overallAverage(period: 1, periodBoundary: period1End),
@@ -146,12 +159,13 @@ struct GradesView: View {
                 .padding(.horizontal, 16)
 
                 if sortedGrades.count >= 2 {
-                    RecentGradesRow(grades: Array(sortedGrades.prefix(20)))
+                    RecentGradesRow(grades: Array(sortedGrades.prefix(20)), onSeeAll: { showAllSubjects = true })
                         .padding(.horizontal, 16)
                 }
 
                 ForEach(sortedGrades) { grade in
                     GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
+                        .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
                         .contentShape(Rectangle())
                         .onTapGesture { gradeToEdit = grade }
                         .contextMenu {
@@ -166,6 +180,7 @@ struct GradesView: View {
             }
             .padding(.vertical, 12)
         }
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
     }
 }
 
@@ -179,32 +194,28 @@ private struct GradeHomeRow: View {
     var body: some View {
         HStack(spacing: 12) {
             // Per-subject colour bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(color)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LinearGradient(colors: [color.blended(with: .white, by: 0.25), color],
+                                     startPoint: .top, endPoint: .bottom))
                 .frame(width: 4)
                 .frame(maxHeight: .infinity)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(grade.subject)
-                    .font(.callout.bold())
+                    .font(.system(size: 16, weight: .bold))
+                    .kerning(-0.2)
                     .foregroundStyle(.primary)
                 HStack(spacing: 6) {
-                    // Coloured type badge
-                    Label(grade.type.label, systemImage: grade.type.icon)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(grade.type.color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(grade.type.color.opacity(0.14), in: Capsule())
+                    AuroraChip(text: grade.type.label, color: grade.type.color)
                     Text(grade.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                     if grade.countsForAverage && grade.weight != 1.0 {
                         Text("×\(Int((grade.weight * 100).rounded()))%")
-                            .font(.caption2.weight(.medium))
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Color(.tertiarySystemFill), in: Capsule())
+                            .background(.white.opacity(0.07), in: Capsule())
                     }
                 }
                 if !grade.teacher.isEmpty {
@@ -214,28 +225,29 @@ private struct GradeHomeRow: View {
                 }
             }
             Spacer()
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
                 Text(grade.value.italianGrade)
-                    .font(.system(.title, design: .rounded, weight: .bold))
+                    .font(.system(size: 26, weight: .heavy))
+                    .kerning(-0.5)
                     .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
                     .monospacedDigit()
                     .frame(minWidth: 46, alignment: .trailing)
-                // Fixed-width trend column so the arrows line up across rows,
-                // regardless of how wide the grade number is.
+                // Cerchietto trend (design 2c)
                 Group {
                     if let trend {
-                        Image(systemName: trend.systemImage)
-                            .font(.title3.weight(.semibold))
+                        Image(systemName: trend == .improved ? "arrow.up" : trend == .declined ? "arrow.down" : "equal")
+                            .font(.system(size: 10, weight: .heavy))
                             .foregroundStyle(trend.color)
+                            .frame(width: 20, height: 20)
+                            .background(trend.color.opacity(0.14), in: Circle())
+                            .overlay(Circle().strokeBorder(trend.color.opacity(0.3), lineWidth: 1))
                     }
                 }
                 .frame(width: 24)
             }
         }
         .padding(14)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .auroraCard(radius: 14)
     }
 }
 
@@ -253,13 +265,13 @@ private struct GradesSummaryCard: View {
         HStack(spacing: 20) {
             ZStack {
                 Circle()
-                    .stroke(Color(.systemFill), lineWidth: 9)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 9)
                 if let avg = overall {
                     Circle()
                         .trim(from: 0, to: min(avg / 10.0, 1.0))
                         .stroke(
                             AngularGradient(
-                                colors: [avg.gradeColor.opacity(0.6), avg.gradeColor],
+                                colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
                                 center: .center,
                                 startAngle: .degrees(-90),
                                 endAngle: .degrees(-90 + 360 * (avg / 10.0))
@@ -271,14 +283,15 @@ private struct GradesSummaryCard: View {
                 }
                 VStack(spacing: 1) {
                     Text(overall?.italianGrade ?? "—")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .font(.system(size: 24, weight: .heavy))
+                        .kerning(-0.5)
                         .foregroundStyle(overall?.gradeColor ?? .secondary)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: overall)
                     Text("MEDIA")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 8.5, weight: .bold))
                         .foregroundStyle(.secondary)
-                        .tracking(1.5)
+                        .tracking(1.6)
                 }
             }
             .frame(width: ring, height: ring)
@@ -290,9 +303,7 @@ private struct GradesSummaryCard: View {
             .frame(maxWidth: .infinity)
         }
         .padding(16)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+        .auroraCard(radius: 16)
     }
 }
 
@@ -315,16 +326,18 @@ private struct PeriodBarRow: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(.systemFill)).frame(height: 5)
+                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 7)
                     if let avg {
                         Capsule()
-                            .fill(avg.gradeColor.opacity(0.75))
-                            .frame(width: max(geo.size.width * (avg / 10.0), 0), height: 5)
+                            .fill(LinearGradient(
+                                colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
+                                startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(geo.size.width * (avg / 10.0), 0), height: 7)
                             .animation(.easeOut(duration: 0.5), value: avg)
                     }
                 }
             }
-            .frame(height: 5)
+            .frame(height: 7)
         }
     }
 }
@@ -333,13 +346,25 @@ private struct PeriodBarRow: View {
 
 private struct RecentGradesRow: View {
     let grades: [Grade]
+    var onSeeAll: (() -> Void)? = nil
     @ScaledMetric private var bubble: CGFloat = 50
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ultimi voti")
-                .font(.subheadline.weight(.semibold))
-                .padding(.leading, 2)
+            HStack {
+                Text("Ultimi voti")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+                if let onSeeAll {
+                    Button(action: onSeeAll) {
+                        Text("Vedi tutti ›")
+                            .font(.system(size: 11.5, weight: .bold))
+                            .foregroundStyle(Color(hex: "#A5B4FC")!)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.leading, 2)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -370,9 +395,7 @@ private struct RecentGradesRow: View {
             }
         }
         .padding(14)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .auroraCard(radius: 14)
     }
 }
 
@@ -390,17 +413,13 @@ private struct GradientPageBackground: ViewModifier {
             .scrollContentBackground(.hidden)
             .background {
                 ZStack {
-                    Color.sectionPage
+                    AuroraBackground(section: .voti)
                     LinearGradient(
-                        colors: [top.opacity(0.14), .clear],
+                        colors: [top.opacity(0.12), .clear],
                         startPoint: .top, endPoint: .center
                     )
-                    LinearGradient(
-                        colors: [.clear, bottom.opacity(0.10)],
-                        startPoint: .center, endPoint: .bottom
-                    )
+                    .ignoresSafeArea()
                 }
-                .ignoresSafeArea()
             }
     }
 }
@@ -443,6 +462,7 @@ struct SubjectsListView: View {
                 .listRowBackground(Color.sectionCard)
             }
         }
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
         .navigationTitle("Materie")
         .navigationBarTitleDisplayMode(.large)
         .gradientPageBackground(top: .indigo, bottom: .blue)
@@ -541,14 +561,30 @@ struct SubjectDetailView: View {
         return .needsMany(max(k, 1))
     }
 
+    private var subjectTeacher: String? {
+        grades.last { !$0.teacher.isEmpty }?.teacher
+    }
+
     var body: some View {
         List {
+            Section {
+                HStack(spacing: 6) {
+                    AuroraChip(text: subject, color: store.color(for: subject))
+                    if let t = subjectTeacher {
+                        AuroraChip(text: t, color: Color(hex: "#60A5FA")!, icon: "person.fill")
+                    }
+                    Spacer()
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
             if grades.count >= 2 {
-                Section("Andamento") {
+                Section {
                     GradeChartView(grades: grades, tint: store.color(for: subject))
-                        .frame(height: 220)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                         .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
             }
 
@@ -621,6 +657,7 @@ struct SubjectDetailView: View {
             }
             .listRowBackground(Color.sectionCard)
         }
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
         .navigationTitle(subject)
         .navigationBarTitleDisplayMode(.large)
         .gradientPageBackground(top: store.color(for: subject), bottom: store.color(for: subject))
@@ -681,12 +718,15 @@ struct SubjectDetailView: View {
 
     @ViewBuilder
     private func averageRow(_ label: String, _ avg: Double) -> some View {
-        LabeledContent(label) {
+        LabeledContent {
             Text(avg.italianGrade)
-                .font(.system(.callout, design: .rounded, weight: .bold))
+                .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(avg.gradeColor)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: avg)
+        } label: {
+            Text(label)
+                .font(.system(size: 14.5, weight: .semibold))
         }
     }
 }
@@ -756,77 +796,147 @@ struct SubjectColorPickerSheet: View {
     }
 }
 
-// MARK: - Grade chart
+// MARK: - Grade chart (design 2d: card ANDAMENTO)
 
 private struct GradeChartView: View {
     let grades: [Grade]
 
-    var tint: Color = Color(red: 0.42, green: 0.45, blue: 0.62)
+    var tint: Color = Color(hex: "#60A5FA")!
 
     private var sorted: [Grade] { grades.sorted { $0.date < $1.date } }
-    private var lineColor: Color { tint }
     @State private var selectedIndex: Int?
+    @Environment(\.colorScheme) private var scheme
+
+    private let rose = Color(hex: "#FB7185")!
+    private let roseText = Color(hex: "#FDA4AF")!
+    private let violet = Color(hex: "#A78BFA")!
+    private let violetText = Color(hex: "#C4B5FD")!
+
+    /// Riempimento interno dei punti: il colore della pagina, così l'anello
+    /// colorato risalta come nel canvas.
+    private var pointFill: Color {
+        scheme == .dark ? Color(hex: "#0B101F")! : .white
+    }
+
+    private func pointColor(_ grade: Grade, index: Int) -> Color {
+        if selectedIndex == index { return violet }
+        if !grade.countsForAverage { return .blue }
+        return grade.value < sufficientGrade ? rose : tint
+    }
+
+    private var yGridValues: [Double] {
+        stride(from: 2.0, through: maxGrade, by: 2.0).map { $0 }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Detail of the tapped point, OUTSIDE the plot so it's never clipped.
+            // Header della card: ANDAMENTO + dettaglio del punto toccato
             HStack(spacing: 7) {
+                Text("ANDAMENTO")
+                    .font(.system(size: 10.5, weight: .heavy))
+                    .kerning(1)
+                    .foregroundStyle(Color(hex: "#A5B4FC")!)
+                Spacer()
                 if let s = selectedIndex, s >= 0, s < sorted.count {
-                    Circle().fill(sorted[s].countsForAverage ? sorted[s].value.gradeColor : .blue).frame(width: 8, height: 8)
+                    Circle()
+                        .fill(pointColor(sorted[s], index: -1))
+                        .frame(width: 7, height: 7)
                     Text(sorted[s].value.italianGrade)
-                        .font(.subheadline.weight(.bold))
-                    Text("·").foregroundStyle(.tertiary)
+                        .font(.system(size: 13, weight: .bold))
                     Text(sorted[s].date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
-                        .font(.caption)
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 } else {
-                    Image(systemName: "hand.tap").font(.caption2)
-                    Text("Tocca un punto per i dettagli").font(.caption)
+                    Text("tocca un punto per i dettagli")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary.opacity(0.8))
                 }
             }
-            .foregroundStyle(selectedIndex == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-            .frame(height: 20)
+            .frame(height: 18)
             .animation(.easeInOut(duration: 0.15), value: selectedIndex)
 
             Chart {
+                // Linea della sufficienza: rosa, tratteggiata (canvas 2d)
                 RuleMark(y: .value("Sufficienza", sufficientGrade))
-                    .foregroundStyle(.secondary.opacity(0.25))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                    .foregroundStyle(rose.opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
 
                 ForEach(Array(sorted.enumerated()), id: \.offset) { i, grade in
                     LineMark(x: .value("n", i), y: .value("Voto", grade.value))
                         .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(lineColor)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(tint)
 
+                    // Punto: anello colorato con interno scuro; alone violetto
+                    // quando selezionato; insufficienze in rosa con valore sotto.
                     PointMark(x: .value("n", i), y: .value("Voto", grade.value))
-                        .foregroundStyle(grade.countsForAverage ? (selectedIndex == i ? lineColor : lineColor.opacity(0.8)) : Color.blue)
-                        .symbolSize(selectedIndex == i ? 120 : 42)
-                }
-
-                if let s = selectedIndex, s >= 0, s < sorted.count {
-                    RuleMark(x: .value("n", s))
-                        .foregroundStyle(lineColor.opacity(0.30))
-                        .lineStyle(StrokeStyle(lineWidth: 1))
+                        .symbolSize(0)
+                        .annotation(position: .overlay) {
+                            ZStack {
+                                if selectedIndex == i {
+                                    Circle().fill(violet.opacity(0.18)).frame(width: 24, height: 24)
+                                }
+                                Circle()
+                                    .fill(selectedIndex == i ? violet : pointFill)
+                                    .frame(width: selectedIndex == i ? 11 : 9, height: selectedIndex == i ? 11 : 9)
+                                    .overlay(
+                                        Circle().strokeBorder(
+                                            selectedIndex == i ? violetText : pointColor(grade, index: i),
+                                            lineWidth: selectedIndex == i ? 1.5 : 2)
+                                    )
+                            }
+                        }
+                        .annotation(position: grade.value < sufficientGrade ? .bottom : .top, spacing: 5) {
+                            if selectedIndex == i {
+                                Text(grade.value.italianGrade)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(violetText)
+                            } else if grade.value < sufficientGrade {
+                                Text(grade.value.italianGrade)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(roseText)
+                            }
+                        }
                 }
             }
+            .frame(height: 170)
             .chartYScale(domain: 1...(maxGrade + 0.4))
             .chartXScale(domain: -0.4 ... (Double(max(sorted.count - 1, 1)) + 0.4))
             .chartXSelection(value: $selectedIndex)
             .chartXAxis(.hidden)
             .chartYAxis {
-                AxisMarks(position: .leading) { _ in
-                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.3))
+                AxisMarks(position: .leading, values: yGridValues) { value in
+                    let v = value.as(Double.self) ?? 0
+                    let isSufficiency = abs(v - sufficientGrade) < 0.01
+                    if !isSufficiency {
+                        // La riga della sufficienza è già il RuleMark rosa.
+                        AxisGridLine().foregroundStyle(.white.opacity(scheme == .dark ? 0.06 : 0.0))
+                        if scheme == .light {
+                            AxisGridLine().foregroundStyle(.black.opacity(0.06))
+                        }
+                    }
                     AxisValueLabel()
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color(.label))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(isSufficiency ? rose.opacity(0.7)
+                                         : (scheme == .dark ? Color(hex: "#E2E8FF")!.opacity(0.35) : Color.secondary))
                 }
             }
             .animation(.easeOut(duration: 0.2), value: selectedIndex)
             .sensoryFeedback(.selection, trigger: selectedIndex)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(
+                    colors: scheme == .dark
+                        ? [.white.opacity(0.08), .white.opacity(0.035)]
+                        : [.white.opacity(0.92), .white.opacity(0.65)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(.white.opacity(scheme == .dark ? 0.12 : 0.65), lineWidth: 1))
+        .shadow(color: .black.opacity(scheme == .dark ? 0.30 : 0.07), radius: 14, y: 6)
+        .padding(.horizontal, 16)
     }
 }
 

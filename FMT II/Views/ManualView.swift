@@ -1,105 +1,132 @@
 import SwiftUI
 
-// MARK: - Manuale
+// MARK: - Manuale (stile Aurora Glass)
 
 private struct ManualEntry: Identifiable {
     let id = UUID()
     let title: String
     let detail: String
+    var icon: String = "circle.fill"
 }
 
 private struct ManualSection: Identifiable {
     let id = UUID()
     let screen: String
     let icon: String
+    let tintHex: String
     let entries: [ManualEntry]
 }
 
 struct ManualView: View {
     @State private var query = ""
+    @Environment(\.colorScheme) private var scheme
 
     private let sections: [ManualSection] = [
-        ManualSection(screen: "Per iniziare", icon: "hand.wave", entries: [
+        ManualSection(screen: "Per iniziare", icon: "hand.wave.fill", tintHex: "#34D399", entries: [
             ManualEntry(title: "Cambiare sezione",
-                        detail: "In alto c'è la barra Orario · Diario · Voti. Tocca un nome o scorri orizzontalmente per passare da una sezione all'altra."),
-            ManualEntry(title: "Importare l'orario",
-                        detail: "Alla prima apertura importi il PDF dell'orario della scuola. Senza orario restano comunque attive le sezioni Diario e Voti."),
+                        detail: "In alto c'è il selettore Orario · Diario · Voti: la pillola colorata scivola con te. Tocca un nome oppure scorri orizzontalmente la pagina: lo sfondo sfuma verso la tinta della sezione.",
+                        icon: "rectangle.3.group.fill"),
+            ManualEntry(title: "Importare l'orario da PDF",
+                        detail: "Alla prima apertura importi il PDF dell'orario della scuola. Se il PDF è completo l'import è immediato; se manca un solo elemento (per esempio i docenti) l'app importa il resto e ti fa scegliere per quali classi completare i dati a mano; se il file non è leggibile o contiene conflitti viene rifiutato e ti viene proposta la creazione manuale.",
+                        icon: "square.and.arrow.down.fill"),
             ManualEntry(title: "Creare l'orario a mano",
-                        detail: "Se non hai un PDF, scegli \"Crea il mio orario\": imposti la classe, le ore (inizio + durata) e i giorni, poi tocchi le celle della griglia settimanale per inserire le materie. Il docente è facoltativo e viene auto-completato — una volta abbinato a una materia, l'app lo ricompila da solo. Puoi creare l'orario anche per più classi."),
-            ManualEntry(title: "Tema e personalizzazione",
-                        detail: "Dalle Impostazioni scegli tema chiaro/scuro/automatico; nei Voti ogni materia ha un colore personalizzabile.")
+                        detail: "Senza PDF scegli \"Crea il mio orario\": imposti classe, ore (inizio + durata) e giorni, poi tocchi le celle della griglia per inserire le materie. Le celle libere sono tratteggiate; il docente è facoltativo e viene ricompilato da solo una volta abbinato a una materia.",
+                        icon: "square.and.pencil"),
+            ManualEntry(title: "Tema e colori",
+                        detail: "Dalle Impostazioni scegli tema chiaro/scuro/automatico e assegni un colore personale a ogni classe, docente o materia: lo ritrovi in tutte le viste dell'orario.",
+                        icon: "paintpalette.fill")
         ]),
-        ManualSection(screen: "Orario", icon: "calendar", entries: [
-            ManualEntry(title: "Cambiare vista",
-                        detail: "In alto scegli Adesso, Giorno o Settimana per vedere la lezione corrente, l'intera giornata o tutta la settimana."),
-            ManualEntry(title: "Classe o Docente",
-                        detail: "Con il selettore Classe/Docente cerchi per classe oppure per cognome del docente."),
-            ManualEntry(title: "Cercare un docente",
-                        detail: "Digita il cognome: compare un elenco scorrevole. Premi Invio per scegliere il primo risultato. La X arancione cancella la ricerca."),
-            ManualEntry(title: "Ora manuale",
-                        detail: "Dalle Impostazioni puoi disattivare \"Usa ora corrente\" e fissare un giorno e un'ora specifici da consultare."),
+        ManualSection(screen: "Orario", icon: "calendar", tintHex: "#38BDF8", entries: [
+            ManualEntry(title: "Le tre viste",
+                        detail: "Adesso mostra l'ora corrente con la barra di avanzamento e la prossima ora; Giorno l'intera giornata; Settimana la griglia completa con le etichette colorate.",
+                        icon: "clock.fill"),
+            ManualEntry(title: "Classe, Docente o Materia",
+                        detail: "Col selettore scegli se consultare per classe o per docente. Se l'orario importato contiene solo le materie (senza docenti), il filtro diventa automaticamente Classe/Materia.",
+                        icon: "person.2.fill"),
+            ManualEntry(title: "Cercare",
+                        detail: "Digita il cognome (o la materia): compare l'elenco dei suggerimenti, Invio sceglie il primo. La ✕ cancella la ricerca.",
+                        icon: "magnifyingglass"),
             ManualEntry(title: "Vedere la controparte",
-                        detail: "Tocca una lezione per passare alla sua controparte: dalla classe vedi dov'è quel docente, e viceversa."),
+                        detail: "Tocca una lezione per saltare alla sua controparte: dalla classe vedi l'orario di quel docente, e viceversa. Il passaggio è animato.",
+                        icon: "arrow.triangle.2.circlepath"),
             ManualEntry(title: "Creare una nota da una lezione",
-                        detail: "Tieni premuto su una lezione (l'elemento blu) e scegli \"Crea nota\": la voce di diario nasce già con giorno, ora e docente/classe."),
+                        detail: "Tieni premuto su una lezione e scegli \"Crea nota\": la voce di diario nasce già con giorno, ora, docente/classe e materia compilati.",
+                        icon: "note.text.badge.plus"),
+            ManualEntry(title: "Ora manuale",
+                        detail: "Tocca il badge Live (o dalle Impostazioni) per fissare un giorno e un'ora specifici da consultare al posto dell'ora corrente.",
+                        icon: "clock.badge.questionmark"),
             ManualEntry(title: "Condividere l'orario",
-                        detail: "Dall'icona di condivisione esporti l'orario in un file da inviare o salvare.")
+                        detail: "Dall'icona di condivisione esporti l'orario in un file da inviare o salvare; chi lo riceve lo importa senza rifare nulla.",
+                        icon: "square.and.arrow.up")
         ]),
-        ManualSection(screen: "Diario", icon: "book.closed", entries: [
+        ManualSection(screen: "Diario", icon: "book.closed.fill", tintHex: "#4E7CF6", entries: [
             ManualEntry(title: "Nuova voce",
-                        detail: "Tocca la matita in alto a destra. Puoi formattare il testo: Titolo, Intestazione, Sottotitolo, Corpo e grassetto, corsivo, sottolineato, barrato."),
-            ManualEntry(title: "Dettagli",
-                        detail: "Tocca \"Dettagli\" (in fondo all'editor) per aprire un pannello con tipo, giorno, ora (24h), materia, docente, classe e promemoria — così il testo resta sempre visibile mentre scrivi."),
+                        detail: "Tocca il pulsante + in basso a destra. Nel testo puoi usare Titolo, Intestazione, Sottotitolo, Corpo e grassetto, corsivo, sottolineato, barrato.",
+                        icon: "plus.circle.fill"),
+            ManualEntry(title: "La striscia della settimana",
+                        detail: "Le date in alto scorrono e si toccano: toccandone una, l'elenco salta alle note di quel giorno. I puntini colorati indicano i tipi di impegno presenti (rosa verifica, ambra compito, viola interrogazione, azzurro nota).",
+                        icon: "calendar.day.timeline.left"),
+            ManualEntry(title: "Filtri rapidi",
+                        detail: "Sotto le date trovi Tutti / Compiti / Verifiche / Interrogazioni, sempre visibili. Le verifiche hanno la card rosata con il bordo sfumato.",
+                        icon: "line.3.horizontal.decrease.circle.fill"),
+            ManualEntry(title: "Dettagli della voce",
+                        detail: "Nel pannello \"Dettagli\" assegni tipo, giorno, ora, materia, docente, classe e promemoria — il testo resta visibile mentre scrivi.",
+                        icon: "tag.fill"),
             ManualEntry(title: "Promemoria multipli",
-                        detail: "Puoi aggiungere più promemoria a una voce, ciascuno con giorno e ora scelti (ricorrenti ogni settimana): utile per un avviso il giorno prima e uno il giorno stesso."),
-            ManualEntry(title: "Tipi speciali (compiti, verifiche, interrogazioni)",
-                        detail: "Assegna un tipo alla voce: Compito (giallo), Verifica (rosso), Interrogazione (arancione). La voce cambia leggermente colore e puoi filtrarla per tipo, anche insieme agli altri tag."),
-            ManualEntry(title: "Cercare nel testo",
-                        detail: "Menu ••• → Cerca: trova qualsiasi parola contenuta nel testo delle note, come un \"trova\" di un documento."),
-            ManualEntry(title: "Filtrare per tag",
-                        detail: "Menu ••• → Filtra per tag: mostri solo le voci con un certo tag (materia, docente o classe)."),
-            ManualEntry(title: "Selezione multipla",
-                        detail: "Menu ••• → Seleziona. Tocca le voci (ovunque sulla riga), usa \"Seleziona tutto\", poi elimina o archivia in blocco."),
+                        detail: "Più avvisi per la stessa voce, ciascuno con giorno e ora (ricorrenti ogni settimana): uno il giorno prima e uno il giorno stesso, per esempio.",
+                        icon: "bell.fill"),
+            ManualEntry(title: "Cercare e filtrare",
+                        detail: "Menu ••• → Cerca trova qualsiasi parola nel testo; Filtra mostra solo le voci con un certo tag (materia, docente o classe) o tipo.",
+                        icon: "magnifyingglass"),
+            ManualEntry(title: "Selezione multipla e archivio",
+                        detail: "Menu ••• → Seleziona per eliminare o archiviare in blocco; Mostra l'archivio per rivedere e ripristinare le voci archiviate.",
+                        icon: "checklist"),
             ManualEntry(title: "Azioni rapide",
-                        detail: "Tieni premuto su una voce per Modifica, Archivia o Elimina. Puoi anche scorrerla verso sinistra."),
-            ManualEntry(title: "Archivio",
-                        detail: "Menu ••• → Mostra l'archivio per vedere le voci archiviate e ripristinarle.")
+                        detail: "Tieni premuto su una voce per Modifica, Archivia o Elimina; oppure scorrila verso sinistra.",
+                        icon: "hand.tap.fill")
         ]),
-        ManualSection(screen: "Voti", icon: "chart.line.uptrend.xyaxis", entries: [
+        ManualSection(screen: "Voti", icon: "chart.line.uptrend.xyaxis", tintHex: "#8B5CF6", entries: [
             ManualEntry(title: "Aggiungere un voto",
-                        detail: "Col + inserisci materia (con suggerimenti: Invio sceglie il primo), docente, voto, tipo, data, peso e se fa media."),
+                        detail: "Col + inserisci materia (con suggerimenti), docente, voto, tipo, data, peso e se fa media. Il ring in alto mostra la media generale con le barre dei periodi.",
+                        icon: "plus.circle.fill"),
             ManualEntry(title: "Peso e media",
-                        detail: "Il peso (0–100%) determina quanto il voto incide nella media. Disattivando \"Fa media\" il voto diventa blu e non viene conteggiato."),
+                        detail: "Il peso (0–100%) determina quanto il voto incide nella media ponderata. Disattivando \"Fa media\" il voto diventa blu e non viene conteggiato.",
+                        icon: "scalemass.fill"),
             ManualEntry(title: "Grafico andamento",
-                        detail: "Nella materia tocca un punto del grafico per vedere voto e data. Le frecce ↑ ↓ indicano se ogni voto ha alzato o abbassato la media."),
+                        detail: "Nella scheda materia, la card Andamento mostra la curva dei voti col colore della materia: la linea rosa tratteggiata è la sufficienza, i punti insufficienti sono rosa col valore sotto. Tocca un punto per il dettaglio (alone viola).",
+                        icon: "chart.xyaxis.line"),
             ManualEntry(title: "Obiettivo media",
-                        detail: "Imposta la media obiettivo: l'app calcola quale o quanti voti ti servono. La frase motivazionale cambia a ogni nuovo obiettivo."),
+                        detail: "Imposta la media obiettivo: l'app calcola quale o quanti voti ti servono per raggiungerla.",
+                        icon: "target"),
             ManualEntry(title: "Colore della materia",
-                        detail: "Nella scheda materia, dal selettore colore in alto a destra, personalizzi il colore: anche lo sfondo e il grafico si adattano."),
-            ManualEntry(title: "Elenco materie",
-                        detail: "L'icona elenco apre tutte le materie con la rispettiva media."),
-            ManualEntry(title: "Azioni rapide",
-                        detail: "Tieni premuto su un voto per Modifica, Apri materia o Elimina.")
+                        detail: "Dal cerchio colorato in alto a destra nella scheda materia personalizzi il colore: righe, grafico e sfondo si adattano.",
+                        icon: "paintbrush.fill"),
+            ManualEntry(title: "Ultimi voti ed elenco materie",
+                        detail: "Le bolle \"Ultimi voti\" scorrono in orizzontale; \"Vedi tutti ›\" (o l'icona elenco) apre tutte le materie con la rispettiva media.",
+                        icon: "list.bullet.circle.fill"),
+            ManualEntry(title: "Soglia personalizzata",
+                        detail: "Cambiando voto sufficiente o massimo nelle Impostazioni, i colori di tutti i voti (verde/arancio/rosso) si aggiornano immediatamente.",
+                        icon: "slider.horizontal.3")
         ]),
-        ManualSection(screen: "Impostazioni", icon: "gearshape", entries: [
+        ManualSection(screen: "Impostazioni", icon: "gearshape.fill", tintHex: "#F472B6", entries: [
             ManualEntry(title: "Aspetto",
-                        detail: "Scegli tema chiaro, scuro o automatico."),
-            ManualEntry(title: "Dimensione testo",
-                        detail: "In Accessibilità puoi ingrandire tutti i testi dell'app (Automatica, Grande, Molto grande, Enorme), impostazioni e menu compresi."),
-            ManualEntry(title: "Scala dei voti",
-                        detail: "In Valutazione imposti il voto sufficiente (non per forza 6) e il voto massimo (di default 10): i colori dei voti, la sufficienza sul grafico e gli obiettivi si adattano di conseguenza."),
-            ManualEntry(title: "Periodi scolastici",
-                        detail: "Imposta quadrimestri oppure trimestre + pentamestre e la fine del primo periodo (solo giorno e mese, l'anno è automatico). Passando a trimestre la fine è impostata al 23 dicembre."),
-            ManualEntry(title: "Backup",
-                        detail: "Esporti diario, voti e orario in un unico file e li reimporti quando vuoi (anche su un altro dispositivo)."),
-            ManualEntry(title: "Crea o modifica l'orario",
-                        detail: "Senza orario trovi \"Crea il mio orario\"; se l'hai creato a mano, \"Modifica orario\" riapre la griglia. Puoi sempre importare un PDF: se hai un orario tuo ti avvisiamo prima di sostituirlo, e lo sostituiamo solo se il PDF viene letto correttamente."),
-            ManualEntry(title: "Modifica database",
-                        detail: "Correggi o aggiungi docenti e classi, regola le fasce orarie (inizio + durata) e modifica le singole lezioni. C'è un avviso prima di entrare."),
+                        detail: "Tema chiaro/scuro/automatico, dimensione del testo (fino a Enorme) e colori personalizzati per classi, docenti e materie.",
+                        icon: "circle.lefthalf.filled"),
+            ManualEntry(title: "Orario",
+                        detail: "Sorgente e contenuto dell'orario caricato, ora corrente o manuale, PDF originale, modifica dell'orario creato a mano e Dati orario (docenti, classi, fasce, lezioni).",
+                        icon: "calendar"),
+            ManualEntry(title: "Voti",
+                        detail: "Scala dei voti (sufficienza e massimo) e periodi: quadrimestri oppure trimestre + pentamestre, con la fine del primo periodo (solo giorno e mese).",
+                        icon: "chart.bar.fill"),
+            ManualEntry(title: "Dati e backup",
+                        detail: "Esporti orario, diario e voti in un unico file e li reimporti quando vuoi, anche su un altro dispositivo.",
+                        icon: "externaldrive.fill"),
             ManualEntry(title: "Zona di rischio",
-                        detail: "Cambia o rimuovi l'orario, cancella tutto il diario o tutti i voti. Ogni azione chiede conferma."),
+                        detail: "Cambia o rimuovi l'orario, cancella tutto il diario o tutti i voti. Ogni azione chiede conferma e non è reversibile.",
+                        icon: "exclamationmark.triangle.fill"),
             ManualEntry(title: "Segnala un problema",
-                        detail: "Apre l'app Mail con un messaggio pronto da inviare allo sviluppatore.")
+                        detail: "Apre l'app Mail con un messaggio già pronto da inviare allo sviluppatore.",
+                        icon: "exclamationmark.bubble.fill")
         ])
     ]
 
@@ -110,36 +137,131 @@ struct ManualView: View {
             let entries = section.entries.filter {
                 $0.title.lowercased().contains(q) || $0.detail.lowercased().contains(q)
             }
-            return entries.isEmpty ? nil : ManualSection(screen: section.screen, icon: section.icon, entries: entries)
+            return entries.isEmpty ? nil
+                : ManualSection(screen: section.screen, icon: section.icon, tintHex: section.tintHex, entries: entries)
         }
     }
 
     var body: some View {
-        List {
-            if filteredSections.isEmpty {
-                ContentUnavailableView("Nessun risultato", systemImage: "magnifyingglass",
-                                       description: Text("Nessuna funzione corrisponde a «\(query)»."))
-            }
-            ForEach(filteredSections) { section in
-                Section {
-                    ForEach(section.entries) { entry in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(entry.title)
-                                .font(.callout.weight(.semibold))
-                            Text(entry.detail)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                AuroraTitle(title: "Manuale",
+                            subtitle: "Tutte le funzioni, sezione per sezione")
+                    .padding(.top, 2)
+
+                // Campo di ricerca in vetro
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    TextField("Cerca una funzione", text: $query)
+                        .autocorrectionDisabled()
+                    if !query.isEmpty {
+                        Button { query = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                         }
-                        .padding(.vertical, 2)
+                        .buttonStyle(.plain)
                     }
-                } header: {
-                    Label(section.screen, systemImage: section.icon)
-                        .font(.subheadline.weight(.semibold))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(.white.opacity(scheme == .dark ? 0.06 : 0.7),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(.white.opacity(scheme == .dark ? 0.10 : 0.5), lineWidth: 1))
+
+                if filteredSections.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.quaternary)
+                        Text("Nessun risultato per «\(query)»")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 60)
+                }
+
+                ForEach(filteredSections) { section in
+                    sectionCard(section)
                 }
             }
+            .padding(16)
+            .padding(.bottom, 24)
         }
-        .navigationTitle("Manuale")
+        .background { AuroraBackground(section: .neutral) }
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: "Cerca una funzione")
+    }
+
+    private func sectionCard(_ section: ManualSection) -> some View {
+        let tint = Color(hex: section.tintHex)!
+        return VStack(alignment: .leading, spacing: 0) {
+            // Intestazione della sezione: badge sfumato + nome in maiuscoletto
+            HStack(spacing: 10) {
+                Image(systemName: section.icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        LinearGradient(colors: [tint.blended(with: .white, by: 0.18), tint],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    )
+                    .shadow(color: tint.opacity(0.4), radius: 6, y: 3)
+                Text(section.screen.uppercased())
+                    .font(.system(size: 11, weight: .heavy))
+                    .kerning(1)
+                    .foregroundStyle(scheme == .dark ? tint.blended(with: .white, by: 0.35) : tint.blended(with: .black, by: 0.2))
+                Spacer()
+                Text("\(section.entries.count)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(.white.opacity(0.07), in: Capsule())
+            }
+            .padding(14)
+
+            // Voci con hairline tra le righe (come le card del canvas)
+            ForEach(Array(section.entries.enumerated()), id: \.element.id) { index, entry in
+                if index > 0 {
+                    Rectangle()
+                        .fill(.white.opacity(scheme == .dark ? 0.07 : 0.35))
+                        .frame(height: 1)
+                        .padding(.leading, 46)
+                }
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: entry.icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .frame(width: 22)
+                        .padding(.top, 2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.title)
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(entry.detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+            }
+            Spacer().frame(height: 6)
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(
+                    colors: scheme == .dark
+                        ? [.white.opacity(0.08), .white.opacity(0.035)]
+                        : [.white.opacity(0.92), .white.opacity(0.65)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(.white.opacity(scheme == .dark ? 0.12 : 0.6), lineWidth: 1))
+        .shadow(color: .black.opacity(scheme == .dark ? 0.30 : 0.06), radius: 14, y: 6)
     }
 }

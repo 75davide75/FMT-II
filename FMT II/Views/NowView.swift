@@ -9,34 +9,23 @@ struct NowView: View {
     let schoolTimes: [String]
     let onOpenWeek: () -> Void
     let onJumpToLesson: (DayId, String) -> Void
-    let onAddNote: ((DayId?, String?, String?, String?) -> Void)?
+    let onAddNote: ((DayId?, String?, String?, String?, String?) -> Void)?
 
     var body: some View {
-        VStack(spacing: 12) {
-            LessonCard(
-                title: "Ora corrente",
-                icon: "clock.fill",
-                accentColor: currentLesson != nil ? .green : .secondary,
+        VStack(spacing: 10) {
+            CurrentLessonCard(
                 lesson: currentLesson,
                 targetMode: targetMode,
+                activeTime: activeTime,
                 fallback: weekendText(day: activeDay, time: activeTime),
                 schoolTimes: schoolTimes,
-                showWeekButton: false,
-                isNextCard: false,
-                onOpenWeek: nil,
                 onJumpToLesson: onJumpToLesson,
                 onAddNote: onAddNote
             )
-            LessonCard(
-                title: "Prossima ora",
-                icon: "arrow.right.circle.fill",
-                accentColor: nextLesson != nil ? .blue : .secondary,
+            NextLessonCard(
                 lesson: nextLesson,
                 targetMode: targetMode,
-                fallback: "Nessuna lezione successiva oggi",
                 schoolTimes: schoolTimes,
-                showWeekButton: true,
-                isNextCard: true,
                 onOpenWeek: onOpenWeek,
                 onJumpToLesson: onJumpToLesson,
                 onAddNote: onAddNote
@@ -45,127 +34,243 @@ struct NowView: View {
     }
 }
 
-struct LessonCard: View {
-    let title: String
-    let icon: String
-    let accentColor: Color
+private let greenA = Color(hex: "#34D399")!
+private let greenB = Color(hex: "#A3E635")!
+private let greenText = Color(hex: "#6EE7B7")!
+private let skyA = Color(hex: "#38BDF8")!
+private let skyText = Color(hex: "#7DD3FC")!
+
+/// Card "ORA CORRENTE" (design 3a): vetro tinto di verde, nome grande,
+/// barra di avanzamento con bagliore, "termina tra N min".
+private struct CurrentLessonCard: View {
     let lesson: Lesson?
     let targetMode: TargetMode
+    let activeTime: String
     let fallback: String
     let schoolTimes: [String]
-    let showWeekButton: Bool
-    let isNextCard: Bool
-    let onOpenWeek: (() -> Void)?
     let onJumpToLesson: (DayId, String) -> Void
-    let onAddNote: ((DayId?, String?, String?, String?) -> Void)?
+    let onAddNote: ((DayId?, String?, String?, String?, String?) -> Void)?
+    @Environment(\.colorScheme) private var scheme
+
+    private var progress: Double {
+        guard let l = lesson else { return 0 }
+        let start = Double(minutesFromMidnight(l.startTime))
+        let end = Double(minutesFromMidnight(l.endTime))
+        let now = Double(minutesFromMidnight(activeTime))
+        guard end > start else { return 0 }
+        return min(1, max(0, (now - start) / (end - start)))
+    }
+
+    private var remainingText: String {
+        guard let l = lesson else { return "" }
+        let mins = minutesFromMidnight(l.endTime) - minutesFromMidnight(activeTime)
+        return mins > 0 ? "termina tra \(mins) min" : "in chiusura"
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header row
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .foregroundStyle(accentColor)
-                    .font(.subheadline)
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                Circle()
+                    .fill(lesson != nil ? greenA : Color.secondary)
+                    .frame(width: 7, height: 7)
+                    .shadow(color: lesson != nil ? greenA.opacity(0.9) : .clear, radius: 4)
+                Text("ORA CORRENTE")
+                    .font(.system(size: 10.5, weight: .heavy))
+                    .kerning(1)
+                    .foregroundStyle(lesson != nil ? (scheme == .dark ? greenText : greenA.blended(with: .black, by: 0.25)) : .secondary)
                 Spacer()
-                if showWeekButton {
-                    Button(action: { onOpenWeek?() }) {
-                        HStack(spacing: 4) {
+                if let l = lesson {
+                    Text("\(l.period)ª ora")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let l = lesson {
+                Text(targetMode == .class_ ? l.classModeTitle : l.className)
+                    .font(.system(size: 24, weight: .heavy))
+                    .kerning(-0.3)
+                    .foregroundStyle(.primary)
+                    .padding(.top, 8)
+                    .contextMenu {
+                        Button {
+                            onAddNote?(l.day, l.startTime,
+                                       targetMode == .class_ ? l.teacher : nil,
+                                       targetMode == .teacher ? l.className : nil,
+                                       targetMode == .class_ && !l.subject.isEmpty ? l.subject : nil)
+                        } label: {
+                            Label("Crea nota", systemImage: "note.text.badge.plus")
+                        }
+                    }
+                if targetMode == .class_, let sub = l.classModeSubtitle {
+                    Text(sub)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(scheme == .dark ? 0.08 : 0.5)).frame(height: 6)
+                        Capsule()
+                            .fill(LinearGradient(colors: [greenA, greenB], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(6, geo.size.width * progress), height: 6)
+                            .shadow(color: greenA.opacity(0.55), radius: 5)
+                    }
+                }
+                .frame(height: 6)
+                .padding(.top, 12)
+
+                HStack(spacing: 4) {
+                    timeJump(l.startTime, target: earlierTime(of: l.startTime, back: 1), day: l.day)
+                    Text("– ")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    timeJump(l.endTime, target: l.endTime, day: l.day)
+                    Text("· \(remainingText)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(targetMode == .class_ ? l.dayLabel : (l.teacher.isEmpty ? l.subject : l.teacher))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .padding(.top, 6)
+            } else {
+                Text("Nessuna lezione")
+                    .font(.system(size: 24, weight: .heavy))
+                    .kerning(-0.3)
+                    .padding(.top, 8)
+                Text(fallback)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
+            }
+        }
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(
+                    colors: scheme == .dark
+                        ? [greenA.opacity(lesson != nil ? 0.13 : 0.0), .white.opacity(0.045)]
+                        : [greenA.opacity(lesson != nil ? 0.18 : 0.03), .white.opacity(0.75)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(lesson != nil ? greenA.opacity(0.32) : .white.opacity(0.13), lineWidth: 1)
+        )
+        .shadow(color: (lesson != nil ? Color(red: 0.04, green: 0.31, blue: 0.22) : .black).opacity(scheme == .dark ? 0.25 : 0.08), radius: 14, y: 6)
+    }
+
+    private func earlierTime(of time: String, back: Int) -> String {
+        let idx = schoolTimes.firstIndex(of: time) ?? 0
+        let target = max(0, idx - back)
+        return schoolTimes.indices.contains(target) ? schoolTimes[target] : time
+    }
+
+    private func timeJump(_ label: String, target: String, day: DayId) -> some View {
+        Button { onJumpToLesson(day, target) } label: {
+            Text(label)
+                .font(.system(size: 11, weight: .bold).monospacedDigit())
+                .foregroundStyle(scheme == .dark ? greenText : greenA.blended(with: .black, by: 0.25))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Card "PROSSIMA ORA" (design 3a): vetro tinto cilestino.
+private struct NextLessonCard: View {
+    let lesson: Lesson?
+    let targetMode: TargetMode
+    let schoolTimes: [String]
+    let onOpenWeek: () -> Void
+    let onJumpToLesson: (DayId, String) -> Void
+    let onAddNote: ((DayId?, String?, String?, String?, String?) -> Void)?
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Circle().fill(lesson != nil ? skyA : Color.secondary).frame(width: 7, height: 7)
+                Text("PROSSIMA ORA")
+                    .font(.system(size: 10.5, weight: .heavy))
+                    .kerning(1)
+                    .foregroundStyle(lesson != nil ? (scheme == .dark ? skyText : skyA.blended(with: .black, by: 0.3)) : .secondary)
+                Spacer()
+                if let l = lesson {
+                    Button {
+                        // Salta all'orario della prossima lezione (comportamento invariato).
+                        let idx = schoolTimes.firstIndex(of: l.startTime) ?? 0
+                        let target = max(0, idx - 2)
+                        onJumpToLesson(l.day, schoolTimes.indices.contains(target) ? schoolTimes[target] : l.startTime)
+                    } label: {
+                        Text("\(l.startTime) – \(l.endTime)")
+                            .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button(action: onOpenWeek) {
+                        HStack(spacing: 3) {
                             Text("Settimana")
                             Image(systemName: "chevron.right")
                         }
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.tint)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(scheme == .dark ? skyText : skyA.blended(with: .black, by: 0.3))
                     }
                 }
             }
 
-            if let lesson {
-                // Main content
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(targetMode == .class_ ? lesson.classModeTitle : lesson.className)
-                        .font(.title2.bold())
+            if let l = lesson {
+                HStack {
+                    Text(targetMode == .class_ ? l.classModeTitle : l.className)
+                        .font(.system(size: 18, weight: .heavy))
                         .foregroundStyle(.primary)
                         .contextMenu {
                             Button {
-                                onAddNote?(lesson.day, lesson.startTime,
-                                           targetMode == .class_ ? lesson.teacher : nil,
-                                           targetMode == .teacher ? lesson.className : nil)
+                                onAddNote?(l.day, l.startTime,
+                                           targetMode == .class_ ? l.teacher : nil,
+                                           targetMode == .teacher ? l.className : nil,
+                                           targetMode == .class_ && !l.subject.isEmpty ? l.subject : nil)
                             } label: {
                                 Label("Crea nota", systemImage: "note.text.badge.plus")
                             }
                         }
-
-                    HStack(spacing: 8) {
-                        // Start time button
-                        timeButton(lesson.startTime, boundary: "start", lesson: lesson)
-                        Image(systemName: "arrow.right")
-                            .font(.caption2)
-                            .foregroundStyle(.quaternary)
-                        // End time button
-                        timeButton(lesson.endTime, boundary: "end", lesson: lesson)
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.caption2)
-                            Text(targetMode == .class_ ? lesson.dayLabel : lesson.teacher)
-                                .lineLimit(1)
+                    Spacer()
+                    Button(action: onOpenWeek) {
+                        HStack(spacing: 3) {
+                            Text("Settimana")
+                            Image(systemName: "chevron.right")
                         }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(scheme == .dark ? skyText : skyA.blended(with: .black, by: 0.3))
                     }
                 }
-
-                // Accent bar
-                Rectangle()
-                    .fill(accentColor.opacity(0.25))
-                    .frame(height: 3)
-                    .clipShape(Capsule())
+                .padding(.top, 6)
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Nessuna lezione")
-                        .font(.title2.bold())
-                        .foregroundStyle(.primary)
-                    Text(fallback)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Nessuna lezione")
+                    .font(.system(size: 18, weight: .heavy))
+                    .padding(.top, 6)
+                Text("Nessuna lezione successiva oggi")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
             }
         }
-        .padding(16)
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(
+                    colors: scheme == .dark
+                        ? [skyA.opacity(lesson != nil ? 0.11 : 0.0), .white.opacity(0.04)]
+                        : [skyA.opacity(lesson != nil ? 0.16 : 0.03), .white.opacity(0.75)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(accentColor.opacity(0.2), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(lesson != nil ? skyA.opacity(0.28) : .white.opacity(0.13), lineWidth: 1)
         )
-        .shadow(color: accentColor.opacity(0.06), radius: 10, y: 4)
-    }
-
-    private func timeButton(_ time: String, boundary: String, lesson: Lesson) -> some View {
-        let idx = schoolTimes.firstIndex(of: time) ?? 0
-        let targetIdx: Int
-        if boundary == "start" {
-            // "Prossima ora" needs to step back 2 slots so the previous lesson becomes the new "prossima"
-            targetIdx = isNextCard ? max(0, idx - 2) : max(0, idx - 1)
-        } else {
-            targetIdx = idx
-        }
-        let targetTime = schoolTimes.indices.contains(targetIdx) ? schoolTimes[targetIdx] : time
-
-        return Button {
-            onJumpToLesson(lesson.day, targetTime)
-        } label: {
-            Text(time)
-                .font(.callout.monospacedDigit().weight(.semibold))
-                .foregroundStyle(accentColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
     }
 }

@@ -122,7 +122,7 @@ extension Color {
     })
     static let sectionCard = Color(UIColor { tc in
         tc.userInterfaceStyle == .dark
-            ? UIColor.tertiarySystemBackground           // ~#2C2C2E, lighter than the page
+            ? UIColor(white: 1.0, alpha: 0.08)           // vetro chiaro sopra lo sfondo aurora
             : UIColor.secondarySystemGroupedBackground   // white
     })
 }

@@ -6,7 +6,7 @@ struct WeekView: View {
     let targetMode: TargetMode
     let targetName: String
     let onOpenCounterpart: (Lesson) -> Void
-    let onAddNote: (DayId?, String?, String?, String?) -> Void
+    let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
 
     private let timeColWidth: CGFloat = 52
     private let dayColWidth: CGFloat = 88
@@ -26,7 +26,7 @@ struct WeekView: View {
                 Spacer()
                 HStack(spacing: 12) {
                     Button {
-                        onAddNote(nil, nil, nil, nil)
+                        onAddNote(nil, nil, nil, nil, nil)
                     } label: {
                         Image(systemName: "square.and.pencil")
                             .font(.title3)
@@ -52,9 +52,10 @@ struct WeekView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: timeColWidth, height: 36)
                         ForEach(schedule.days) { day in
-                            Text(shortLabel(day.label))
-                                .font(.caption.bold())
-                                .foregroundStyle(.primary)
+                            Text(shortLabel(day.label).uppercased())
+                                .font(.system(size: 10, weight: .bold))
+                                .kerning(0.4)
+                                .foregroundStyle(.secondary)
                                 .frame(width: dayColWidth, height: 36)
                         }
                     }
@@ -97,8 +98,7 @@ struct WeekView: View {
             }
             .padding(.bottom, 4)
         }
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+        .auroraCard(radius: 18)
     }
 
     private func shortLabel(_ label: String) -> String {
@@ -113,7 +113,7 @@ struct WeekCell: View {
     let width: CGFloat
     let height: CGFloat
     let onTap: (Lesson) -> Void
-    let onAddNote: (DayId?, String?, String?, String?) -> Void
+    let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
 
     var body: some View {
         ZStack {
@@ -122,21 +122,29 @@ struct WeekCell: View {
             } else {
                 VStack(spacing: 3) {
                     ForEach(lessons.prefix(2)) { lesson in
+                        let label = targetMode == .class_ ? lesson.classModeTitle : lesson.className
+                        let tint = entityTint(label)
                         Button { onTap(lesson) } label: {
-                            Text(targetMode == .class_ ? lesson.classModeTitle : lesson.className)
-                                .font(.caption2.weight(.semibold))
+                            Text(label)
+                                .font(.system(size: 9.5, weight: .bold))
+                                .kerning(0.2)
                                 .lineLimit(1)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(tint.blended(with: .white, by: 0.45))
                                 .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 5))
+                                .padding(.vertical, 5)
+                                .frame(maxWidth: .infinity)
+                                .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .strokeBorder(tint.opacity(0.30), lineWidth: 1))
+                                .padding(.horizontal, 3)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
                             Button {
                                 onAddNote(lesson.day, lesson.startTime,
                                           targetMode == .class_ ? lesson.teacher : nil,
-                                          targetMode == .teacher ? lesson.className : nil)
+                                          targetMode == .teacher ? lesson.className : nil,
+                                          targetMode == .class_ && !lesson.subject.isEmpty ? lesson.subject : nil)
                             } label: {
                                 Label("Crea nota", systemImage: "note.text.badge.plus")
                             }
