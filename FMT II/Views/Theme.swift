@@ -462,6 +462,14 @@ func hasEntityColorOverride(_ name: String) -> Bool {
     entityOverrides()[name.trimmingCharacters(in: .whitespaces).lowercased()] != nil
 }
 
+/// Testo leggibile per un'etichetta colorata su fondo tinta al ~16%:
+/// schiarita in scuro, scurita in chiaro — così il nome del docente/classe
+/// resta contrastato in entrambi i temi.
+func entityLabelColor(_ tint: Color, _ scheme: ColorScheme) -> Color {
+    scheme == .dark ? tint.blended(with: .white, by: 0.45)
+                    : tint.blended(with: .black, by: 0.5)
+}
+
 /// Gradiente-etichetta di un'entità (per la vista giornaliera).
 func entityGradient(_ name: String) -> LinearGradient {
     let c = entityTint(name)

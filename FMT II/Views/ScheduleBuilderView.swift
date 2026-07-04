@@ -418,7 +418,7 @@ struct ScheduleBuilderView: View {
                     Text(l.subject)
                         .font(.system(size: 10.5, weight: .heavy))
                         .kerning(0.3)
-                        .foregroundStyle(tint.blended(with: .white, by: 0.45))
+                        .foregroundStyle(entityLabelColor(tint, scheme))
                         .lineLimit(2).multilineTextAlignment(.center)
                     if !l.teacher.isEmpty {
                         Text(l.teacher).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1)

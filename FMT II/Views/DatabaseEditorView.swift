@@ -9,6 +9,7 @@ import SwiftUI
 struct DatabaseEditorView: View {
     @ObservedObject var store: ScheduleStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     @State private var draft: ScheduleData
     @State private var firstStartDate = Date()
@@ -172,7 +173,7 @@ struct DatabaseEditorView: View {
                     Text(name)
                         .font(.system(size: 11.5, weight: .bold))
                         .kerning(0.3)
-                        .foregroundStyle(entityTint(name).blended(with: .white, by: 0.45))
+                        .foregroundStyle(entityLabelColor(entityTint(name), scheme))
                         .padding(.horizontal, 11)
                         .padding(.vertical, 5)
                         .background(entityTint(name).opacity(0.13), in: Capsule())
@@ -273,7 +274,7 @@ struct DatabaseEditorView: View {
                 .background(Color(hex: "#60A5FA")!.opacity(0.13), in: Capsule())
             Text(lesson.className)
                 .font(.system(size: 11.5, weight: .bold))
-                .foregroundStyle(entityTint(lesson.className).blended(with: .white, by: 0.45))
+                .foregroundStyle(entityLabelColor(entityTint(lesson.className), scheme))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 3)
                 .background(entityTint(lesson.className).opacity(0.13), in: Capsule())

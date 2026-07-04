@@ -63,6 +63,7 @@ struct TimelineRow: View {
     let isLast: Bool
     let onOpenCounterpart: (Lesson) -> Void
     let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var hasLessons: Bool { !lessons.isEmpty }
 
@@ -125,7 +126,7 @@ struct TimelineRow: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(label)
                                         .font(.callout.bold())
-                                        .foregroundStyle(tint.blended(with: .white, by: 0.45))
+                                        .foregroundStyle(entityLabelColor(tint, scheme))
                                     if targetMode == .class_, let sub = lesson.classModeSubtitle {
                                         Text(sub)
                                             .font(.caption2)

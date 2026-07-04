@@ -114,6 +114,7 @@ struct WeekCell: View {
     let height: CGFloat
     let onTap: (Lesson) -> Void
     let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         ZStack {
@@ -129,7 +130,7 @@ struct WeekCell: View {
                                 .font(.system(size: 9.5, weight: .bold))
                                 .kerning(0.2)
                                 .lineLimit(1)
-                                .foregroundStyle(tint.blended(with: .white, by: 0.45))
+                                .foregroundStyle(entityLabelColor(tint, scheme))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 5)
                                 .frame(maxWidth: .infinity)

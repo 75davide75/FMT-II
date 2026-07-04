@@ -907,6 +907,7 @@ struct EntityColorsView: View {
 struct EntityColorPickerSheet: View {
     let name: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
     @AppStorage("entityColorsVersion") private var version = 0
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 14), count: 6)
@@ -921,7 +922,7 @@ struct EntityColorPickerSheet: View {
                         Text(name)
                             .font(.system(size: 12, weight: .bold))
                             .kerning(0.2)
-                            .foregroundStyle(entityTint(name).blended(with: .white, by: 0.45))
+                            .foregroundStyle(entityLabelColor(entityTint(name), scheme))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
                             .background(entityTint(name).opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
