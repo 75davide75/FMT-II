@@ -139,6 +139,9 @@ struct WeekCell: View {
                                 .padding(.horizontal, 3)
                         }
                         .buttonStyle(.plain)
+                        // La preview del context menu segue gli angoli della
+                        // cella: senza, il bordo viene tagliato agli angoli.
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 9, style: .continuous))
                         .contextMenu {
                             Button {
                                 onAddNote(lesson.day, lesson.startTime,

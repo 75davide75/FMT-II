@@ -389,6 +389,7 @@ struct NotesListView: View {
                                             .tint(.orange)
                                         }
                                     }
+                                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 22, style: .continuous))
                                     .contextMenu {
                                         Button {
                                             noteContext = NoteCreationContext(existingNote: note)

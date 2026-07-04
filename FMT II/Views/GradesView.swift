@@ -168,6 +168,7 @@ struct GradesView: View {
                         .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
                         .contentShape(Rectangle())
                         .onTapGesture { gradeToEdit = grade }
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .contextMenu {
                             Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
                             Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }

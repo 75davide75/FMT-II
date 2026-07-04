@@ -149,6 +149,10 @@ struct TimelineRow: View {
                             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(tint.opacity(0.28), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
+                        // La preview del context menu deve seguire gli angoli
+                        // arrotondati della cella, altrimenti il bordo viene
+                        // tagliato agli angoli.
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .contextMenu {
                             Button {
                                 onAddNote(lesson.day, lesson.startTime,
