@@ -84,6 +84,8 @@ struct ScheduleBuilderView: View {
         .sheet(isPresented: $showSetupSheet) { setupSheet }
         .alert("Nome della classe", isPresented: $showClassPrompt) {
             TextField("Es. 5GSA", text: $classNameDraft)
+            // Obbligatorio: o si dà un nome alla classe, o si esce dal builder.
+            Button("Annulla", role: .cancel) { dismiss() }
             Button("OK") {
                 commitClassName()
                 // Required: if still empty, ask again.
@@ -188,6 +190,18 @@ struct ScheduleBuilderView: View {
     private var setupSheet: some View {
         NavigationStack {
             Form {
+                Section("Classe") {
+                    LabeledContent("Classe selezionata", value: selectedClass.isEmpty ? "—" : selectedClass)
+                    Button {
+                        renameDraft = selectedClass
+                        showSetupSheet = false
+                        // L'alert può comparire solo quando lo sheet è chiuso.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { renamingClass = true }
+                    } label: {
+                        Label("Rinomina classe", systemImage: "pencil")
+                    }
+                    .disabled(selectedClass.isEmpty)
+                }
                 Section("Ore") {
                     DatePicker("Inizio 1ª ora", selection: $firstStartDate, displayedComponents: .hourAndMinute)
                         .onChange(of: firstStartDate) { _, _ in rebuildPeriodsAndDays() }
