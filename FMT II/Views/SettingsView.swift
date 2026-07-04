@@ -171,11 +171,11 @@ struct SettingsView: View {
     }
 
     /// Header di sezione in maiuscoletto indaco (design 3e).
-    static func header(_ text: String) -> some View {
+    static func header(_ text: String, tint: Color = Color(hex: "#A5B4FC")!) -> some View {
         Text(text.uppercased())
             .font(.system(size: 10.5, weight: .heavy))
             .kerning(1)
-            .foregroundStyle(Color(hex: "#A5B4FC")!)
+            .foregroundStyle(tint)
             .textCase(nil)
     }
 
@@ -414,23 +414,45 @@ struct SettingsView: View {
     private var dangerZoneSection: some View {
         if store.schedule != nil || notesStore != nil || gradesStore != nil {
             Section {
-                DangerZoneView(
-                    onChangePDF: store.schedule != nil ? {
-                        if store.schedule?.edited == true {
-                            showOverwriteWarn = true
-                        } else {
+                if store.schedule != nil {
+                    Button {
+                        if store.schedule?.edited == true { showOverwriteWarn = true }
+                        else {
                             dismiss()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFilePicker = true }
                         }
-                    } : nil,
-                    onRemove: store.schedule != nil ? { showClearConfirmation = true } : nil,
-                    onDeleteNotes: notesStore != nil ? { showDeleteNotesConfirm = true } : nil,
-                    onDeleteGrades: gradesStore != nil ? { showDeleteGradesConfirm = true } : nil
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                    } label: {
+                        Self.row("Cambia PDF", icon: "arrow.triangle.2.circlepath", "#FB923C")
+                            .foregroundStyle(.primary)
+                    }
+                    Button(role: .destructive) { showClearConfirmation = true } label: {
+                        Self.row("Rimuovi orario", icon: "trash.fill", "#FB7185")
+                            .foregroundStyle(.red)
+                    }
+                }
+                if notesStore != nil {
+                    Button(role: .destructive) { showDeleteNotesConfirm = true } label: {
+                        Self.row("Cancella tutto il diario", icon: "trash.fill", "#F43F5E")
+                            .foregroundStyle(.red)
+                    }
+                }
+                if gradesStore != nil {
+                    Button(role: .destructive) { showDeleteGradesConfirm = true } label: {
+                        Self.row("Cancella tutti i voti", icon: "trash.fill", "#E11D48")
+                            .foregroundStyle(.red)
+                    }
+                }
+            } header: {
+                HStack(spacing: 5) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color(hex: "#FB7185")!)
+                    Self.header("Zona di rischio", tint: Color(hex: "#FB7185")!)
+                }
+            } footer: {
+                Text("Azioni definitive: prima di procedere viene sempre chiesta conferma.")
             }
+            .listRowBackground(Color.sectionCard)
         }
     }
 
