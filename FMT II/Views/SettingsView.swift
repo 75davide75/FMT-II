@@ -46,14 +46,6 @@ struct SettingsView: View {
     @State private var pendingBackup: BackupData?
     @State private var importError: String?
 
-    var preferredColorScheme: ColorScheme? {
-        switch appearanceMode {
-        case "light": return .light
-        case "dark": return .dark
-        default: return nil
-        }
-    }
-
     var manualDay: Binding<DayId> {
         Binding(
             get: { DayId(rawValue: manualDayRaw) ?? .monday },
@@ -175,7 +167,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .preferredColorScheme(preferredColorScheme)
         .modifier(FixedTypeSize(size: overrideTypeSize))
     }
 

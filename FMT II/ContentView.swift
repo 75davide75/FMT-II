@@ -35,13 +35,6 @@ struct ContentView: View {
     @State private var pagerProgress: CGFloat = 0
     @State private var showBuilder = false
 
-    var preferredColorScheme: ColorScheme? {
-        switch appearanceMode {
-        case "light": return .light
-        case "dark": return .dark
-        default: return nil
-        }
-    }
 
     /// Text-size override, re-applied to the toolbar bar because UIKit-hosted
     /// toolbar content doesn't always inherit the app-root setting.
@@ -76,7 +69,7 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.55), value: hasSeenTutorial)
-        .preferredColorScheme(preferredColorScheme)
+        .onChange(of: appearanceMode) { _, mode in applyAppearanceMode(mode) }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -154,6 +147,7 @@ struct ContentView: View {
             Text(store.errorMessage ?? "")
         }
         .onAppear {
+            applyAppearanceMode(appearanceMode)
             if hasSeenTutorial { hasCompletedOnboarding = true }
             // A freddo la classe selezionata è vuota: riparti dalla
             // predefinita, altrimenti l'Orario mostra solo ore libere.
@@ -465,6 +459,21 @@ struct EasterEggView: View {
 }
 
 // MARK: - Utility functions
+
+/// Applica il tema a livello di finestra: a differenza di
+/// `preferredColorScheme(nil)`, tornare ad «Automatico» segue subito il
+/// sistema anche negli sheet già aperti.
+func applyAppearanceMode(_ mode: String) {
+    let style: UIUserInterfaceStyle
+    switch mode {
+    case "light": style = .light
+    case "dark": style = .dark
+    default: style = .unspecified
+    }
+    for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+        for window in scene.windows { window.overrideUserInterfaceStyle = style }
+    }
+}
 
 enum TargetMode { case class_, teacher }
 enum ViewMode { case now, day, week }
