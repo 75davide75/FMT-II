@@ -49,6 +49,7 @@ struct NotesListView: View {
     @State private var taskFilter: NoteTaskType? = nil
     @State private var isSearching = false
     @FocusState private var searchFocused: Bool
+    @Environment(\.colorScheme) private var scheme
 
     private var allSelected: Bool {
         !displayNotes.isEmpty && selectedIds.count == displayNotes.count
@@ -228,8 +229,10 @@ struct NotesListView: View {
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .shadow(color: Color(hex: "#685CF6")!.opacity(0.5), radius: 10, y: 4)
                 } else {
+                    // In chiaro il bianco traslucido spariva nel fondo: la
+                    // tile inattiva usa un velo scuro.
                     RoundedRectangle(cornerRadius: 17, style: .continuous)
-                        .fill(.white.opacity(0.05))
+                        .fill(scheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
                 }
             }
             .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
@@ -237,7 +240,8 @@ struct NotesListView: View {
                     // Oggi resta riconoscibile anche quando è selezionata
                     // un'altra data.
                     isActiveTile ? .white.opacity(0.28)
-                        : (isToday ? Color(hex: "#8B5CF6")!.opacity(0.55) : .white.opacity(0.08)),
+                        : (isToday ? Color(hex: "#8B5CF6")!.opacity(0.55)
+                                   : (scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))),
                     lineWidth: isToday && !isActiveTile ? 1.4 : 1))
         }
         .buttonStyle(.plain)
@@ -253,22 +257,24 @@ struct NotesListView: View {
                 .foregroundStyle(
                     type == nil
                         ? (active ? Color(hex: "#0B1024")! : Color.primary.opacity(0.75))
-                        : type!.auroraColor.blended(with: .white, by: active ? 0 : 0.35)
+                        // In chiaro il testo tinta va scurito, non schiarito.
+                        : type!.auroraColor.blended(with: scheme == .dark ? .white : .black,
+                                                    by: active ? (scheme == .dark ? 0 : 0.25) : 0.35)
                 )
                 .padding(.horizontal, 13)
                 .padding(.vertical, 6)
                 .background {
                     if type == nil && active {
-                        Capsule().fill(Color(hex: "#F0F4FF")!.opacity(0.92))
+                        Capsule().fill(scheme == .dark ? Color(hex: "#F0F4FF")!.opacity(0.92) : .white)
                     } else if let t = type {
                         Capsule().fill(t.auroraColor.opacity(active ? 0.30 : 0.12))
                     } else {
-                        Capsule().fill(.white.opacity(0.06))
+                        Capsule().fill(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05))
                     }
                 }
                 .overlay(Capsule().strokeBorder(
                     type == nil
-                        ? .white.opacity(active ? 0.6 : 0.10)
+                        ? (scheme == .dark ? Color.white.opacity(active ? 0.6 : 0.10) : Color.black.opacity(active ? 0.15 : 0.08))
                         : type!.auroraColor.opacity(active ? 0.55 : 0.26),
                     lineWidth: 1))
         }
@@ -301,8 +307,8 @@ struct NotesListView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(.white.opacity(0.07), in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+                .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.08), lineWidth: 1))
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
