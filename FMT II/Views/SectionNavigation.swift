@@ -166,9 +166,17 @@ struct GlassSectionBar: View {
 
     // Scaled so the top menu grows with the app's text-size setting instead of
     // clipping the labels inside a fixed-width pill.
-    @ScaledMetric(relativeTo: .footnote) private var segWidth: CGFloat = 62
+    @ScaledMetric(relativeTo: .footnote) private var rawSegWidth: CGFloat = 62
     @ScaledMetric(relativeTo: .footnote) private var height: CGFloat = 32
     @ScaledMetric(relativeTo: .footnote) private var inset: CGFloat = 5
+
+    /// A «Enorme» il selettore sfondava la barra e copriva i bottoni trailing
+    /// (che smettevano di ricevere i tocchi): la larghezza dei segmenti è
+    /// limitata così da lasciare sempre spazio al resto della toolbar.
+    private var segWidth: CGFloat {
+        let available = UIScreen.main.bounds.width - 120
+        return min(rawSegWidth, available / CGFloat(max(titles.count, 1)))
+    }
 
     private var tint: Color {
         guard !colors.isEmpty else { return .accentColor }

@@ -22,6 +22,8 @@ struct MainScheduleView: View {
 
     @State private var showTeacherMenu = false
     @State private var showSettings = false
+    @State private var headerHeight: CGFloat = 64
+    @Environment(\.colorScheme) private var scheme
     @State private var showQuickTimePicker = false
     @State private var showChangePDFConfirm = false
     @State private var noteContext: NoteCreationContext? = nil
@@ -113,8 +115,6 @@ struct MainScheduleView: View {
         ZStack(alignment: .top) {
                 ScrollView {
                     VStack(spacing: 14) {
-                        AuroraTitle(title: "Orario", subtitle: orarioSubtitle)
-                            .padding(.top, 2)
                         statusStrip
                         controlPanel
                         if viewMode != .week { timeIndicator }
@@ -156,8 +156,32 @@ struct MainScheduleView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, headerHeight + 6)
                     .padding(.bottom, 32)
                 }
+
+                // «Orario» + sottotitolo restano fissi: il contenuto scorre
+                // sotto, con un velo sfumato che tiene leggibile il titolo.
+                AuroraTitle(title: "Orario", subtitle: orarioSubtitle)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 2)
+                    .padding(.bottom, 10)
+                    .background {
+                        LinearGradient(
+                            colors: scheme == .dark
+                                ? [Color(hex: "#05060D")!.opacity(0.92), Color(hex: "#05060D")!.opacity(0.55), .clear]
+                                : [Color(.systemGroupedBackground).opacity(0.95), Color(.systemGroupedBackground).opacity(0.6), .clear],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    }
+                    .background {
+                        GeometryReader { g in
+                            Color.clear
+                                .onAppear { headerHeight = g.size.height }
+                                .onChange(of: g.size.height) { _, h in headerHeight = h }
+                        }
+                    }
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
