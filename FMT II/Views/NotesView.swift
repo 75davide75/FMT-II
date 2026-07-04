@@ -4,6 +4,14 @@ import UIKit
 private enum TagKind: Equatable { case subject, teacher, class_ }
 private struct TagFilter: Equatable { let kind: TagKind; let value: String }
 
+/// Gruppo di note di una stessa data di calendario (o senza data).
+private struct NoteDateGroup {
+    let id: String
+    let label: String
+    let date: Date?
+    let notes: [Note]
+}
+
 extension NoteTaskType {
     var color: Color {
         switch self {
@@ -80,14 +88,15 @@ struct NotesListView: View {
         // Full-text find — matches note content, plus its time and day.
         return base.filter { n in
             let day = n.dayId.flatMap { dayLabels[$0] } ?? ""
-            let date = n.createdAt.formatted(date: .abbreviated, time: .omitted)
-            let hay = (n.attributedText.string + " " + (n.time ?? "") + " " + day + " " + date).lowercased()
+            let created = n.createdAt.formatted(date: .abbreviated, time: .omitted)
+            let dated = n.date?.formatted(date: .abbreviated, time: .omitted) ?? ""
+            let hay = (n.attributedText.string + " " + (n.time ?? "") + " " + day + " " + created + " " + dated).lowercased()
             return hay.contains(q)
         }
     }
 
-    @State private var jumpToDay: DayId? = nil
-    @State private var selectedStripDay: DayId? = nil
+    @State private var jumpToDate: Date? = nil
+    @State private var selectedStripDate: Date? = nil
 
     /// Sottotitolo del titolo grande: "5 impegni · 1 verifica".
     private var diarioSubtitle: String {
@@ -98,25 +107,24 @@ struct NotesListView: View {
         return parts.joined(separator: " · ")
     }
 
-    /// Il primo gruppo con note a partire dal giorno dato in avanti nella
-    /// settimana, altrimenti l'ultimo precedente.
-    private func nextGroup(after day: DayId) -> (label: String, dayId: DayId?, notes: [Note])? {
-        guard let start = weekOrder.firstIndex(of: day) else { return nil }
-        let ordered = notesByDay.filter { $0.dayId != nil }
-        for candidate in weekOrder[start...] {
-            if let g = ordered.first(where: { $0.dayId == candidate }) { return g }
-        }
-        for candidate in weekOrder[..<start].reversed() {
-            if let g = ordered.first(where: { $0.dayId == candidate }) { return g }
-        }
-        return notesByDay.first
+    /// Il gruppo del giorno esatto se ha note, altrimenti il primo gruppo con
+    /// data successiva, altrimenti l'ultimo precedente.
+    private func targetGroup(for date: Date) -> NoteDateGroup? {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: date)
+        let dated = notesByDate.filter { $0.date != nil }
+        if let exact = dated.first(where: { cal.isDate($0.date!, inSameDayAs: day) }) { return exact }
+        if let next = dated.first(where: { $0.date! > day }) { return next }
+        if let previous = dated.last(where: { $0.date! < day }) { return previous }
+        return notesByDate.first
     }
 
-    /// Tipi presenti in un giorno (puntini della striscia settimana, max 3).
-    private func dayDots(_ day: DayId) -> [Color] {
+    /// Tipi presenti in una data (puntini della striscia giorni, max 3).
+    private func dayDots(_ date: Date) -> [Color] {
+        let cal = Calendar.current
         var seen = Set<String>()
         var colors: [Color] = []
-        for n in visibleBase where n.dayId == day {
+        for n in visibleBase where n.date.map({ cal.isDate($0, inSameDayAs: date) }) == true {
             let key = n.taskType ?? "nota"
             guard seen.insert(key).inserted else { continue }
             colors.append(n.taskType.flatMap(NoteTaskType.init(rawValue:))?.auroraColor ?? plainNoteColor)
@@ -132,25 +140,31 @@ struct NotesListView: View {
                         subtitle: diarioSubtitle)
                 .padding(.top, 2)
 
-            // Striscia della settimana, scorrevole: tocca una data per
-            // saltare alle note di quel giorno.
+            // Striscia dei giorni, infinita in entrambe le direzioni: tocca
+            // una data per saltare alle sue note. (La finestra è così ampia
+            // che il pan non raggiunge mai un bordo, quindi lo scorrimento
+            // non "scappa" più verso il pager delle sezioni.)
             ScrollViewReader { stripProxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 7) {
-                        ForEach(weekOrder, id: \.self) { day in
-                            weekTile(day)
-                                .id(day)
+                    LazyHStack(spacing: 7) {
+                        ForEach(stripDates, id: \.self) { date in
+                            dayTile(date)
+                                .id(date)
                         }
                     }
                     .padding(.vertical, 1)
                 }
-                .onChange(of: selectedStripDay) { _, day in
-                    guard let day else { return }
+                .onAppear {
+                    stripProxy.scrollTo(Calendar.current.startOfDay(for: Date()), anchor: .center)
+                }
+                .onChange(of: selectedStripDate) { _, date in
+                    guard let date else { return }
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
-                        stripProxy.scrollTo(day, anchor: .center)
+                        stripProxy.scrollTo(date, anchor: .center)
                     }
                 }
             }
+            .frame(height: 74)
 
             // Filtri rapidi Verifiche / Compiti / Interrogazioni.
             ScrollView(.horizontal, showsIndicators: false) {
@@ -166,20 +180,25 @@ struct NotesListView: View {
         }
     }
 
-    private func weekTile(_ day: DayId) -> some View {
-        let isToday = day == todayDayId()
-        // Evidenziata è la data selezionata; in assenza di selezione, oggi.
-        let isActiveTile = (selectedStripDay ?? todayDayId()) == day
+    /// Le date della striscia: ±2 anni intorno a oggi. La LazyHStack
+    /// materializza solo le celle visibili.
+    private var stripDates: [Date] {
         let cal = Calendar.current
-        let today = Date()
-        let weekdayIdx = weekOrder.firstIndex(of: todayDayId()) ?? 0
-        let dayIdx = weekOrder.firstIndex(of: day) ?? 0
-        let date = cal.date(byAdding: .day, value: dayIdx - weekdayIdx, to: today) ?? today
-        let dots = dayDots(day)
+        let today = cal.startOfDay(for: Date())
+        return (-730...730).compactMap { cal.date(byAdding: .day, value: $0, to: today) }
+    }
+
+    private func dayTile(_ date: Date) -> some View {
+        let cal = Calendar.current
+        let isToday = cal.isDateInToday(date)
+        // Evidenziata è la data selezionata; in assenza di selezione, oggi.
+        let isActiveTile = cal.isDate(selectedStripDate ?? cal.startOfDay(for: Date()), inSameDayAs: date)
+        let day = todayDayId(date)
+        let dots = dayDots(date)
 
         return Button {
-            selectedStripDay = day
-            jumpToDay = day
+            selectedStripDate = date
+            jumpToDate = date
         } label: {
             VStack(spacing: 2) {
                 Text(String((dayLabels[day] ?? "").prefix(3)).uppercased())
@@ -257,9 +276,9 @@ struct NotesListView: View {
     }
 
     /// Header di giorno: pill OGGI sfumata + nome + conteggio (design 1a).
-    private func dayHeader(_ group: (label: String, dayId: DayId?, notes: [Note])) -> some View {
+    private func dayHeader(_ group: NoteDateGroup) -> some View {
         HStack(spacing: 8) {
-            if group.dayId == todayDayId() {
+            if group.date.map({ Calendar.current.isDateInToday($0) }) == true {
                 Text("OGGI")
                     .font(.system(size: 10.5, weight: .heavy))
                     .kerning(0.8)
@@ -320,22 +339,38 @@ struct NotesListView: View {
         .background(.bar)
     }
 
-    private var notesByDay: [(label: String, dayId: DayId?, notes: [Note])] {
-        var groups: [String: [Note]] = [:]
-        var noDay: [Note] = []
+    /// Gruppi per data di calendario in ordine cronologico; le note senza data
+    /// chiudono l'elenco.
+    private var notesByDate: [NoteDateGroup] {
+        let cal = Calendar.current
+        var groups: [Date: [Note]] = [:]
+        var noDate: [Note] = []
         for note in displayNotes {
-            if let d = note.day { groups[d, default: []].append(note) }
-            else { noDay.append(note) }
+            if let d = note.date { groups[cal.startOfDay(for: d), default: []].append(note) }
+            else { noDate.append(note) }
         }
-        var result: [(label: String, dayId: DayId?, notes: [Note])] = []
-        for dayId in weekOrder {
-            if let dayNotes = groups[dayId.rawValue], !dayNotes.isEmpty {
-                let label = dayLabels[dayId] ?? dayId.rawValue
-                result.append((label, dayId, dayNotes.sorted { ($0.time ?? "") < ($1.time ?? "") }))
-            }
+        var result: [NoteDateGroup] = groups.keys.sorted().map { day in
+            NoteDateGroup(id: "d-\(Int(day.timeIntervalSince1970))",
+                          label: dateGroupLabel(day),
+                          date: day,
+                          notes: groups[day]!.sorted { ($0.time ?? "") < ($1.time ?? "") })
         }
-        if !noDay.isEmpty { result.append(("Senza data", nil, noDay)) }
+        if !noDate.isEmpty {
+            result.append(NoteDateGroup(id: "nodate", label: "Senza data", date: nil, notes: noDate))
+        }
         return result
+    }
+
+    private func dateGroupLabel(_ day: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(day) { return "Oggi" }
+        if cal.isDateInTomorrow(day) { return "Domani" }
+        if cal.isDateInYesterday(day) { return "Ieri" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "it_IT")
+        f.dateFormat = cal.component(.year, from: day) == cal.component(.year, from: Date())
+            ? "EEEE d MMMM" : "EEEE d MMMM yyyy"
+        return f.string(from: day).capitalized
     }
 
     var body: some View {
@@ -352,7 +387,7 @@ struct NotesListView: View {
                     } else {
                     ScrollViewReader { proxy in
                     List {
-                        ForEach(notesByDay, id: \.label) { group in
+                        ForEach(notesByDate, id: \.id) { group in
                             Section {
                                 ForEach(group.notes) { note in
                                     NoteRowSelectable(
@@ -367,12 +402,10 @@ struct NotesListView: View {
                                             noteContext = NoteCreationContext(existingNote: note)
                                         }
                                     }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button(role: .destructive) {
-                                            withAnimation { store.delete(ids: Set([note.id])) }
-                                        } label: {
-                                            Label("Elimina", systemImage: "trash")
-                                        }
+                                    // Niente eliminazione con lo swipe: si
+                                    // elimina dal menu (pressione prolungata)
+                                    // o dalla selezione multipla.
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         if showArchive {
                                             Button {
                                                 withAnimation { store.unarchive(ids: Set([note.id])) }
@@ -416,7 +449,7 @@ struct NotesListView: View {
                             } header: {
                                 dayHeader(group)
                             }
-                            .id(group.label)
+                            .id(group.id)
                         }
                         Color.clear.frame(height: 80)
                             .listRowBackground(Color.clear)
@@ -425,18 +458,16 @@ struct NotesListView: View {
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
                     .animation(.default, value: displayNotes.count)
-                    .onChange(of: jumpToDay) { _, day in
-                        guard let day else { return }
-                        // Giorno esatto se ha note, altrimenti il primo giorno
-                        // successivo con note (poi il precedente).
-                        let target = notesByDay.first { $0.dayId == day }
-                            ?? nextGroup(after: day)
-                        if let target {
+                    .onChange(of: jumpToDate) { _, date in
+                        guard let date else { return }
+                        // Data esatta se ha note, altrimenti la prima data
+                        // successiva con note (poi la precedente).
+                        if let target = targetGroup(for: date) {
                             withAnimation(.spring(response: 0.55, dampingFraction: 0.9)) {
-                                proxy.scrollTo(target.label, anchor: .top)
+                                proxy.scrollTo(target.id, anchor: .top)
                             }
                         }
-                        jumpToDay = nil
+                        jumpToDate = nil
                     }
                     }
                     }
@@ -532,7 +563,7 @@ struct NotesListView: View {
                 }
             }
             .sensoryFeedback(.selection, trigger: isSelecting)
-            .sensoryFeedback(.impact(weight: .light), trigger: selectedStripDay)
+            .sensoryFeedback(.impact(weight: .light), trigger: selectedStripDate)
             .sensoryFeedback(.selection, trigger: tagFilter)
             .sensoryFeedback(.impact(weight: .light), trigger: selectedIds)
             .sensoryFeedback(.impact(flexibility: .soft), trigger: displayNotes.count)
@@ -550,7 +581,7 @@ struct NotesListView: View {
                     searchQuery = ""
                     tagFilter = nil
                     taskFilter = nil
-                    selectedStripDay = nil
+                    selectedStripDate = nil
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -627,6 +658,33 @@ struct NotesListView: View {
                 Text("Nessun risultato")
                     .font(.title3.bold())
                 Text("Nessuna voce del diario per «\(searchQuery)».")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            } else if let t = taskFilter {
+                // Filtro tipo attivo ma senza note: il messaggio dice cosa
+                // manca, non "Diario vuoto".
+                Image(systemName: t.icon)
+                    .font(.system(size: 56))
+                    .foregroundStyle(.quaternary)
+                Text(t == .verifica ? "Nessuna verifica in programma"
+                     : t == .compito ? "Nessun compito in programma"
+                     : "Nessuna interrogazione in programma")
+                    .font(.title3.bold())
+                    .multilineTextAlignment(.center)
+                Text("Le note con questa etichetta compariranno qui.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            } else if let f = tagFilter {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.system(size: 56))
+                    .foregroundStyle(.quaternary)
+                Text("Nessuna corrispondenza")
+                    .font(.title3.bold())
+                Text("Non ci sono note per «\(f.value)».")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -875,7 +933,7 @@ struct NoteEditorSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var attributedText: NSAttributedString = NSAttributedString(string: "")
-    @State private var day: String? = nil
+    @State private var noteDate: Date? = nil
     @State private var time: String? = nil
     @State private var teacherTag: String = ""
     @State private var classTag: String = ""
@@ -885,7 +943,7 @@ struct NoteEditorSheet: View {
     @State private var showDetailsSheet = false
 
     private var hasDetails: Bool {
-        day != nil || time != nil || !teacherTag.isEmpty || !classTag.isEmpty || !subjectTag.isEmpty || !reminders.isEmpty || taskType != nil
+        noteDate != nil || time != nil || !teacherTag.isEmpty || !classTag.isEmpty || !subjectTag.isEmpty || !reminders.isEmpty || taskType != nil
     }
 
     private var isNew: Bool { context.existingNote == nil }
@@ -939,7 +997,7 @@ struct NoteEditorSheet: View {
     }
 
     private func addReminder() {
-        let d = day ?? DayId.monday.rawValue
+        let d = noteDate.map { todayDayId($0).rawValue } ?? DayId.monday.rawValue
         let t = time ?? currentHHmm()
         reminders.append(NoteReminder(day: d, time: t))
         Task { await NotificationManager.shared.requestAuthorization() }
@@ -1070,14 +1128,21 @@ struct NoteEditorSheet: View {
             HStack {
                 Label("Giorno", systemImage: "calendar").font(.callout)
                 Spacer()
-                Picker("", selection: Binding(get: { day }, set: { day = $0 })) {
-                    Text("—").tag(String?.none)
-                    ForEach(weekOrder, id: \.self) { d in
-                        Text(dayLabels[d] ?? d.rawValue).tag(Optional(d.rawValue))
+                if let binding = Binding($noteDate) {
+                    // Data completa (giorno, mese e anno), non solo il giorno
+                    // della settimana.
+                    DatePicker("", selection: binding, displayedComponents: .date)
+                        .labelsHidden()
+                    Button { noteDate = nil } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
+                } else {
+                    Button("Aggiungi") { noteDate = Calendar.current.startOfDay(for: Date()) }
+                        .font(.callout)
+                        .foregroundStyle(.tint)
                 }
-                .pickerStyle(.menu)
-                .tint(.secondary)
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
 
@@ -1190,7 +1255,7 @@ struct NoteEditorSheet: View {
     private func setupInitialState() {
         if let note = context.existingNote {
             attributedText = note.attributedText
-            day = note.day
+            noteDate = note.date
             time = note.time
             teacherTag = note.teacherTag ?? ""
             classTag = note.classTag ?? ""
@@ -1200,7 +1265,9 @@ struct NoteEditorSheet: View {
             // Keep "Dettagli" collapsed by default so the text area stays large;
             // the blue dot signals that details are present.
         } else {
-            day = context.day?.rawValue
+            // Dalle viste orario arriva il giorno settimanale: diventa la
+            // prossima occorrenza di quel giorno.
+            noteDate = context.date ?? context.day.map { nextOccurrence(of: $0) }
             time = context.time
             teacherTag = context.teacherTag ?? ""
             classTag = context.classTag ?? ""
@@ -1211,7 +1278,8 @@ struct NoteEditorSheet: View {
     private func save() {
         var note = context.existingNote ?? Note()
         note.setAttributedText(attributedText)
-        note.day = day
+        note.date = noteDate.map { Calendar.current.startOfDay(for: $0) }
+        note.day = noteDate.map { todayDayId($0).rawValue }
         note.time = time
         note.teacherTag = teacherTag.trimmingCharacters(in: .whitespaces).isEmpty ? nil : teacherTag.trimmingCharacters(in: .whitespaces)
         note.classTag = classTag.trimmingCharacters(in: .whitespaces).isEmpty ? nil : classTag.trimmingCharacters(in: .whitespaces)
