@@ -1054,206 +1054,375 @@ struct NoteEditorSheet: View {
         }
     }
 
+    @Environment(\.colorScheme) private var scheme
+
+    private var canSave: Bool {
+        !attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private let diarioGradient = LinearGradient(colors: [Color(hex: "#4E7CF6")!, Color(hex: "#8B5CF6")!],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing)
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                RichTextEditor(attributedText: $attributedText)
-                    .frame(maxHeight: .infinity)
+        VStack(spacing: 0) {
+            editorHeader
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+                .padding(.bottom, 6)
 
-                Divider()
+            RichTextEditor(attributedText: $attributedText, placeholder: "Scrivi la nota…")
+                .frame(maxHeight: .infinity)
+                .padding(.horizontal, 8)
 
-                Button {
-                    showDetailsSheet = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Label("Dettagli", systemImage: "tag")
-                            .font(.callout)
-                        if hasDetails {
-                            Circle().fill(.blue).frame(width: 6, height: 6)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.caption)
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .background(Color(.secondarySystemGroupedBackground))
-            }
-            .background(Color(.systemBackground).ignoresSafeArea())
-            .navigationTitle(isNew ? "Nuova nota" : "Modifica nota")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Annulla") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Salva") { save() }
-                        .fontWeight(.semibold)
-                        .disabled(attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .sheet(isPresented: $showDetailsSheet) {
-                NavigationStack {
-                    ScrollView { metadataFields.padding(.vertical, 4) }
-                        .background(Color(.systemGroupedBackground))
-                        .navigationTitle("Dettagli")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) { Button("Fine") { showDetailsSheet = false } }
-                        }
-                }
+            detailsBar
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+        }
+        .background(AuroraBackground(section: .diario))
+        .sheet(isPresented: $showDetailsSheet) {
+            detailsSheet
                 .presentationDetents([.medium, .large])
-            }
+                .presentationCornerRadius(30)
+                .presentationDragIndicator(.visible)
         }
         .onAppear { setupInitialState() }
     }
 
-    @ViewBuilder
-    private var metadataFields: some View {
-        VStack(spacing: 0) {
+    /// Header modale del design: Annulla in vetro, titolo centrato, Salva a
+    /// gradiente (spento a opacità 0.4 finché il testo è vuoto).
+    private var editorHeader: some View {
+        ZStack {
+            Text(isNew ? "Nuova nota" : "Modifica nota")
+                .font(.system(size: 16, weight: .bold))
             HStack {
-                Label("Tipo", systemImage: "flag.fill").font(.callout)
-                Spacer()
-                Picker("", selection: $taskType) {
-                    Text("Nessuno").tag(NoteTaskType?.none)
-                    ForEach(NoteTaskType.allCases) { t in
-                        Text(t.label).tag(NoteTaskType?.some(t))
-                    }
+                Button { dismiss() } label: {
+                    Text("Annulla")
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(scheme == .dark ? Color(hex: "#DCE4FF")! : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 9)
+                        .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                        .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1))
                 }
-                .pickerStyle(.menu)
-                .tint(.secondary)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 10)
+                .buttonStyle(.plain)
 
-            Divider().padding(.leading, 16)
-
-            HStack {
-                Label("Giorno", systemImage: "calendar").font(.callout)
                 Spacer()
-                if let binding = Binding($noteDate) {
-                    // Data completa (giorno, mese e anno), non solo il giorno
-                    // della settimana.
-                    DatePicker("", selection: binding, displayedComponents: .date)
-                        .labelsHidden()
-                    Button { noteDate = nil } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+
+                Button { save() } label: {
+                    Text("Salva")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 9)
+                        .background(diarioGradient, in: Capsule())
+                        .shadow(color: Color(hex: "#6960F6")!.opacity(canSave ? 0.45 : 0), radius: 9, y: 4)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+                .opacity(canSave ? 1 : 0.4)
+                .animation(.easeInOut(duration: 0.4), value: canSave)
+            }
+        }
+    }
+
+    /// Barra riepilogo Dettagli: tap → foglio Dettagli; le chip riflettono
+    /// live tipo, data e ora impostati.
+    private var detailsBar: some View {
+        Button { showDetailsSheet = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(hex: "#A5B4FC")!)
+                Text("Dettagli")
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                if let t = taskType {
+                    summaryChip(t.label, tint: t.auroraColor, dot: true)
+                } else {
+                    summaryChip("Nota", tint: plainNoteColor, dot: true)
+                }
+                if let d = noteDate {
+                    summaryChip(d.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                }
+                if let time {
+                    summaryChip(time)
+                }
+
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 13)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .auroraCard(radius: 18)
+    }
+
+    private func summaryChip(_ text: String, tint: Color? = nil, dot: Bool = false) -> some View {
+        let neutralBg: Color = scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05)
+        let neutralBorder: Color = scheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08)
+        let textColor: Color = tint.map { entityLabelColor($0, scheme) } ?? Color.primary.opacity(0.78)
+        let bg: Color = tint?.opacity(0.14) ?? neutralBg
+        let border: Color = tint?.opacity(0.28) ?? neutralBorder
+        return HStack(spacing: 4) {
+            if dot, let tint {
+                Circle().fill(tint).frame(width: 4, height: 4)
+            }
+            Text(text)
+                .font(.system(size: 10.5, weight: .semibold))
+        }
+        .foregroundStyle(textColor)
+        .lineLimit(1)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(bg, in: Capsule())
+        .overlay(Capsule().strokeBorder(border, lineWidth: 1))
+    }
+
+    // MARK: Foglio Dettagli (bottom sheet del design)
+
+    private var detailsSheet: some View {
+        VStack(spacing: 0) {
+            // Header: titolo centrato + Fine a gradiente.
+            ZStack {
+                Text("Dettagli")
+                    .font(.system(size: 16, weight: .bold))
+                HStack {
+                    Spacer()
+                    Button { showDetailsSheet = false } label: {
+                        Text("Fine")
+                            .font(.system(size: 12.5, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 7)
+                            .background(diarioGradient, in: Capsule())
+                            .shadow(color: Color(hex: "#6960F6")!.opacity(0.45), radius: 7, y: 3)
                     }
                     .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    tipoSection
+                    fieldsCard
+                    remindersSection
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+                .padding(.bottom, 26)
+            }
+        }
+        .background {
+            if scheme == .dark {
+                LinearGradient(colors: [Color(hex: "#14172A")!, Color(hex: "#0C0E1A")!],
+                               startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+            } else {
+                Color(.systemGroupedBackground).ignoresSafeArea()
+            }
+        }
+    }
+
+    /// Icona di campo: squircle 28pt con tinta al 12–14%.
+    private func fieldIcon(_ symbol: String, tint: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 28, height: 28)
+            .background(tint.opacity(0.13), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(tint.opacity(0.28), lineWidth: 1))
+    }
+
+    /// Tipo: chip a un tocco (Nota = nessun tipo, con lo stile azzurro del design).
+    private var tipoSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 9) {
+                fieldIcon("flag.fill", tint: Color(hex: "#C4B5FD")!)
+                Text("Tipo").font(.system(size: 14, weight: .semibold))
+            }
+            ChipFlowLayout(spacing: 6) {
+                tipoChip(nil, label: "Nota", tint: plainNoteColor, gradient: plainNoteGradient)
+                ForEach(NoteTaskType.allCases) { t in
+                    tipoChip(t, label: t.label, tint: t.auroraColor, gradient: t.auroraGradient)
+                }
+            }
+        }
+    }
+
+    private func tipoChip(_ type: NoteTaskType?, label: String, tint: Color, gradient: LinearGradient) -> some View {
+        let selected = taskType == type
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { taskType = type }
+        } label: {
+            HStack(spacing: 5) {
+                if !selected {
+                    Circle().fill(tint).frame(width: 4, height: 4)
+                }
+                Text(label)
+                    .font(.system(size: 11.5, weight: selected ? .heavy : .semibold))
+            }
+            .foregroundStyle(selected ? .white : entityLabelColor(tint, scheme))
+            .padding(.horizontal, selected ? 13 : 12)
+            .padding(.vertical, 5)
+            .background {
+                if selected {
+                    Capsule().fill(gradient)
+                        .shadow(color: tint.opacity(0.4), radius: 7, y: 3)
+                } else {
+                    Capsule().fill(tint.opacity(0.12))
+                }
+            }
+            .overlay(Capsule().strokeBorder(selected ? .white.opacity(0.3) : tint.opacity(0.26), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: selected)
+    }
+
+    /// Lista campi: Giorno (data completa), Ora, Docente, Classe, Materia.
+    private var fieldsCard: some View {
+        VStack(spacing: 0) {
+            // Giorno — data completa, azzerabile.
+            fieldRow(icon: "calendar", tint: Color(hex: "#93C5FD")!, label: "Giorno") {
+                if let binding = Binding($noteDate) {
+                    DatePicker("", selection: binding, displayedComponents: .date)
+                        .labelsHidden()
+                    clearButton { noteDate = nil }
                 } else {
                     Button("Aggiungi") { noteDate = Calendar.current.startOfDay(for: Date()) }
-                        .font(.callout)
+                        .font(.system(size: 13))
                         .foregroundStyle(.tint)
                 }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-
-            Divider().padding(.leading, 16)
-
-            HStack {
-                Label("Ora", systemImage: "clock").font(.callout)
-                Spacer()
+            fieldHairline
+            // Ora — chip azzerabile.
+            fieldRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: "Ora") {
                 if time != nil {
                     DatePicker("", selection: timeDateBinding, displayedComponents: .hourAndMinute)
                         .labelsHidden()
-                    Button { time = nil } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
+                    clearButton { time = nil }
                 } else {
                     Button("Aggiungi") { time = currentHHmm() }
-                        .font(.callout)
+                        .font(.system(size: 13))
                         .foregroundStyle(.tint)
                 }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-
-            Divider().padding(.leading, 16)
-
-            HStack {
-                Label("Docente", systemImage: "person.fill").font(.callout)
-                Spacer()
+            fieldHairline
+            fieldRow(icon: "person.fill", tint: Color(hex: "#93C5FD")!, label: "Docente") {
                 TextField("Cognome", text: $teacherTag)
-                    .multilineTextAlignment(.trailing).font(.callout)
-                    .foregroundStyle(.secondary).autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing).font(.system(size: 13))
+                    .autocorrectionDisabled()
                     .textInputAutocapitalization(.characters).frame(maxWidth: 150)
                     .submitLabel(.done)
                     .onSubmit { if let f = teacherSuggestions.first { teacherTag = f } }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
             suggestionsRow(teacherSuggestions) { teacherTag = $0 }
-
-            Divider().padding(.leading, 16)
-
-            HStack {
-                Label("Classe", systemImage: "graduationcap.fill").font(.callout)
-                Spacer()
+            fieldHairline
+            fieldRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: "Classe") {
                 TextField("Es. 5GSA", text: $classTag)
-                    .multilineTextAlignment(.trailing).font(.callout)
-                    .foregroundStyle(.secondary).autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing).font(.system(size: 13))
+                    .autocorrectionDisabled()
                     .textInputAutocapitalization(.characters).frame(maxWidth: 150)
                     .submitLabel(.done)
                     .onSubmit { if let f = classSuggestions.first { classTag = f } }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
             suggestionsRow(classSuggestions) { classTag = $0 }
-
-            Divider().padding(.leading, 16)
-
-            HStack {
-                Label("Materia", systemImage: "book.closed.fill").font(.callout)
-                Spacer()
+            fieldHairline
+            fieldRow(icon: "book.closed.fill", tint: Color(hex: "#F0ABFC")!, label: "Materia") {
                 TextField("Es. Matematica", text: $subjectTag)
-                    .multilineTextAlignment(.trailing).font(.callout)
-                    .foregroundStyle(.secondary).autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing).font(.system(size: 13))
+                    .autocorrectionDisabled()
                     .frame(maxWidth: 150)
                     .submitLabel(.done)
                     .onSubmit { if let f = subjectSuggestions.first { subjectTag = f } }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
             suggestionsRow(subjectSuggestions) { subjectTag = $0 }
+        }
+        .background(scheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.75),
+                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(scheme == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.07), lineWidth: 1))
+    }
 
-            Divider().padding(.leading, 16)
+    private func fieldRow<Content: View>(icon: String, tint: Color, label: String,
+                                         @ViewBuilder trailing: () -> Content) -> some View {
+        HStack(spacing: 10) {
+            fieldIcon(icon, tint: tint)
+            Text(label).font(.system(size: 14, weight: .semibold))
+            Spacer()
+            trailing()
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
+    }
 
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label("Promemoria", systemImage: "bell").font(.callout)
+    private var fieldHairline: some View {
+        Rectangle()
+            .fill(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 51)
+    }
+
+    private func clearButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 9, weight: .heavy))
+                .foregroundStyle(.secondary)
+                .frame(width: 20, height: 20)
+                .background(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Promemoria: + a gradiente, righe verdi rimovibili, hint.
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 9) {
+                fieldIcon("bell.fill", tint: Color(hex: "#6EE7B7")!)
+                Text("Promemoria").font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Button { addReminder() } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(diarioGradient, in: Circle())
+                        .shadow(color: Color(hex: "#6960F6")!.opacity(0.45), radius: 7, y: 3)
+                }
+                .buttonStyle(.plain)
+            }
+            ForEach($reminders) { $r in
+                HStack(spacing: 8) {
+                    Menu {
+                        ForEach(weekOrder, id: \.self) { d in
+                            Button(dayLabels[d] ?? d.rawValue) { $r.day.wrappedValue = d.rawValue }
+                        }
+                    } label: {
+                        Text(dayLabels[r.dayId ?? .monday] ?? "Giorno")
+                            .font(.system(size: 12.5, weight: .bold))
+                            .foregroundStyle(entityLabelColor(Color(hex: "#34D399")!, scheme))
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 5)
+                            .background(Color(hex: "#34D399")!.opacity(0.11), in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color(hex: "#34D399")!.opacity(0.26), lineWidth: 1))
+                    }
                     Spacer()
-                    Button { addReminder() } label: {
-                        Image(systemName: "plus.circle.fill").foregroundStyle(.tint)
-                    }
-                    .buttonStyle(.plain)
-                }
-                ForEach($reminders) { $r in
-                    HStack {
-                        Menu {
-                            ForEach(weekOrder, id: \.self) { d in
-                                Button(dayLabels[d] ?? d.rawValue) { $r.day.wrappedValue = d.rawValue }
-                            }
-                        } label: {
-                            Text(dayLabels[r.dayId ?? .monday] ?? "Giorno")
-                                .font(.callout)
-                        }
-                        Spacer()
-                        DatePicker("", selection: reminderTime($r), displayedComponents: .hourAndMinute)
-                            .labelsHidden()
-                        Button { reminders.removeAll { $0.id == r.id } } label: {
-                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                if reminders.isEmpty {
-                    Text("Aggiungi uno o più avvisi settimanali, ciascuno con giorno e ora.")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    DatePicker("", selection: reminderTime($r), displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                    clearButton { reminders.removeAll { $0.id == r.id } }
                 }
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
+            Text("Uno o più avvisi settimanali, ciascuno con giorno e ora.")
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary.opacity(0.8))
         }
     }
 
@@ -1302,21 +1471,44 @@ struct NoteEditorSheet: View {
 
 struct RichTextEditor: UIViewRepresentable {
     @Binding var attributedText: NSAttributedString
+    var placeholder: String? = nil
+
+    /// Font di base dell'editor (19/semibold, design "Nuova nota").
+    static let baseFont = UIFont.systemFont(ofSize: 19, weight: .semibold)
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeUIView(context: Context) -> UITextView {
         let tv = UITextView()
         tv.delegate = context.coordinator
-        tv.backgroundColor = .systemBackground
-        tv.font = UIFont.preferredFont(forTextStyle: .body)
-        tv.textContainerInset = UIEdgeInsets(top: 14, left: 10, bottom: 14, right: 10)
+        // Sfondo trasparente: sotto c'è l'aurora del Diario.
+        tv.backgroundColor = .clear
+        tv.font = Self.baseFont
+        tv.typingAttributes[.font] = Self.baseFont
+        tv.tintColor = UIColor(red: 0.486, green: 0.627, blue: 1.0, alpha: 1)   // #7CA0FF
+        tv.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
         tv.inputAccessoryView = context.coordinator.makeFormattingBar(for: tv)
         if !attributedText.string.isEmpty { tv.attributedText = attributedText }
+
+        if let placeholder {
+            let label = UILabel()
+            label.text = placeholder
+            label.font = UIFont.systemFont(ofSize: 13)
+            label.textColor = UIColor.secondaryLabel.withAlphaComponent(0.6)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            tv.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: tv.topAnchor, constant: 20),
+                label.leadingAnchor.constraint(equalTo: tv.leadingAnchor, constant: 17)
+            ])
+            label.isHidden = !attributedText.string.isEmpty
+            context.coordinator.placeholderLabel = label
+        }
         return tv
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
+        context.coordinator.placeholderLabel?.isHidden = !attributedText.string.isEmpty
         guard !uiView.attributedText.isEqual(to: attributedText) else { return }
         let sel = uiView.selectedRange
         uiView.attributedText = attributedText
@@ -1329,6 +1521,7 @@ struct RichTextEditor: UIViewRepresentable {
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: RichTextEditor
         weak var textView: UITextView?
+        weak var placeholderLabel: UILabel?
         weak var boldBtn: UIButton?
         weak var italicBtn: UIButton?
         weak var underlineBtn: UIButton?
@@ -1338,6 +1531,7 @@ struct RichTextEditor: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             parent.attributedText = textView.attributedText
+            placeholderLabel?.isHidden = !textView.text.isEmpty
             updateFormatButtons()
         }
 
@@ -1395,14 +1589,15 @@ struct RichTextEditor: UIViewRepresentable {
         func makeFormattingBar(for tv: UITextView) -> UIView {
             self.textView = tv
 
-            let bar = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 46))
-            bar.backgroundColor = UIColor.secondarySystemBackground
+            // Barra in materiale sfocato con hairline in alto (design).
+            let bar = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
+            bar.frame = CGRect(x: 0, y: 0, width: 100, height: 46)
             bar.autoresizingMask = .flexibleWidth
 
             let hairline = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 0.5))
             hairline.backgroundColor = UIColor.separator
             hairline.autoresizingMask = .flexibleWidth
-            bar.addSubview(hairline)
+            bar.contentView.addSubview(hairline)
 
             let symCfg = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
 
@@ -1450,8 +1645,8 @@ struct RichTextEditor: UIViewRepresentable {
             doneCfg.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 8)
             let doneBtn = UIButton(configuration: doneCfg)
             doneBtn.setTitle("Fine", for: .normal)
-            doneBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
-            doneBtn.setTitleColor(UIColor.tintColor, for: .normal)
+            doneBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+            doneBtn.setTitleColor(UIColor(red: 0.486, green: 0.627, blue: 1.0, alpha: 1), for: .normal)  // #7CA0FF
             doneBtn.addTarget(self, action: #selector(done), for: .touchUpInside)
 
             let spacer = UIView()
@@ -1460,13 +1655,13 @@ struct RichTextEditor: UIViewRepresentable {
             let mainStack = UIStackView(arrangedSubviews: [formatBtn, vsep, boldBtn, italicBtn, underlineBtn, strikeBtn, spacer, doneBtn])
             mainStack.axis = .horizontal; mainStack.spacing = 0; mainStack.alignment = .center
             mainStack.translatesAutoresizingMaskIntoConstraints = false
-            bar.addSubview(mainStack)
+            bar.contentView.addSubview(mainStack)
 
             NSLayoutConstraint.activate([
-                mainStack.leadingAnchor.constraint(equalTo: bar.safeAreaLayoutGuide.leadingAnchor),
-                mainStack.trailingAnchor.constraint(equalTo: bar.safeAreaLayoutGuide.trailingAnchor),
-                mainStack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 0.5),
-                mainStack.bottomAnchor.constraint(equalTo: bar.bottomAnchor)
+                mainStack.leadingAnchor.constraint(equalTo: bar.contentView.safeAreaLayoutGuide.leadingAnchor),
+                mainStack.trailingAnchor.constraint(equalTo: bar.contentView.safeAreaLayoutGuide.trailingAnchor),
+                mainStack.topAnchor.constraint(equalTo: bar.contentView.topAnchor, constant: 0.5),
+                mainStack.bottomAnchor.constraint(equalTo: bar.contentView.bottomAnchor)
             ])
 
             return bar
@@ -1537,8 +1732,8 @@ struct RichTextEditor: UIViewRepresentable {
             switch style {
             case .title:      font = .systemFont(ofSize: 28, weight: .bold)
             case .heading:    font = .systemFont(ofSize: 22, weight: .bold)
-            case .subheading: font = .systemFont(ofSize: 18, weight: .semibold)
-            case .body:       font = .preferredFont(forTextStyle: .body)
+            case .subheading: font = .systemFont(ofSize: 20, weight: .semibold)
+            case .body:       font = RichTextEditor.baseFont
             }
             let ns = tv.attributedText.string as NSString
             let paraRange = ns.paragraphRange(for: tv.selectedRange)
