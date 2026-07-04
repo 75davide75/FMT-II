@@ -159,22 +159,29 @@ struct MainScheduleView: View {
                     .padding(.top, headerHeight + 6)
                     .padding(.bottom, 32)
                 }
+                // Il contenuto svanisce avvicinandosi al titolo (mask sulla
+                // ScrollView): nessun velo dipinto sopra l'aurora, quindi
+                // niente banda scura né sovrapposizioni.
+                .mask {
+                    VStack(spacing: 0) {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .clear, location: 0.5),
+                                .init(color: .black, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                        .frame(height: headerHeight + 14)
+                        Rectangle()
+                    }
+                }
 
-                // «Orario» + sottotitolo restano fissi: il contenuto scorre
-                // sotto, con un velo sfumato che tiene leggibile il titolo.
+                // «Orario» + sottotitolo restano fissi, senza sfondo.
                 AuroraTitle(title: "Orario", subtitle: orarioSubtitle)
                     .padding(.horizontal, 16)
                     .padding(.top, 2)
                     .padding(.bottom, 10)
-                    .background {
-                        LinearGradient(
-                            colors: scheme == .dark
-                                ? [Color(hex: "#05060D")!.opacity(0.92), Color(hex: "#05060D")!.opacity(0.55), .clear]
-                                : [Color(.systemGroupedBackground).opacity(0.95), Color(.systemGroupedBackground).opacity(0.6), .clear],
-                            startPoint: .top, endPoint: .bottom
-                        )
-                        .ignoresSafeArea(edges: .top)
-                    }
                     .background {
                         GeometryReader { g in
                             Color.clear
