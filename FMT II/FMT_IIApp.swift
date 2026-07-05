@@ -16,7 +16,17 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         center.delegate = self
         // Ask early so permission is already granted by the time a reminder is
         // scheduled (otherwise the first scheduled notification is silently dropped).
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        #if DEBUG
+        // Durante il seed per gli screenshot non chiedere il permesso notifiche,
+        // così il dialog di sistema non compare nelle catture.
+        let seedingForScreenshots = ProcessInfo.processInfo.arguments.contains("-FMTSeedDemo")
+            || ProcessInfo.processInfo.environment["FMT_SEED_DEMO"] == "1"
+        #else
+        let seedingForScreenshots = false
+        #endif
+        if !seedingForScreenshots {
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        }
         return true
     }
 

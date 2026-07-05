@@ -149,6 +149,18 @@ struct ContentView: View {
         .onAppear {
             applyAppearanceMode(appearanceMode)
             if hasSeenTutorial { hasCompletedOnboarding = true }
+            #if DEBUG
+            // Seed di dati demo per gli screenshot (solo con -FMTSeedDemo).
+            DemoSeed.seedIfRequested(schedule: store, notes: notesStore, grades: gradesStore)
+            let dbgArgs = ProcessInfo.processInfo.arguments
+            if let i = dbgArgs.firstIndex(of: "-FMTViewMode"), i + 1 < dbgArgs.count {
+                switch dbgArgs[i + 1] {
+                case "day":  viewMode = .day
+                case "week": viewMode = .week
+                default:     viewMode = .now
+                }
+            }
+            #endif
             // A freddo la classe selezionata è vuota: riparti dalla
             // predefinita, altrimenti l'Orario mostra solo ore libere.
             if selectedClass.isEmpty, let s = store.schedule {

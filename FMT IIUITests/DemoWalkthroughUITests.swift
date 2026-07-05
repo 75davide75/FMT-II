@@ -49,6 +49,36 @@ final class DemoWalkthroughUITests: XCTestCase {
         return app
     }
 
+    // Screenshot puliti per App Store / sito: dati demo via -FMTSeedDemo, onboarding
+    // saltato via launch-args, sezioni cambiate toccando la barra (affidabile anche
+    // su iPad, dove il launch-arg di sezione non è onorato dal pager). Device via
+    // env SHOT_DEVICE (es. "iphone"/"ipad"). Output in /private/tmp/fmtshots.
+    func testAppStoreShots() throws {
+        try? FileManager.default.createDirectory(
+            atPath: "/private/tmp/fmtshots", withIntermediateDirectories: true)
+
+        let app = XCUIApplication()
+        app.launchArguments += ["-FMTSeedDemo", "-hasSeenTutorial", "YES",
+                                "-hasCompletedOnboarding", "YES", "-appSectionRaw", "schedule"]
+        app.launch()
+        sleep(3)
+
+        // Porta il pager alla prima pagina (Orario) in modo deterministico.
+        app.swipeRight(); sleep(1); app.swipeRight(); sleep(1)
+
+        // — Orario — (i tap sui segmenti Adesso/Giorno/Settimana sono affidabili)
+        tapSegment(app, "Settimana"); sleep(1); shot(app, "01-orario-settimana")
+        tapSegment(app, "Giorno"); sleep(1); shot(app, "02-orario-giorno")
+        // Torna ad "Adesso": niente griglia orizzontale che intercetti lo swipe.
+        tapSegment(app, "Adesso"); sleep(1)
+
+        // — Diario — (cambio sezione via swipe, come test1: robusto anche su iPad)
+        app.swipeLeft(); sleep(2); shot(app, "03-diario")
+
+        // — Voti —
+        app.swipeLeft(); sleep(2); shot(app, "04-voti")
+    }
+
     // 1 — Orario completo (formato legacy docenti) + tutte le viste + interazioni
     func test1Walkthrough() throws {
         let app = launch(importing: "/Users/davidesogos/Desktop/orario classi.pdf")
