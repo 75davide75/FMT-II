@@ -187,7 +187,7 @@ struct SettingsView: View {
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
                 .background(
-                    LinearGradient(colors: [Color(hex: hexColor)!.blended(with: .white, by: 0.18), Color(hex: hexColor)!],
+                    LinearGradient(colors: [(Color(hex: hexColor) ?? .gray).blended(with: .white, by: 0.18), Color(hex: hexColor) ?? .gray],
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: RoundedRectangle(cornerRadius: 7, style: .continuous)
                 )

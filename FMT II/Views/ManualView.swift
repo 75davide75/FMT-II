@@ -199,7 +199,7 @@ struct ManualView: View {
     }
 
     private func sectionCard(_ section: ManualSection) -> some View {
-        let tint = Color(hex: section.tintHex)!
+        let tint = Color(hex: section.tintHex) ?? .gray
         return VStack(alignment: .leading, spacing: 0) {
             // Intestazione della sezione: badge sfumato + nome in maiuscoletto
             HStack(spacing: 10) {
