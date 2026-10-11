@@ -147,6 +147,19 @@ struct SectionPager<Page: View>: View {
                 progress = CGFloat(clamped)
             }
             .onAppear { scrolledID = index }
+            // Rotazione / ridimensionamento: le pagine cambiano larghezza ma lo
+            // ScrollView conserva lo scostamento vecchio (due sezioni a metà,
+            // sovrapposte). Riallinea alla pagina corrente, senza animazione.
+            .onChange(of: w) { _, _ in
+                let target = index
+                var noAnimation = Transaction()
+                noAnimation.disablesAnimations = true
+                withTransaction(noAnimation) { scrolledID = nil }
+                DispatchQueue.main.async {
+                    withTransaction(noAnimation) { scrolledID = target }
+                    progress = CGFloat(target)
+                }
+            }
         }
     }
 }
