@@ -13,8 +13,21 @@ enum WhatsNew {
 
 struct WhatsNewBanner: View {
     let onDismiss: () -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        ZStack {
+            // Sfondo sfocato + velo (come il popup nome classe del builder):
+            // il contenuto dietro non deve trasparire dentro la card.
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+            Color.black.opacity(scheme == .dark ? 0.35 : 0.15).ignoresSafeArea()
+            card
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 11) {
                 Image(systemName: "sparkles")
@@ -48,10 +61,20 @@ struct WhatsNewBanner: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
-        .auroraCard(radius: 22)
-        .frame(maxWidth: 520)
-        .padding(.horizontal, 16)
+        .padding(18)
+        .background {
+            // Card opaca: gradiente scuro pieno (bianco pieno in chiaro).
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(scheme == .dark
+                      ? AnyShapeStyle(LinearGradient(colors: [Color(hex: "#1A1E36")!, Color(hex: "#111426")!],
+                                                     startPoint: .top, endPoint: .bottom))
+                      : AnyShapeStyle(Color.white))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(.white.opacity(scheme == .dark ? 0.14 : 0.6), lineWidth: 1))
+        .shadow(color: .black.opacity(0.45), radius: 24, y: 10)
+        .frame(maxWidth: 460)
+        .padding(.horizontal, 24)
     }
 
     private func feature(icon: String, hex: String, title: String, text: String) -> some View {

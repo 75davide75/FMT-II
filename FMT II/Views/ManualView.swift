@@ -60,7 +60,10 @@ struct ManualView: View {
                         icon: "square.and.arrow.up"),
             ManualEntry(title: "Materie per classe (Dati orario)",
                         detail: "Menu ••• → Dati orario → \"Materie per classe\": qui modifichi le corrispondenze docente ↔ materia. Primo passo: scegli le classi da sistemare (o \"Tutte\"). Secondo passo: per ogni ora vedi giorno, orario e docente, e scrivi la materia nel campo a destra. Mentre digiti compaiono i suggerimenti delle materie più diffuse: Invio inserisce il primo. Appena confermi una materia per un docente, la stessa materia si precompila in tutte le sue altre ore (in grigio finché non le confermi); se cambi una di quelle ore, l'app ti chiede se il docente insegna più di una materia — con Sì quella singola ora può essere diversa, con No torna il valore proposto. Alla fine tocca \"Applica\" e poi \"Salva\" nei Dati orario.",
-                        icon: "book.closed.fill")
+                        icon: "book.closed.fill"),
+            ManualEntry(title: "Ora d'inizio per classe",
+                        detail: "Menu ••• → Dati orario → Fasce orarie: attiva \"Inizio diverso per classe\" e scegli per ogni classe a che ora inizia la 1ª ora (es. 1C alle 8:10, 3C alle 9:10). La durata delle lezioni resta uguale per tutte. In vista Docente le righe seguono gli orari reali di tutte le classi.",
+                        icon: "clock.fill")
         ]),
         ManualSection(screen: "Diario", icon: "book.closed.fill", tintHex: "#4E7CF6", entries: [
             ManualEntry(title: "Nuova voce",
@@ -121,6 +124,9 @@ struct ManualView: View {
             ManualEntry(title: "Voti",
                         detail: "Scala dei voti (sufficienza e massimo) e periodi: quadrimestri oppure trimestre + pentamestre, con la fine del primo periodo (solo giorno e mese).",
                         icon: "chart.bar.fill"),
+            ManualEntry(title: "Sincronizzazione iCloud",
+                        detail: "Con lo stesso Apple ID, voti, diario, orario e impostazioni di scuola (scala dei voti, periodi, colori) si aggiornano da soli su iPhone e iPad. In Impostazioni → Sincronizzazione iCloud vedi lo stato e puoi forzare un aggiornamento con \"Sincronizza ora\". Tema e dimensione del testo restano propri di ogni dispositivo.",
+                        icon: "icloud.fill"),
             ManualEntry(title: "Dati e backup",
                         detail: "Esporti orario, diario e voti in un unico file e li reimporti quando vuoi, anche su un altro dispositivo.",
                         icon: "externaldrive.fill"),

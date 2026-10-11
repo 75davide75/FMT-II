@@ -245,14 +245,13 @@ struct ContentView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: appSectionRaw)
-            .overlay(alignment: .top) {
+            .overlay {
                 if showWhatsNew {
                     WhatsNewBanner {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { showWhatsNew = false }
+                        withAnimation(.easeInOut(duration: 0.3)) { showWhatsNew = false }
                         lastSeenWhatsNew = WhatsNew.version
                     }
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity)
                 }
             }
         }

@@ -21,6 +21,17 @@ enum DemoSeed {
     static func seedIfRequested(schedule: ScheduleStore, notes: NotesStore, grades: GradesStore) {
         guard isRequested else { return }
         schedule.restore(makeSchedule())
+        if ProcessInfo.processInfo.arguments.contains("-FMTDemoPerClass"), var s = schedule.schedule {
+            // Verifica dell'ora d'inizio per classe: una 1C che entra alle 9:10.
+            let extra = s.lessons.filter { $0.day == .monday || $0.day == .wednesday }.map { l -> Lesson in
+                var c = l; c.className = "1C"; return c
+            }
+            s.lessons += extra
+            s.classes.append("1C")
+            s.perClassStartTimes = true
+            s.classStartTimes = ["3ªB": s.sortedPeriods.first?.startTime ?? "08:10", "1C": "09:10"]
+            schedule.update(applyManualEdits(s))
+        }
         grades.replaceAll(makeGrades())
         notes.replaceAll(makeNotes())
     }

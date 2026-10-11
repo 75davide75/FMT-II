@@ -28,13 +28,17 @@ alla revisione **solo dopo OK esplicito**; GitHub: push + PR verso `main`.
 
 | recordType | recordName | campi |
 |---|---|---|
-| `Grade` | UUID del voto | `payload` (JSON del `Grade`), `modifiedAt` |
-| `Note` | UUID della nota | `payload` (JSON) oppure `payloadAsset` (CKAsset se > 700 KB), `modifiedAt` |
-| `Schedule` | `current` | `payloadAsset` (JSON di `ScheduleData`, CKAsset), `modifiedAt`, `deleted` (Int 0/1: orario rimosso) |
+| `Grade` | `grade-<UUID>` | `payload` (JSON del `Grade`), `modifiedAt` |
+| `Note` | `note-<UUID>` | `payload` (JSON, Bytes), `modifiedAt` |
+| `Schedule` | `schedule-current` | `payloadAsset` (JSON di `ScheduleData`, CKAsset), `modifiedAt`, `deleted` (Int 0/1: orario rimosso) |
 
 Il payload JSON riusa i `Codable` esistenti: nessun campo CloudKit per singolo
 attributo, quindi aggiungere attributi in futuro non richiede modifiche allo
 schema.
+
+Nota (implementazione): le note sono solo testo RTF, quindi restano sempre
+in un campo Bytes; l'orario usa sempre un CKAsset. Così in Development
+vengono creati tutti i campi dello schema prima del deploy in Production.
 
 **Modelli**: `Grade`, `Note` e `ScheduleData` ricevono `modifiedAt: Date`
 (decodeIfPresent, default = `createdAt`/`date`/distantPast) aggiornato a ogni

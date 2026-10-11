@@ -326,13 +326,15 @@ struct SettingsView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(sync.status.isProblem ? Color(hex: "#FB923C")! : .secondary)
             }
+            let canSyncNow = !(sync.status == .off || sync.status == .syncing || sync.status == .noAccount)
             Button {
                 Task { await sync.syncNow() }
             } label: {
                 Self.row("Sincronizza ora", icon: "arrow.triangle.2.circlepath", "#4E7CF6")
                     .foregroundStyle(.primary)
+                    .opacity(canSyncNow ? 1 : 0.4)
             }
-            .disabled(sync.status == .off || sync.status == .syncing || sync.status == .noAccount)
+            .disabled(!canSyncNow)
         } header: {
             Self.header("Sincronizzazione iCloud")
         } footer: {
