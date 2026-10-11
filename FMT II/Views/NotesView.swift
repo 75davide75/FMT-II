@@ -40,6 +40,7 @@ struct NotesListView: View {
     var gradesStore: GradesStore? = nil
 
     @State private var noteContext: NoteCreationContext? = nil
+    @Environment(\.deviceLayout) private var layout
     @State private var isSelecting = false
     @State private var selectedIds: Set<UUID> = []
     @State private var showArchive = false
@@ -376,6 +377,42 @@ struct NotesListView: View {
         return f.string(from: day).capitalized
     }
 
+    /// Una voce del diario: tocco, selezione e menu (uguale su iPhone e iPad).
+    private func noteCell(_ note: Note) -> some View {
+        NoteRowSelectable(
+            note: note,
+            isSelecting: isSelecting,
+            isSelected: selectedIds.contains(note.id),
+            searchQuery: searchQuery
+        ) {
+            if isSelecting {
+                toggleSelection(note.id)
+            } else {
+                noteContext = NoteCreationContext(existingNote: note)
+            }
+        }
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .contextMenu {
+            Button {
+                noteContext = NoteCreationContext(existingNote: note)
+            } label: { Label("Modifica", systemImage: "pencil") }
+
+            if showArchive {
+                Button {
+                    withAnimation { store.unarchive(ids: [note.id]) }
+                } label: { Label("Ripristina", systemImage: "arrow.uturn.up") }
+            } else {
+                Button {
+                    withAnimation { store.archive(ids: [note.id]) }
+                } label: { Label("Archivia", systemImage: "archivebox.fill") }
+            }
+
+            Button(role: .destructive) {
+                withAnimation { store.delete(ids: [note.id]) }
+            } label: { Label("Elimina", systemImage: "trash") }
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
                 VStack(spacing: 0) {
@@ -389,77 +426,73 @@ struct NotesListView: View {
                         emptyState
                     } else {
                     ScrollViewReader { proxy in
-                    List {
-                        ForEach(notesByDate, id: \.id) { group in
-                            Section {
-                                ForEach(group.notes) { note in
-                                    NoteRowSelectable(
-                                        note: note,
-                                        isSelecting: isSelecting,
-                                        isSelected: selectedIds.contains(note.id),
-                                        searchQuery: searchQuery
-                                    ) {
-                                        if isSelecting {
-                                            toggleSelection(note.id)
-                                        } else {
-                                            noteContext = NoteCreationContext(existingNote: note)
-                                        }
-                                    }
-                                    // Niente eliminazione con lo swipe: si
-                                    // elimina dal menu (pressione prolungata)
-                                    // o dalla selezione multipla.
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        if showArchive {
-                                            Button {
-                                                withAnimation { store.unarchive(ids: Set([note.id])) }
-                                            } label: {
-                                                Label("Ripristina", systemImage: "arrow.uturn.up")
+                    Group {
+                        if layout.isIPadLayout {
+                            // iPad: le date (intestazione + voci) su 2 colonne, in ordine
+                            // da sinistra a destra. Archivia/Ripristina restano nel menu
+                            // a pressione prolungata.
+                            ScrollView {
+                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 16, alignment: .top),
+                                                    GridItem(.flexible(), spacing: 16, alignment: .top)],
+                                          alignment: .leading, spacing: 18) {
+                                    ForEach(notesByDate, id: \.id) { group in
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            dayHeader(group)
+                                            ForEach(group.notes) { note in
+                                                noteCell(note)
                                             }
-                                            .tint(.blue)
-                                        } else {
-                                            Button {
-                                                withAnimation { store.archive(ids: Set([note.id])) }
-                                            } label: {
-                                                Label("Archivia", systemImage: "archivebox.fill")
+                                        }
+                                        .frame(maxHeight: .infinity, alignment: .top)
+                                        .id(group.id)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 80)
+                            }
+                            .scrollContentBackground(.hidden)
+                        } else {
+                            List {
+                                ForEach(notesByDate, id: \.id) { group in
+                                    Section {
+                                        ForEach(group.notes) { note in
+                                            noteCell(note)
+                                            // Niente eliminazione con lo swipe: si
+                                            // elimina dal menu (pressione prolungata)
+                                            // o dalla selezione multipla.
+                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                                if showArchive {
+                                                    Button {
+                                                        withAnimation { store.unarchive(ids: Set([note.id])) }
+                                                    } label: {
+                                                        Label("Ripristina", systemImage: "arrow.uturn.up")
+                                                    }
+                                                    .tint(.blue)
+                                                } else {
+                                                    Button {
+                                                        withAnimation { store.archive(ids: Set([note.id])) }
+                                                    } label: {
+                                                        Label("Archivia", systemImage: "archivebox.fill")
+                                                    }
+                                                    .tint(.orange)
+                                                }
                                             }
-                                            .tint(.orange)
+                                            .listRowBackground(Color.clear)
+                                            .listRowSeparator(.hidden)
+                                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                                         }
+                                    } header: {
+                                        dayHeader(group)
                                     }
-                                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 22, style: .continuous))
-                                    .contextMenu {
-                                        Button {
-                                            noteContext = NoteCreationContext(existingNote: note)
-                                        } label: { Label("Modifica", systemImage: "pencil") }
-
-                                        if showArchive {
-                                            Button {
-                                                withAnimation { store.unarchive(ids: [note.id]) }
-                                            } label: { Label("Ripristina", systemImage: "arrow.uturn.up") }
-                                        } else {
-                                            Button {
-                                                withAnimation { store.archive(ids: [note.id]) }
-                                            } label: { Label("Archivia", systemImage: "archivebox.fill") }
-                                        }
-
-                                        Button(role: .destructive) {
-                                            withAnimation { store.delete(ids: [note.id]) }
-                                        } label: { Label("Elimina", systemImage: "trash") }
-                                    }
+                                    .id(group.id)
+                                }
+                                Color.clear.frame(height: 80)
                                     .listRowBackground(Color.clear)
                                     .listRowSeparator(.hidden)
-                                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                                }
-                            } header: {
-                                dayHeader(group)
                             }
-                            .id(group.id)
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
                         }
-                        Color.clear.frame(height: 80)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
                     .animation(.default, value: displayNotes.count)
                     .onChange(of: jumpToDate) { _, date in
                         guard let date else { return }
