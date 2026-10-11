@@ -560,7 +560,7 @@ private struct SubjectListRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subject)
                     .font(.callout.bold())
-                Text("\(count) vot\(count == 1 ? "o" : "i")")
+                Text(gradesCountLabel(count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

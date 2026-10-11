@@ -303,7 +303,7 @@ struct NotesListView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.primary)
             Spacer()
-            Text("\(group.notes.count) impegn\(group.notes.count == 1 ? "o" : "i")")
+            Text(group.notes.count == 1 ? L("1 impegno") : L("\(group.notes.count) impegni"))
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)

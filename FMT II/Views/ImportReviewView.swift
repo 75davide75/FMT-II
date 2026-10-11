@@ -289,7 +289,7 @@ struct ImportReviewView: View {
                     Button {
                         editing = true
                     } label: {
-                        Label("Completa \(selectedClasses.count) class\(selectedClasses.count == 1 ? "e" : "i")",
+                        Label(selectedClasses.count == 1 ? L("Completa 1 classe") : L("Completa \(selectedClasses.count) classi"),
                               systemImage: "pencil")
                             .font(.headline)
                             .frame(maxWidth: .infinity)

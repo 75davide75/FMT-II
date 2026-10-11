@@ -547,7 +547,7 @@ struct SubjectAssignmentView: View {
                     edits = Dictionary(uniqueKeysWithValues: draft.lessons.map { ($0.id, $0.subject) })
                     editing = true
                 } label: {
-                    Label("Modifica \(selectedClasses.count) class\(selectedClasses.count == 1 ? "e" : "i")",
+                    Label(selectedClasses.count == 1 ? L("Modifica 1 classe") : L("Modifica \(selectedClasses.count) classi"),
                           systemImage: "pencil")
                         .font(.headline)
                         .frame(maxWidth: .infinity)

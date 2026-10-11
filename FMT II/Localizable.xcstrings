@@ -1,13 +1,1406 @@
 {
   "sourceLanguage": "it",
-  "version": "1.0",
   "strings": {
-    "Orario": {
+    "": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Timetable"
+            "value": ""
+          }
+        }
+      }
+    },
+    "%@ Puoi creare l'orario manualmente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ You can create the timetable manually."
+          }
+        }
+      }
+    },
+    "%@ insegna più di una materia?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Does %@ teach more than one subject?"
+          }
+        }
+      }
+    },
+    "%@ sopra": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ above"
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ – %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ – %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@–%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@–%@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@–%2$@"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld impegni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items"
+          }
+        }
+      }
+    },
+    "%lld lezioni · %lld classi · %lld docenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lessons · %lld classes · %lld teachers"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld lezioni · %2$lld classi · %3$lld docenti"
+          }
+        }
+      }
+    },
+    "%lld lezioni · %lld docenti · %lld classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lessons · %lld teachers · %lld classes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld lezioni · %2$lld docenti · %3$lld classi"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld verifiche": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tests"
+          }
+        }
+      }
+    },
+    "%lld voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld grades"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        }
+      }
+    },
+    "%lldª (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period %lld (%@)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lldª (%2$@)"
+          }
+        }
+      }
+    },
+    "%lldª ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period %lld"
+          }
+        }
+      }
+    },
+    "%lldª · %@–%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "P%lld · %@–%@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lldª · %2$@–%3$@"
+          }
+        }
+      }
+    },
+    "(senza nome)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(no name)"
+          }
+        }
+      }
+    },
+    "+%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld"
+          }
+        }
+      }
+    },
+    ", orario incluso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", timetable included"
+          }
+        }
+      }
+    },
+    "1 impegno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 item"
+          }
+        }
+      }
+    },
+    "1 verifica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 test"
+          }
+        }
+      }
+    },
+    "1 voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 grade"
+          }
+        }
+      }
+    },
+    "1° Quadrimestre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1st Semester"
+          }
+        }
+      }
+    },
+    "2° Quadrimestre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2nd Semester"
+          }
+        }
+      }
+    },
+    "ANDAMENTO": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TREND"
+          }
+        }
+      }
+    },
+    "Accedi a iCloud": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud"
+          }
+        }
+      }
+    },
+    "Accedi a iCloud nelle Impostazioni di iOS per avere voti, diario e orario su tutti i tuoi dispositivi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud in iOS Settings to have grades, planner and timetable on all your devices."
+          }
+        }
+      }
+    },
+    "Adesso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        }
+      }
+    },
+    "Adesso mostra l'ora corrente con la barra di avanzamento e la prossima ora; Giorno l'intera giornata; Settimana la griglia completa con le etichette colorate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now shows the current period with a progress bar and the next one; Day shows the whole day; Week shows the full grid with colored labels."
+          }
+        }
+      }
+    },
+    "Aggiornata alle %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updated at %@"
+          }
+        }
+      }
+    },
+    "Aggiungere un voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adding a grade"
+          }
+        }
+      }
+    },
+    "Aggiungi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "Aggiungi classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add class"
+          }
+        }
+      }
+    },
+    "Aggiungi lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add lesson"
+          }
+        }
+      }
+    },
+    "Aggiungi voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add grade"
+          }
+        }
+      }
+    },
+    "Agosto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "August"
+          }
+        }
+      }
+    },
+    "Alla prima apertura importi il PDF dell'orario della scuola. Se il PDF è completo l'import è immediato; se manca un solo elemento (per esempio i docenti) l'app importa il resto e ti fa scegliere per quali classi completare i dati a mano; se il file non è leggibile o contiene conflitti viene rifiutato e ti viene proposta la creazione manuale.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On first launch you import your school's timetable PDF. If the PDF is complete, the import is immediate; if a single element is missing (for example the teachers), the app imports the rest and lets you choose which classes to complete by hand; if the file can't be read or contains conflicts, it is rejected and you're offered manual creation."
+          }
+        }
+      }
+    },
+    "Altre azioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        }
+      }
+    },
+    "Ancora nessun voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No grades yet"
+          }
+        }
+      }
+    },
+    "Annotazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Annulla": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Applica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        }
+      }
+    },
+    "Apre l'app Mail con un messaggio già pronto da inviare allo sviluppatore.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the Mail app with a ready-made message for the developer."
+          }
+        }
+      }
+    },
+    "Apri la creazione manuale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open manual creation"
+          }
+        }
+      }
+    },
+    "Apri materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open subject"
+          }
+        }
+      }
+    },
+    "Aprile": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "April"
+          }
+        }
+      }
+    },
+    "Archivia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        }
+      }
+    },
+    "Archivio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        }
+      }
+    },
+    "Archivio vuoto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive empty"
+          }
+        }
+      }
+    },
+    "Arte e immagine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Art and design"
+          }
+        }
+      }
+    },
+    "Aspetto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "Assegna o correggi la materia di ogni ora, classe per classe: la materia inserita per un docente si propaga alle sue altre ore.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assign or fix the subject of each period, class by class: the subject entered for a teacher is carried over to their other periods."
+          }
+        }
+      }
+    },
+    "Attiva": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "Automatica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        }
+      }
+    },
+    "Automatico": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        }
+      }
+    },
+    "Avanti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        }
+      }
+    },
+    "Azioni definitive: prima di procedere viene sempre chiesta conferma.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanent actions: you're always asked to confirm first."
+          }
+        }
+      }
+    },
+    "Azioni rapide": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick actions"
+          }
+        }
+      }
+    },
+    "Biologia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biology"
+          }
+        }
+      }
+    },
+    "CIAO ☺️": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HI ☺️"
+          }
+        }
+      }
+    },
+    "Calcolate da inizio e durata — nessun inserimento manuale.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated from start and length — no manual entry."
+          }
+        }
+      }
+    },
+    "Cambia PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change PDF"
+          }
+        }
+      }
+    },
+    "Cambia il nome della classe selezionata: si aggiorna anche in tutte le sue lezioni.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the selected class's name: it's updated in all its lessons too."
+          }
+        }
+      }
+    },
+    "Cambia o rimuovi l'orario, cancella tutto il diario o tutti i voti. Ogni azione chiede conferma e non è reversibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change or remove the timetable, delete the whole planner or all grades. Each action asks for confirmation and cannot be undone."
+          }
+        }
+      }
+    },
+    "Cambiando voto sufficiente o massimo nelle Impostazioni, i colori di tutti i voti (verde/arancio/rosso) si aggiornano immediatamente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you change the passing or maximum grade in Settings, the colors of all grades (green/orange/red) update immediately."
+          }
+        }
+      }
+    },
+    "Cambiare il PDF?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the PDF?"
+          }
+        }
+      }
+    },
+    "Cambiare sezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switching sections"
+          }
+        }
+      }
+    },
+    "Campo obbligatorio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required field"
+          }
+        }
+      }
+    },
+    "Cancella tutti i voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all grades"
+          }
+        }
+      }
+    },
+    "Cancella tutto il diario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the whole planner"
+          }
+        }
+      }
+    },
+    "Cancellare tutti i voti?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all grades?"
+          }
+        }
+      }
+    },
+    "Cancellare tutto il diario?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the whole planner?"
+          }
+        }
+      }
+    },
+    "Carica una volta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load it once"
+          }
+        }
+      }
+    },
+    "Caricamento...": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading..."
+          }
+        }
+      }
+    },
+    "Cerca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
+          }
+        }
+      }
+    },
+    "Cerca come vuoi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search your way"
+          }
+        }
+      }
+    },
+    "Cerca nel testo delle note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search note text"
+          }
+        }
+      }
+    },
+    "Cerca una funzione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search for a feature"
+          }
+        }
+      }
+    },
+    "Cercare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching"
+          }
+        }
+      }
+    },
+    "Cercare e filtrare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search and filter"
+          }
+        }
+      }
+    },
+    "Chi sono": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About me"
+          }
+        }
+      }
+    },
+    "Chiaro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Chimica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chemistry"
+          }
+        }
+      }
+    },
+    "Chiudi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Class"
+          }
+        }
+      }
+    },
+    "Classe, Docente o Materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Class, Teacher or Subject"
+          }
+        }
+      }
+    },
+    "Classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classes"
+          }
+        }
+      }
+    },
+    "Classi da completare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classes to complete"
+          }
+        }
+      }
+    },
+    "Classi da modificare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classes to edit"
+          }
+        }
+      }
+    },
+    "Classi · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classes · %lld"
+          }
+        }
+      }
+    },
+    "Cognome": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Surname"
+          }
+        }
+      }
+    },
+    "Col + in basso a destra inserisci materia (con suggerimenti), docente, voto, tipo, data, peso e se fa media. L'anello in alto mostra la media generale con le barre dei periodi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With the + at the bottom right you enter subject (with suggestions), teacher, grade, type, date, weight and whether it counts towards the average. The ring at the top shows the overall average with the period bars."
+          }
+        }
+      }
+    },
+    "Col selettore scegli se consultare per classe o per docente. Se l'orario importato contiene solo le materie (senza docenti), il filtro diventa automaticamente Classe/Materia.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the selector to browse by class or by teacher. If the imported timetable only contains subjects (no teachers), the filter automatically becomes Class/Subject."
+          }
+        }
+      }
+    },
+    "Colore della materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject color"
+          }
+        }
+      }
+    },
+    "Colore già usato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color already in use"
+          }
+        }
+      }
+    },
+    "Colore materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject color"
+          }
+        }
+      }
+    },
+    "Colore · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color · %@"
+          }
+        }
+      }
+    },
+    "Colori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colors"
+          }
+        }
+      }
+    },
+    "Colori di classi e docenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Class and teacher colors"
+          }
+        }
+      }
+    },
+    "Compiti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Homework"
+          }
+        }
+      }
+    },
+    "Compito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Homework"
+          }
+        }
+      }
+    },
+    "Completa %lld classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete %lld classes"
+          }
+        }
+      }
+    },
+    "Completa 1 classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete 1 class"
+          }
+        }
+      }
+    },
+    "Con l'ora corrente attiva, la vista Adesso segue l'orologio del dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With current time on, the Now view follows the device clock."
+          }
+        }
+      }
+    },
+    "Con lo stesso Apple ID, voti, diario, orario e impostazioni di scuola (scala dei voti, periodi, colori) si aggiornano da soli su iPhone e iPad. In Impostazioni → Sincronizzazione iCloud vedi lo stato e puoi forzare un aggiornamento con \"Sincronizza ora\". Tema e dimensione del testo restano propri di ogni dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With the same Apple ID, grades, planner, timetable and school settings (grade scale, periods, colors) update by themselves on iPhone and iPad. In Settings → iCloud Sync you can see the status and force an update with \"Sync now\". Theme and text size stay specific to each device."
+          }
+        }
+      }
+    },
+    "Condividere l'orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing the timetable"
+          }
+        }
+      }
+    },
+    "Condividi orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share timetable"
+          }
+        }
+      }
+    },
+    "Conferma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        }
+      }
+    },
+    "Conflitto: il docente %@ risulta in due classi diverse (%@ %@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conflict: teacher %@ appears in two different classes (%@ %@)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Conflitto: il docente %1$@ risulta in due classi diverse (%2$@ %3$@)."
+          }
+        }
+      }
+    },
+    "Conflitto: la classe %@ ha due materie nella stessa ora (%@ %@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conflict: class %@ has two subjects in the same period (%@ %@)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Conflitto: la classe %1$@ ha due materie nella stessa ora (%2$@ %3$@)."
+          }
+        }
+      }
+    },
+    "Contatta l'assistenza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact support"
+          }
+        }
+      }
+    },
+    "Contenuto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content"
+          }
+        }
+      }
+    },
+    "Continua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Corpo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body"
+          }
+        }
+      }
+    },
+    "Corrispondenze docente ↔ materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher ↔ subject matches"
+          }
+        }
+      }
+    },
+    "Crea il mio orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create my timetable"
+          }
+        }
+      }
+    },
+    "Crea l'orario anche per un'altra classe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create the timetable for another class too."
+          }
+        }
+      }
+    },
+    "Crea nota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create note"
+          }
+        }
+      }
+    },
+    "Crea orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create timetable"
+          }
+        }
+      }
+    },
+    "Crea orario manualmente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create timetable manually"
+          }
+        }
+      }
+    },
+    "Creare l'orario a mano": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating the timetable by hand"
+          }
+        }
+      }
+    },
+    "Creare una nota da una lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating a note from a lesson"
+          }
+        }
+      }
+    },
+    "Credici: la media più alta è più vicina di quanto pensi. ✨": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Believe it: a higher average is closer than you think. ✨"
+          }
+        }
+      }
+    },
+    "Dal cerchio colorato in alto a destra nella scheda materia personalizzi il colore: righe, grafico e sfondo si adattano.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the colored circle at the top right of the subject page to customize its color: rows, chart and background adapt."
+          }
+        }
+      }
+    },
+    "Dal menu ••• in alto a destra scegli \"Condividi orario\": esporti un file da inviare o salvare; chi lo riceve lo importa senza rifare nulla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the ••• menu at the top right choose \"Share timetable\": you export a file to send or save; whoever receives it imports it without redoing anything."
+          }
+        }
+      }
+    },
+    "Dalle Impostazioni scegli tema chiaro/scuro/automatico e assegni un colore personale a ogni classe, docente o materia: lo ritrovi in tutte le viste dell'orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Settings choose a light/dark/automatic theme and give every class, teacher or subject its own color: you'll find it in all timetable views."
+          }
+        }
+      }
+    },
+    "Data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "Dati e backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data and backup"
+          }
+        }
+      }
+    },
+    "Dati orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable data"
+          }
+        }
+      }
+    },
+    "Descrivi il problema": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe the problem"
+          }
+        }
+      }
+    },
+    "Deseleziona tutto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all"
+          }
+        }
+      }
+    },
+    "Dettagli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "Dettagli della voce": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item details"
           }
         }
       }
@@ -22,12 +1415,2938 @@
         }
       }
     },
-    "Voti": {
+    "Diario vuoto": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Grades"
+            "value": "Planner empty"
+          }
+        }
+      }
+    },
+    "Dicembre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "December"
+          }
+        }
+      }
+    },
+    "Digita il cognome (o la materia): compare l'elenco dei suggerimenti, Invio sceglie il primo. La ✕ cancella la ricerca.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the surname (or the subject): a list of suggestions appears, Return picks the first one. The ✕ clears the search."
+          }
+        }
+      }
+    },
+    "Dimensione testo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text size"
+          }
+        }
+      }
+    },
+    "Diritto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Law"
+          }
+        }
+      }
+    },
+    "Disegno e storia dell'arte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drawing and art history"
+          }
+        }
+      }
+    },
+    "Docente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher"
+          }
+        }
+      }
+    },
+    "Docente (facoltativo)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher (optional)"
+          }
+        }
+      }
+    },
+    "Docenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teachers"
+          }
+        }
+      }
+    },
+    "Docenti · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teachers · %lld"
+          }
+        }
+      }
+    },
+    "Dom": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sun"
+          }
+        }
+      }
+    },
+    "Domani": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow"
+          }
+        }
+      }
+    },
+    "Domenica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sunday"
+          }
+        }
+      }
+    },
+    "Durata lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesson length"
+          }
+        }
+      }
+    },
+    "Economia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Economics"
+          }
+        }
+      }
+    },
+    "Educazione civica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Civics"
+          }
+        }
+      }
+    },
+    "Educazione fisica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Physical education"
+          }
+        }
+      }
+    },
+    "Elimina": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Elimina voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete grade"
+          }
+        }
+      }
+    },
+    "Enorme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huge"
+          }
+        }
+      }
+    },
+    "Errore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error"
+          }
+        }
+      }
+    },
+    "Es. 1C alle 8:10, 3C alle 9:10": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. 1C at 8:10, 3C at 9:10"
+          }
+        }
+      }
+    },
+    "Es. 5GSA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. 5GSA"
+          }
+        }
+      }
+    },
+    "Es. GRECO": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. GREEN"
+          }
+        }
+      }
+    },
+    "Es. MATEMATICA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. MATHS"
+          }
+        }
+      }
+    },
+    "Es. Matematica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. Maths"
+          }
+        }
+      }
+    },
+    "Es. ROSSI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E.g. SMITH"
+          }
+        }
+      }
+    },
+    "Esporta backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export backup"
+          }
+        }
+      }
+    },
+    "Esporti orario, diario e voti in un unico file e li reimporti quando vuoi, anche su un altro dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export timetable, planner and grades in a single file and import them again whenever you want, even on another device."
+          }
+        }
+      }
+    },
+    "Fa media": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Counts towards average"
+          }
+        }
+      }
+    },
+    "Fasce orarie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time slots"
+          }
+        }
+      }
+    },
+    "Febbraio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "February"
+          }
+        }
+      }
+    },
+    "File di backup non valido.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid backup file."
+          }
+        }
+      }
+    },
+    "File non valido o danneggiato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid or damaged file."
+          }
+        }
+      }
+    },
+    "Filosofia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Philosophy"
+          }
+        }
+      }
+    },
+    "Filtra": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        }
+      }
+    },
+    "Filtri rapidi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick filters"
+          }
+        }
+      }
+    },
+    "Filtro attivo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter on"
+          }
+        }
+      }
+    },
+    "FindMyTeacher": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FindMyTeacher"
+          }
+        }
+      }
+    },
+    "Fine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Fine %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of %@"
+          }
+        }
+      }
+    },
+    "Fisica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Physics"
+          }
+        }
+      }
+    },
+    "Francese": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "French"
+          }
+        }
+      }
+    },
+    "Gennaio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "January"
+          }
+        }
+      }
+    },
+    "Geografia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geography"
+          }
+        }
+      }
+    },
+    "Geostoria": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History and geography"
+          }
+        }
+      }
+    },
+    "Gio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu"
+          }
+        }
+      }
+    },
+    "Giorno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        }
+      }
+    },
+    "Giorno e ora fissati manualmente per consultare un momento specifico.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day and time set manually to look at a specific moment."
+          }
+        }
+      }
+    },
+    "Giovedì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thursday"
+          }
+        }
+      }
+    },
+    "Giugno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "June"
+          }
+        }
+      }
+    },
+    "Giustifica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excused"
+          }
+        }
+      }
+    },
+    "Grafico andamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend chart"
+          }
+        }
+      }
+    },
+    "Grande": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Large"
+          }
+        }
+      }
+    },
+    "Grazie per il feedback.\nTi risponderò appena possibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanks for the feedback.\nI'll get back to you as soon as possible."
+          }
+        }
+      }
+    },
+    "Greco": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Greek"
+          }
+        }
+      }
+    },
+    "Ha abbassato la media della materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lowered the subject average"
+          }
+        }
+      }
+    },
+    "Ha alzato la media della materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raised the subject average"
+          }
+        }
+      }
+    },
+    "Hai creato il tuo orario a mano: importando un PDF verrà sostituito (solo se la lettura va a buon fine).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You created your timetable by hand: importing a PDF will replace it (only if it's read successfully)."
+          }
+        }
+      }
+    },
+    "Hai un promemoria": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have a reminder"
+          }
+        }
+      }
+    },
+    "Ho capito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        }
+      }
+    },
+    "I dati attuali verranno sostituiti con il backup: %lld voci di diario e %lld voti%@. L'azione non è reversibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current data will be replaced with the backup: %lld planner items and %lld grades%@. This cannot be undone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I dati attuali verranno sostituiti con il backup: %1$lld voci di diario e %2$lld voti%3$@. L'azione non è reversibile."
+          }
+        }
+      }
+    },
+    "I dati di FMT sono stati eliminati da iCloud: la sincronizzazione è in pausa. Tocca «Sincronizza ora» per ricaricare i dati di questo dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FMT data was deleted from iCloud: sync is paused. Tap \"Sync now\" to upload this device's data again."
+          }
+        }
+      }
+    },
+    "Ieri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday"
+          }
+        }
+      }
+    },
+    "Il PDF non contiene testo selezionabile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF contains no selectable text."
+          }
+        }
+      }
+    },
+    "Il file non è un PDF valido.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is not a valid PDF."
+          }
+        }
+      }
+    },
+    "Il nome della classe è obbligatorio per iniziare; potrai rinominarla dalle Impostazioni orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A class name is required to start; you can rename it from Timetable settings."
+          }
+        }
+      }
+    },
+    "Il peso (0–100%) determina quanto il voto incide nella media ponderata. Disattivando \"Fa media\" il voto diventa blu e non viene conteggiato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The weight (0–100%) sets how much the grade counts in the weighted average. Turning off \"Counts towards average\" makes the grade blue and leaves it out."
+          }
+        }
+      }
+    },
+    "Il peso determina quanto incide nella media ponderata.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The weight sets how much it counts in the weighted average."
+          }
+        }
+      }
+    },
+    "Il prossimo voto è un'occasione, non una minaccia. 😉": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The next grade is an opportunity, not a threat. 😉"
+          }
+        }
+      }
+    },
+    "Il tuo Diario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Planner"
+          }
+        }
+      }
+    },
+    "Il voto verrà mostrato in blu e non conterà nella media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The grade will be shown in blue and won't count towards the average."
+          }
+        }
+      }
+    },
+    "Import non riuscito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import failed"
+          }
+        }
+      }
+    },
+    "Import parziale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial import"
+          }
+        }
+      }
+    },
+    "Importa PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import PDF"
+          }
+        }
+      }
+    },
+    "Importa backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import backup"
+          }
+        }
+      }
+    },
+    "Importa il PDF dell'orario, oppure crealo a mano": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import the timetable PDF, or create it by hand"
+          }
+        }
+      }
+    },
+    "Importa il PDF dell'orario, oppure crealo a mano.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import the timetable PDF, or create it by hand."
+          }
+        }
+      }
+    },
+    "Importa il PDF dell'orario: lo trasformiamo in un orario interattivo. Niente PDF? Puoi crearlo a mano in pochi tocchi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import your timetable PDF: we turn it into an interactive timetable. No PDF? You can create it by hand in a few taps."
+          }
+        }
+      }
+    },
+    "Importa orario PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import timetable PDF"
+          }
+        }
+      }
+    },
+    "Importare l'orario da PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing the timetable from PDF"
+          }
+        }
+      }
+    },
+    "Impossibile aprire il file.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't open the file."
+          }
+        }
+      }
+    },
+    "Imposta la media obiettivo: l'app calcola quale o quanti voti ti servono per raggiungerla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a target average: the app works out which grade, or how many, you need to reach it."
+          }
+        }
+      }
+    },
+    "Imposta un giorno e un'ora manualmente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a day and time manually."
+          }
+        }
+      }
+    },
+    "Impostazioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Impostazioni orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable settings"
+          }
+        }
+      }
+    },
+    "In alto c'è il selettore Orario · Diario · Voti: la pillola colorata scivola con te. Tocca un nome oppure scorri orizzontalmente la pagina: lo sfondo sfuma verso la tinta della sezione.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the top there's the Timetable · Planner · Grades selector: the colored pill slides with you. Tap a name or swipe the page sideways: the background fades into the section's tint."
+          }
+        }
+      }
+    },
+    "In corso…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncing…"
+          }
+        }
+      }
+    },
+    "In pausa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "Informatica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer science"
+          }
+        }
+      }
+    },
+    "Informazioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "Inglese": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "Inizia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Inizio 1ª ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First period start"
+          }
+        }
+      }
+    },
+    "Inizio diverso per classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Different start per class"
+          }
+        }
+      }
+    },
+    "Inizio predefinito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default start"
+          }
+        }
+      }
+    },
+    "Innanzitutto grazie, perché stai leggendo questa sezione — cosa che non fa mai nessuno. Sono uno studente che ha appena finito di fare la maturità e ha tanto tempo libero. Una cosa che ho odiato durante gli anni delle superiori è non ricordarmi mai l'orario: volevo inventare un modo per consultare qualunque orario velocemente, senza impazzire a trovare la propria sezione. Questo è il mio miglior tentativo, almeno per ora. Grazie per aver provato la mia prima applicazione.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First of all, thank you for reading this section — nobody ever does. I'm a student who has just finished my final high school exams and has a lot of free time. One thing I hated during high school was never remembering the timetable: I wanted to invent a way to check any timetable quickly, without going crazy looking for your own class. This is my best attempt, at least for now. Thank you for trying my first app."
+          }
+        }
+      }
+    },
+    "Interrogazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oral test"
+          }
+        }
+      }
+    },
+    "Interrogazioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oral tests"
+          }
+        }
+      }
+    },
+    "Intestazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heading"
+          }
+        }
+      }
+    },
+    "Invia segnalazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send report"
+          }
+        }
+      }
+    },
+    "Invio non riuscito dall'app Mail. Riprova.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending from the Mail app failed. Please try again."
+          }
+        }
+      }
+    },
+    "Italiano": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Italian"
+          }
+        }
+      }
+    },
+    "L'orario attuale verrà sostituito con il nuovo file.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current timetable will be replaced with the new file."
+          }
+        }
+      }
+    },
+    "L'orario della tua scuola, sempre in tasca. Trova dov'è ogni lezione in un attimo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your school timetable, always in your pocket. Find where every lesson is in a moment."
+          }
+        }
+      }
+    },
+    "L'orario si aggiorna automaticamente ogni 30 secondi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timetable updates automatically every 30 seconds."
+          }
+        }
+      }
+    },
+    "L'orario verrà eliminato. Potrai caricarne uno nuovo in qualsiasi momento.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timetable will be deleted. You can load a new one at any time."
+          }
+        }
+      }
+    },
+    "La distanza tra il 6 e l'8 è solo un po' di costanza in più. ⭐️": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The gap between a 6 and an 8 is just a bit more consistency. ⭐️"
+          }
+        }
+      }
+    },
+    "La durata delle lezioni resta uguale per tutte le classi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesson length stays the same for all classes."
+          }
+        }
+      }
+    },
+    "La giustifica viene registrata come «G»: non ha voto, non ha peso e non fa media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An excused absence is recorded as \"G\": it has no grade, no weight and doesn't count towards the average."
+          }
+        }
+      }
+    },
+    "La striscia dei giorni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The day strip"
+          }
+        }
+      }
+    },
+    "La struttura dell'orario non è riconoscibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timetable structure isn't recognizable."
+          }
+        }
+      }
+    },
+    "La tua email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your email"
+          }
+        }
+      }
+    },
+    "Latino": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latin"
+          }
+        }
+      }
+    },
+    "Le bolle \"Ultimi voti\" scorrono in orizzontale; \"Vedi tutti ›\" oppure menu ••• → Materie apre tutte le materie con la rispettiva media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The \"Latest grades\" bubbles scroll sideways; \"See all ›\" or menu ••• → Subjects opens every subject with its average."
+          }
+        }
+      }
+    },
+    "Le date in alto scorrono senza limite, avanti e indietro nel calendario: toccandone una, l'elenco salta alle note di quel giorno e il + crea una nota già datata su quel giorno. I puntini colorati indicano i tipi di impegno presenti (rosa verifica, ambra compito, viola interrogazione, azzurro nota).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The dates at the top scroll endlessly, forwards and backwards through the calendar: tap one and the list jumps to that day's notes, and the + creates a note already dated that day. The colored dots show which kinds of items are there (pink test, amber homework, purple oral test, light blue note)."
+          }
+        }
+      }
+    },
+    "Le fasce orarie si ricalcolano da inizio e durata; rinominando la classe si aggiornano anche tutte le sue lezioni.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time slots are recalculated from start and length; renaming the class updates all its lessons too."
+          }
+        }
+      }
+    },
+    "Le lezioni non sono ancora iniziate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons haven't started yet."
+          }
+        }
+      }
+    },
+    "Le lezioni sono terminate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons are over."
+          }
+        }
+      }
+    },
+    "Le note con questa etichetta compariranno qui.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes with this label will appear here."
+          }
+        }
+      }
+    },
+    "Le tre viste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The three views"
+          }
+        }
+      }
+    },
+    "Lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesson"
+          }
+        }
+      }
+    },
+    "Libero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free"
+          }
+        }
+      }
+    },
+    "Live": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live"
+          }
+        }
+      }
+    },
+    "Luglio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "July"
+          }
+        }
+      }
+    },
+    "Lun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mon"
+          }
+        }
+      }
+    },
+    "Lunedì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monday"
+          }
+        }
+      }
+    },
+    "MEDIA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AVERAGE"
+          }
+        }
+      }
+    },
+    "Maggio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May"
+          }
+        }
+      }
+    },
+    "Mail non configurata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail not set up"
+          }
+        }
+      }
+    },
+    "Manuale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual"
+          }
+        }
+      }
+    },
+    "Mar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tue"
+          }
+        }
+      }
+    },
+    "Martedì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuesday"
+          }
+        }
+      }
+    },
+    "Marzo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "March"
+          }
+        }
+      }
+    },
+    "Matematica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maths"
+          }
+        }
+      }
+    },
+    "Materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject"
+          }
+        }
+      }
+    },
+    "Materie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subjects"
+          }
+        }
+      }
+    },
+    "Materie per classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subjects by class"
+          }
+        }
+      }
+    },
+    "Materie per classe (Dati orario)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subjects by class (Timetable data)"
+          }
+        }
+      }
+    },
+    "Materie · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subjects · %lld"
+          }
+        }
+      }
+    },
+    "Media": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average"
+          }
+        }
+      }
+    },
+    "Media della materia invariata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject average unchanged"
+          }
+        }
+      }
+    },
+    "Media obiettivo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target average"
+          }
+        }
+      }
+    },
+    "Menu ••• → Cerca trova qualsiasi parola nel testo; Filtra mostra solo le voci con un certo tag (materia, docente o classe) o tipo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu ••• → Search finds any word in the text; Filter shows only items with a given tag (subject, teacher or class) or type."
+          }
+        }
+      }
+    },
+    "Menu ••• → Dati orario → \"Materie per classe\": qui modifichi le corrispondenze docente ↔ materia. Primo passo: scegli le classi da sistemare (o \"Tutte\"). Secondo passo: per ogni ora vedi giorno, orario e docente, e scrivi la materia nel campo a destra. Mentre digiti compaiono i suggerimenti delle materie più diffuse: Invio inserisce il primo. Appena confermi una materia per un docente, la stessa materia si precompila in tutte le sue altre ore (in grigio finché non le confermi); se cambi una di quelle ore, l'app ti chiede se il docente insegna più di una materia — con Sì quella singola ora può essere diversa, con No torna il valore proposto. Alla fine tocca \"Applica\" e poi \"Salva\" nei Dati orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu ••• → Timetable data → \"Subjects by class\": here you edit the teacher ↔ subject matches. Step one: pick the classes to fix (or \"All\"). Step two: for each period you see day, time and teacher, and you type the subject in the field on the right. As you type, suggestions for the most common subjects appear: Return inserts the first one. As soon as you confirm a subject for a teacher, the same subject is pre-filled in all their other periods (grey until you confirm them); if you change one of those periods, the app asks whether the teacher teaches more than one subject — with Yes that single period can differ, with No it goes back to the suggested value. Finally tap \"Apply\" and then \"Save\" in Timetable data."
+          }
+        }
+      }
+    },
+    "Menu ••• → Dati orario → Fasce orarie: attiva \"Inizio diverso per classe\" e scegli per ogni classe a che ora inizia la 1ª ora (es. 1C alle 8:10, 3C alle 9:10). La durata delle lezioni resta uguale per tutte. In vista Docente le righe seguono gli orari reali di tutte le classi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu ••• → Timetable data → Time slots: turn on \"Different start per class\" and choose for each class when the first period starts (e.g. 1C at 8:10, 3C at 9:10). Lesson length stays the same for all. In Teacher view the rows follow the real times of every class."
+          }
+        }
+      }
+    },
+    "Menu ••• → Seleziona per eliminare o archiviare in blocco; Mostra l'archivio per rivedere e ripristinare le voci archiviate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu ••• → Select to delete or archive in bulk; Show archive to review and restore archived items."
+          }
+        }
+      }
+    },
+    "Mer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wed"
+          }
+        }
+      }
+    },
+    "Mercoledì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wednesday"
+          }
+        }
+      }
+    },
+    "Modifica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Modifica %lld classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit %lld classes"
+          }
+        }
+      }
+    },
+    "Modifica 1 classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit 1 class"
+          }
+        }
+      }
+    },
+    "Modifica classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit class"
+          }
+        }
+      }
+    },
+    "Modifica database": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit database"
+          }
+        }
+      }
+    },
+    "Modifica docente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit teacher"
+          }
+        }
+      }
+    },
+    "Modifica lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit lesson"
+          }
+        }
+      }
+    },
+    "Modifica nota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit note"
+          }
+        }
+      }
+    },
+    "Modifica orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit timetable"
+          }
+        }
+      }
+    },
+    "Modifica voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit grade"
+          }
+        }
+      }
+    },
+    "Molto grande": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very large"
+          }
+        }
+      }
+    },
+    "Mostra il diario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show planner"
+          }
+        }
+      }
+    },
+    "Mostra l'archivio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show archive"
+          }
+        }
+      }
+    },
+    "Mostra tutte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all"
+          }
+        }
+      }
+    },
+    "Musica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music"
+          }
+        }
+      }
+    },
+    "NOVITÀ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHAT'S NEW · %@"
+          }
+        }
+      }
+    },
+    "Nel PDF mancano giorni e ore delle lezioni.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF is missing the lesson days and times."
+          }
+        }
+      }
+    },
+    "Nel PDF mancano troppi elementi (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many elements are missing from the PDF (%@)."
+          }
+        }
+      }
+    },
+    "Nel PDF non sono indicate le materie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF doesn't list the subjects."
+          }
+        }
+      }
+    },
+    "Nel PDF non sono indicati i docenti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF doesn't list the teachers."
+          }
+        }
+      }
+    },
+    "Nel PDF non è indicato il nome della classe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF doesn't show the class name."
+          }
+        }
+      }
+    },
+    "Nel pannello \"Dettagli\" assegni tipo, data completa (giorno, mese e anno), ora, materia, docente, classe e promemoria — il testo resta visibile mentre scrivi. Se non scegli una data, la voce resta sotto il giorno in cui è stata creata.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the \"Details\" panel you set type, full date (day, month and year), time, subject, teacher, class and reminders — the text stays visible while you write. If you don't pick a date, the item stays under the day it was created."
+          }
+        }
+      }
+    },
+    "Nella scheda materia, la card Andamento mostra la curva dei voti col colore della materia: la linea rosa tratteggiata è la sufficienza, i punti insufficienti sono rosa col valore sotto. Tocca un punto per il dettaglio (alone viola).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the subject page, the Trend card shows the grade curve in the subject's color: the dashed pink line is the passing grade, failing points are pink with the value below. Tap a point for details (purple glow)."
+          }
+        }
+      }
+    },
+    "Nessun compito in programma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No homework scheduled"
+          }
+        }
+      }
+    },
+    "Nessun docente in questa fascia.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No teacher in this slot."
+          }
+        }
+      }
+    },
+    "Nessun risultato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No results"
+          }
+        }
+      }
+    },
+    "Nessun risultato per «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No results for \"%@\""
+          }
+        }
+      }
+    },
+    "Nessuna": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
+    "Nessuna corrispondenza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matches"
+          }
+        }
+      }
+    },
+    "Nessuna interrogazione in programma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No oral tests scheduled"
+          }
+        }
+      }
+    },
+    "Nessuna lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lesson"
+          }
+        }
+      }
+    },
+    "Nessuna lezione successiva oggi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No more lessons today"
+          }
+        }
+      }
+    },
+    "Nessuna lezione trovata nel PDF.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lessons found in the PDF."
+          }
+        }
+      }
+    },
+    "Nessuna verifica in programma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No tests scheduled"
+          }
+        }
+      }
+    },
+    "Nessuna voce del diario per «%@».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No planner items for \"%@\"."
+          }
+        }
+      }
+    },
+    "No": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No"
+          }
+        }
+      }
+    },
+    "Nome": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Nome classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Class name"
+          }
+        }
+      }
+    },
+    "Nome della classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name of the class"
+          }
+        }
+      }
+    },
+    "Non attiva": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "Non ci sono note per «%@».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no notes for \"%@\"."
+          }
+        }
+      }
+    },
+    "Non è la singola interrogazione, è la rotta che tieni. 🚀": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not one oral test, it's the course you keep. 🚀"
+          }
+        }
+      }
+    },
+    "Non è stato possibile leggere l'orario da questo file.\nIl formato potrebbe non essere compatibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the timetable from this file.\nThe format might not be supported."
+          }
+        }
+      }
+    },
+    "Nota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Nota senza titolo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled note"
+          }
+        }
+      }
+    },
+    "Novembre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "November"
+          }
+        }
+      }
+    },
+    "Novità di FMT %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's new in FMT %@"
+          }
+        }
+      }
+    },
+    "Nuova classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New class"
+          }
+        }
+      }
+    },
+    "Nuova lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New lesson"
+          }
+        }
+      }
+    },
+    "Nuova nota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New note"
+          }
+        }
+      }
+    },
+    "Nuova voce": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New item"
+          }
+        }
+      }
+    },
+    "Nuova voce di diario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New planner item"
+          }
+        }
+      }
+    },
+    "Nuovo docente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New teacher"
+          }
+        }
+      }
+    },
+    "Nuovo nome": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New name"
+          }
+        }
+      }
+    },
+    "Nuovo voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New grade"
+          }
+        }
+      }
+    },
+    "OGGI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TODAY"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "ORA CORRENTE": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CURRENT PERIOD"
+          }
+        }
+      }
+    },
+    "Obiettivo media": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average target"
+          }
+        }
+      }
+    },
+    "Obiettivo raggiunto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target reached"
+          }
+        }
+      }
+    },
+    "Oggi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Oggi non è nel calendario scolastico.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today isn't a school day."
+          }
+        }
+      }
+    },
+    "Ogni classe può entrare a un orario diverso: Impostazioni → Dati orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each class can start at a different time: Settings → Timetable data."
+          }
+        }
+      }
+    },
+    "Ogni studio di oggi è un voto migliore domani. 📚": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every bit of study today is a better grade tomorrow. 📚"
+          }
+        }
+      }
+    },
+    "Opzionale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
+    "Ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        }
+      }
+    },
+    "Ora d'inizio per classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start time per class"
+          }
+        }
+      }
+    },
+    "Ora manuale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual time"
+          }
+        }
+      }
+    },
+    "Orale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oral"
+          }
+        }
+      }
+    },
+    "Orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable"
+          }
+        }
+      }
+    },
+    "Orario %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable %@"
+          }
+        }
+      }
+    },
+    "Orario di consultazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viewing time"
+          }
+        }
+      }
+    },
+    "Orario importato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable imported"
+          }
+        }
+      }
+    },
+    "Orario non plausibile: contiene il giorno %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Implausible timetable: it contains the day %@."
+          }
+        }
+      }
+    },
+    "Orario non plausibile: lezioni alle %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Implausible timetable: lessons at %@."
+          }
+        }
+      }
+    },
+    "Orario personale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal timetable"
+          }
+        }
+      }
+    },
+    "Ottobre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "October"
+          }
+        }
+      }
+    },
+    "PDF Orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable PDF"
+          }
+        }
+      }
+    },
+    "PDF non supportato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsupported PDF"
+          }
+        }
+      }
+    },
+    "PDF originale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original PDF"
+          }
+        }
+      }
+    },
+    "PROSSIMA ORA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEXT PERIOD"
+          }
+        }
+      }
+    },
+    "Pensata per iPad": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Designed for iPad"
+          }
+        }
+      }
+    },
+    "Pentamestre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pentamester"
+          }
+        }
+      }
+    },
+    "Per classe o per docente: vedi subito dov'è e cosa c'è adesso, oggi o in settimana.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By class or by teacher: see right away where they are and what's on now, today or this week."
+          }
+        }
+      }
+    },
+    "Per il massimo servono solo voti pieni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only top grades will get you the maximum"
+          }
+        }
+      }
+    },
+    "Per iniziare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting started"
+          }
+        }
+      }
+    },
+    "Per inviare la segnalazione configura un account nell'app Mail, oppure scrivi a %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To send the report, set up an account in the Mail app, or write to %@."
+          }
+        }
+      }
+    },
+    "Per quale classe è l'orario?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which class is this timetable for?"
+          }
+        }
+      }
+    },
+    "Periodi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Periods"
+          }
+        }
+      }
+    },
+    "Periodo: %@. Cambia la data per modificare il periodo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period: %@. Change the date to change the period."
+          }
+        }
+      }
+    },
+    "Personalizzato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        }
+      }
+    },
+    "Peso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight"
+          }
+        }
+      }
+    },
+    "Peso e media": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight and average"
+          }
+        }
+      }
+    },
+    "Piccoli passi, grandi risultati. Continua così! 🎯": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small steps, big results. Keep it up! 🎯"
+          }
+        }
+      }
+    },
+    "Pizzica per lo zoom": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinch to zoom"
+          }
+        }
+      }
+    },
+    "Più avvisi per la stessa voce, ciascuno con giorno e ora (ricorrenti ogni settimana): uno il giorno prima e uno il giorno stesso, per esempio.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several alerts for the same item, each with its own day and time (repeating every week): one the day before and one on the day itself, for example."
+          }
+        }
+      }
+    },
+    "Più tardi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      }
+    },
+    "Pratico": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Practical"
+          }
+        }
+      }
+    },
+    "Professore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher"
+          }
+        }
+      }
+    },
+    "Promemoria": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        }
+      }
+    },
+    "Promemoria multipli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiple reminders"
+          }
+        }
+      }
+    },
+    "Prova un altro PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try another PDF"
+          }
+        }
+      }
+    },
+    "Puoi assegnare giorni e ore con la creazione manuale.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can assign days and times with manual creation."
+          }
+        }
+      }
+    },
+    "Quadrimestri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semesters"
+          }
+        }
+      }
+    },
+    "Questo colore è già usato da: %@. Vuoi usarlo lo stesso?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This color is already used by: %@. Use it anyway?"
+          }
+        }
+      }
+    },
+    "Religione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Religious education"
+          }
+        }
+      }
+    },
+    "Rimuovere l'orario?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the timetable?"
+          }
+        }
+      }
+    },
+    "Rimuovi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Rimuovi orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove timetable"
+          }
+        }
+      }
+    },
+    "Rinomina": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
+    "Rinomina classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename class"
+          }
+        }
+      }
+    },
+    "Ripristina": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        }
+      }
+    },
+    "Ripristina modifiche": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes"
+          }
+        }
+      }
+    },
+    "Ripristinare il backup?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore the backup?"
+          }
+        }
+      }
+    },
+    "Ripristinare le modifiche?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard the changes?"
+          }
+        }
+      }
+    },
+    "Sab": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sat"
+          }
+        }
+      }
+    },
+    "Sabato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saturday"
+          }
+        }
+      }
+    },
+    "Salta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "Salta per ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip for now"
+          }
+        }
+      }
+    },
+    "Salva": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Sbagliare fa parte del percorso: conta rialzare la media. 🌱": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mistakes are part of the journey: what matters is bringing the average back up. 🌱"
+          }
+        }
+      }
+    },
+    "Scala dei voti (sufficienza e massimo) e periodi: quadrimestri oppure trimestre + pentamestre, con la fine del primo periodo (solo giorno e mese).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grade scale (passing and maximum) and periods: semesters or trimester + pentamester, with the end of the first period (day and month only)."
+          }
+        }
+      }
+    },
+    "Scala dei voti e periodi: colori, obiettivi e medie si adattano subito. La fine del primo periodo usa solo giorno e mese.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grade scale and periods: colors, targets and averages adapt right away. The end of the first period uses day and month only."
+          }
+        }
+      }
+    },
+    "Scegli esistente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose existing"
+          }
+        }
+      }
+    },
+    "Scegli per quali classi assegnare o correggere le materie: le altre restano invariate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which classes to assign or fix subjects for: the others stay unchanged."
+          }
+        }
+      }
+    },
+    "Scegli tu per quali classi completare i dati: le altre restano come nel PDF.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which classes to complete: the others stay as in the PDF."
+          }
+        }
+      }
+    },
+    "Scegli un colore per ogni classe, docente o materia: lo ritrovi nella settimana, nel giorno e nel builder.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a color for each class, teacher or subject: you'll see it in the week, the day and the builder."
+          }
+        }
+      }
+    },
+    "Scienze": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Science"
+          }
+        }
+      }
+    },
+    "Scienze motorie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sports science"
+          }
+        }
+      }
+    },
+    "Scienze naturali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natural sciences"
+          }
+        }
+      }
+    },
+    "Scritto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Written"
+          }
+        }
+      }
+    },
+    "Scrivi la nota…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write the note…"
+          }
+        }
+      }
+    },
+    "Scuro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "Se sì, questa ora può avere una materia diversa; le altre ore del docente restano invariate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If yes, this period can have a different subject; the teacher's other periods stay unchanged."
+          }
+        }
+      }
+    },
+    "Segna i voti, scegli il peso e tieni d'occhio media, andamento e obiettivi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record grades, choose their weight and keep an eye on average, trend and targets."
+          }
+        }
+      }
+    },
+    "Segnala un problema": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report a problem"
+          }
+        }
+      }
+    },
+    "Segnalazione inviata!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report sent!"
+          }
+        }
+      }
+    },
+    "Sei sicuro di voler modificare il database? Modifiche non corrette potrebbero impedire il corretto funzionamento dell'app.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to edit the database? Incorrect changes could stop the app from working properly."
+          }
+        }
+      }
+    },
+    "Seleziona": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select"
+          }
+        }
+      }
+    },
+    "Seleziona tutto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all"
+          }
+        }
+      }
+    },
+    "Selezione multipla e archivio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiple selection and archive"
+          }
+        }
+      }
+    },
+    "Senza PDF scegli \"Crea il mio orario\": il nome della classe è obbligatorio all'inizio (si può rinominare dopo, dalle Impostazioni orario), imposti ore (inizio + durata) e giorni, poi tocchi le celle della griglia per inserire le materie. La griglia è un foglio: pizzichi per zoomare e trascini per muoverti; in basso a sinistra c'è il controllo dello zoom e, quando sei zoomato, in basso a destra compare la minimappa per orientarti. Le celle libere sono tratteggiate; il docente è facoltativo e viene ricompilato da solo una volta abbinato a una materia.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without a PDF choose \"Create my timetable\": a class name is required at the start (you can rename it later from Timetable settings), you set periods (start + length) and days, then tap the grid cells to enter subjects. The grid is a sheet: pinch to zoom and drag to move around; at the bottom left there's the zoom control and, when you're zoomed in, a minimap appears at the bottom right to help you find your way. Free cells are dashed; the teacher is optional and is filled in automatically once matched to a subject."
+          }
+        }
+      }
+    },
+    "Serve per poterti rispondere.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needed so I can reply to you."
+          }
+        }
+      }
+    },
+    "Settembre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "September"
           }
         }
       }
@@ -42,15 +4361,1036 @@
         }
       }
     },
-    "Ora": {
+    "Settimana a tutto schermo e schermate su due colonne in orizzontale.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Time"
+            "value": "Full-screen week and two-column screens in landscape."
+          }
+        }
+      }
+    },
+    "Si aprirà l'app Mail con il messaggio già pronto, da inviare a %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Mail app will open with the message ready to send to %@."
+          }
+        }
+      }
+    },
+    "Sincronizza ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync now"
+          }
+        }
+      }
+    },
+    "Sincronizzazione iCloud": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Sync"
+          }
+        }
+      }
+    },
+    "Soglia personalizzata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom threshold"
+          }
+        }
+      }
+    },
+    "Sorgente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        }
+      }
+    },
+    "Sorgente e contenuto dell'orario caricato, ora corrente o manuale, PDF originale, modifica dell'orario creato a mano e Dati orario (docenti, classi, fasce, lezioni e materie per classe con le corrispondenze docente ↔ materia).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and content of the loaded timetable, current or manual time, original PDF, editing a hand-made timetable and Timetable data (teachers, classes, slots, lessons and subjects by class with teacher ↔ subject matches)."
+          }
+        }
+      }
+    },
+    "Sostituire il tuo orario?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace your timetable?"
+          }
+        }
+      }
+    },
+    "Sotto le date trovi Tutti / Compiti / Verifiche / Interrogazioni, sempre visibili. Le verifiche hanno la card rosata con il bordo sfumato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the dates you'll find All / Homework / Tests / Oral tests, always visible. Tests have a pink card with a soft border."
+          }
+        }
+      }
+    },
+    "Sottotitolo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subheading"
+          }
+        }
+      }
+    },
+    "Spagnolo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spanish"
+          }
+        }
+      }
+    },
+    "Spazio iCloud esaurito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud storage full"
+          }
+        }
+      }
+    },
+    "Stile del paragrafo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paragraph style"
+          }
+        }
+      }
+    },
+    "Storia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Storia dell'arte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Art history"
+          }
+        }
+      }
+    },
+    "Su iPad": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On iPad"
+          }
+        }
+      }
+    },
+    "Su iPad la Settimana occupa tutto lo schermo, con materia e docente in ogni ora. Il Diario mostra le date su due colonne e, in verticale, i voti stanno su due colonne. In orizzontale l'Orario e i Voti si dividono in due colonne (controlli o riepilogo a sinistra, contenuto a destra). Su iPad le voci del diario si archiviano tenendo premuto.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On iPad the Week fills the whole screen, with subject and teacher in every period. The Planner shows dates in two columns and, in portrait, grades sit in two columns. In landscape the Timetable and Grades split into two columns (controls or summary on the left, content on the right). On iPad you archive planner items by touching and holding."
+          }
+        }
+      }
+    },
+    "Sufficienza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passing grade"
+          }
+        }
+      }
+    },
+    "Supporto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        }
+      }
+    },
+    "Sviluppatore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer"
+          }
+        }
+      }
+    },
+    "Svuota cella": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear cell"
+          }
+        }
+      }
+    },
+    "Sì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes"
+          }
+        }
+      }
+    },
+    "Tecnologia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Technology"
+          }
+        }
+      }
+    },
+    "Tedesco": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "German"
+          }
+        }
+      }
+    },
+    "Tema": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme"
+          }
+        }
+      }
+    },
+    "Tema chiaro/scuro/automatico, dimensione del testo (fino a Enorme) e colori personalizzati per classi, docenti e materie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light/dark/automatic theme, text size (up to Huge) and custom colors for classes, teachers and subjects."
+          }
+        }
+      }
+    },
+    "Tema e colori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme and colors"
+          }
+        }
+      }
+    },
+    "Ti basta un voto da": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You just need a grade of"
+          }
+        }
+      }
+    },
+    "Ti servono circa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You need about"
+          }
+        }
+      }
+    },
+    "Tieni premuto su un docente o una classe per aggiungere una voce al diario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold a teacher or a class to add a planner item."
+          }
+        }
+      }
+    },
+    "Tieni premuto su una lezione e scegli \"Crea nota\": la voce di diario nasce già con giorno, ora, docente/classe e materia compilati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold a lesson and choose \"Create note\": the planner item starts with day, time, teacher/class and subject already filled in."
+          }
+        }
+      }
+    },
+    "Tieni premuto su una lezione per annotare compiti e promemoria, ordinati per giorno e ora.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold a lesson to note homework and reminders, sorted by day and time."
+          }
+        }
+      }
+    },
+    "Tieni premuto su una voce per Modifica, Archivia o Elimina. Lo scorrimento verso sinistra archivia soltanto: per eliminare usa la pressione prolungata o la selezione multipla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold an item for Edit, Archive or Delete. Swiping left only archives: to delete, use touch and hold or multiple selection."
+          }
+        }
+      }
+    },
+    "Tipo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        }
+      }
+    },
+    "Titolo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "Tocca + per aggiungere il primo voto e iniziare a tenere d'occhio la media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + to add your first grade and start keeping an eye on your average."
+          }
+        }
+      }
+    },
+    "Tocca il badge Live (o dalle Impostazioni) per fissare un giorno e un'ora specifici da consultare al posto dell'ora corrente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the Live badge (or go to Settings) to set a specific day and time to view instead of the current time."
+          }
+        }
+      }
+    },
+    "Tocca il pulsante + in basso a destra. Nel testo puoi usare Titolo, Intestazione, Sottotitolo, Corpo e grassetto, corsivo, sottolineato, barrato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the + button at the bottom right. In the text you can use Title, Heading, Subheading, Body and bold, italic, underline, strikethrough."
+          }
+        }
+      }
+    },
+    "Tocca un docente per rinominarlo ovunque nell'orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a teacher to rename them everywhere in the timetable."
+          }
+        }
+      }
+    },
+    "Tocca una classe per rinominarla ovunque nell'orario.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a class to rename it everywhere in the timetable."
+          }
+        }
+      }
+    },
+    "Tocca una lezione per saltare alla sua controparte: dalla classe vedi l'orario di quel docente, e viceversa. Il passaggio è animato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a lesson to jump to its counterpart: from the class you see that teacher's timetable, and vice versa. The switch is animated."
+          }
+        }
+      }
+    },
+    "Trimestre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trimester"
+          }
+        }
+      }
+    },
+    "Trimestre + Pentamestre": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trimester + Pentamester"
+          }
+        }
+      }
+    },
+    "Tutorial": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutorial"
+          }
+        }
+      }
+    },
+    "Tutte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "Tutte le funzioni, sezione per sezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every feature, section by section"
+          }
+        }
+      }
+    },
+    "Tutte le modifiche fatte in questa schermata verranno annullate.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All changes made on this screen will be discarded."
+          }
+        }
+      }
+    },
+    "Tutte le voci del diario, archivio incluso, verranno eliminate. L'azione non è reversibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All planner items, archive included, will be deleted. This cannot be undone."
+          }
+        }
+      }
+    },
+    "Tutti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "Tutti i voti verranno eliminati. L'azione non è reversibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All grades will be deleted. This cannot be undone."
+          }
+        }
+      }
+    },
+    "Ultimi voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest grades"
+          }
+        }
+      }
+    },
+    "Ultimi voti ed elenco materie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest grades and subject list"
+          }
+        }
+      }
+    },
+    "Un unico file con orario, diario e voti: esportalo per sicurezza o per passare a un altro dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A single file with timetable, planner and grades: export it to be safe or to move to another device."
+          }
+        }
+      }
+    },
+    "Un voto alla volta: la media si costruisce con costanza. 💪": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One grade at a time: an average is built with consistency. 💪"
+          }
+        }
+      }
+    },
+    "Uno o più avvisi settimanali, ciascuno con giorno e ora.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One or more weekly alerts, each with a day and time."
+          }
+        }
+      }
+    },
+    "Usa colore automatico": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use automatic color"
+          }
+        }
+      }
+    },
+    "Usa comunque": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use anyway"
+          }
+        }
+      }
+    },
+    "Usa ora corrente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use current time"
+          }
+        }
+      }
+    },
+    "Vedere la controparte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seeing the counterpart"
+          }
+        }
+      }
+    },
+    "Vedi tutti ›": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all ›"
+          }
+        }
+      }
+    },
+    "Ven": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri"
+          }
+        }
+      }
+    },
+    "Venerdì": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Friday"
+          }
+        }
+      }
+    },
+    "Verifica": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test"
+          }
+        }
+      }
+    },
+    "Verifica…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "Verifiche": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tests"
+          }
+        }
+      }
+    },
+    "Versione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        }
+      }
+    },
+    "Voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades"
+          }
+        }
+      }
+    },
+    "Voti sotto controllo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades under control"
+          }
+        }
+      }
+    },
+    "Voti · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades · %lld"
+          }
+        }
+      }
+    },
+    "Voti, diario e orario uguali su iPhone e iPad con lo stesso Apple ID.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades, planner and timetable in sync on iPhone and iPad with the same Apple ID."
+          }
+        }
+      }
+    },
+    "Voti, diario, orario e impostazioni di scuola si aggiornano su tutti i dispositivi con lo stesso Apple ID.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades, planner, timetable and school settings update on all devices with the same Apple ID."
+          }
+        }
+      }
+    },
+    "Voto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grade"
+          }
+        }
+      }
+    },
+    "Voto massimo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum grade"
+          }
+        }
+      }
+    },
+    "Voto sufficiente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passing grade"
+          }
+        }
+      }
+    },
+    "Weekend": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekend"
+          }
+        }
+      }
+    },
+    "ZONA DI RISCHIO": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DANGER ZONE"
+          }
+        }
+      }
+    },
+    "Zona di rischio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zone"
+          }
+        }
+      }
+    },
+    "ao ma la smetti di cliccare? hai capito che questo tasto non funziona. Comunque troppe lezioni pure noi ci siamo stancati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hey, will you stop tapping? you get that this button doesn't work. Anyway, that's a lot of lessons, even we got tired."
+          }
+        }
+      }
+    },
+    "calendar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "calendar"
+          }
+        }
+      }
+    },
+    "checkmark": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "checkmark"
+          }
+        }
+      }
+    },
+    "classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "classes"
+          }
+        }
+      }
+    },
+    "developed by davide 😗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "developed by davide 😗"
+          }
+        }
+      }
+    },
+    "docenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "teachers"
+          }
+        }
+      }
+    },
+    "friday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "friday"
+          }
+        }
+      }
+    },
+    "giorni e ore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days and times"
+          }
+        }
+      }
+    },
+    "in chiusura": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ending"
+          }
+        }
+      }
+    },
+    "lezioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lessons"
+          }
+        }
+      }
+    },
+    "materie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subjects"
+          }
+        }
+      }
+    },
+    "monday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "monday"
+          }
+        }
+      }
+    },
+    "n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "n"
+          }
+        }
+      }
+    },
+    "saturday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "saturday"
+          }
+        }
+      }
+    },
+    "termina tra %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ends in %lld min"
+          }
+        }
+      }
+    },
+    "textformat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "textformat"
+          }
+        }
+      }
+    },
+    "thursday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "thursday"
+          }
+        }
+      }
+    },
+    "tocca un punto per i dettagli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tap a point for details"
+          }
+        }
+      }
+    },
+    "tuesday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tuesday"
+          }
+        }
+      }
+    },
+    "voti da %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "grades of %@"
+          }
+        }
+      }
+    },
+    "wednesday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "wednesday"
+          }
+        }
+      }
+    },
+    "· %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %@"
+          }
+        }
+      }
+    },
+    "×%lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "×%lld%%"
+          }
+        }
+      }
+    },
+    "– ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "– "
+          }
+        }
+      }
+    },
+    "—": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        }
+      }
+    },
+    "№%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "№%lld"
           }
         }
       }
     }
-  }
+  },
+  "version": "1.0"
 }
