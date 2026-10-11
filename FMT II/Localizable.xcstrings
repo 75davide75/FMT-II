@@ -1,0 +1,56 @@
+{
+  "sourceLanguage": "it",
+  "version": "1.0",
+  "strings": {
+    "Orario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timetable"
+          }
+        }
+      }
+    },
+    "Diario": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planner"
+          }
+        }
+      }
+    },
+    "Voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades"
+          }
+        }
+      }
+    },
+    "Settimana": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week"
+          }
+        }
+      }
+    },
+    "Ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        }
+      }
+    }
+  }
+}

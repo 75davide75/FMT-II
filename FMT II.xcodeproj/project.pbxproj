@@ -187,9 +187,10 @@
 				};
 			};
 			buildConfigurationList = 1097EC702FF13D76008F5C5D /* Build configuration list for PBXProject "FMT II" */;
-			developmentRegion = en;
+			developmentRegion = it;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				it,
 				en,
 				Base,
 			);

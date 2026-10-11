@@ -46,9 +46,9 @@ extension AppSection {
 
     var title: String {
         switch self {
-        case .schedule: return "Orario"
-        case .notes:    return "Diario"
-        case .grades:   return "Voti"
+        case .schedule: return L("Orario")
+        case .notes:    return L("Diario")
+        case .grades:   return L("Voti")
         }
     }
 

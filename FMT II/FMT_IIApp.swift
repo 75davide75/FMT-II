@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 struct FMT_IIApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
+    @ObservedObject private var languages = LanguageSettings.shared
 
     /// App-wide text-size override (nil = follow the system). Capped at "Enorme".
     private var overrideTypeSize: DynamicTypeSize? {
@@ -65,9 +66,11 @@ struct FMT_IIApp: App {
         WindowGroup {
             ContentView()
                 .modifier(FixedTypeSize(size: overrideTypeSize))
-                // Force Italian date/number formatting (weekdays, months, pickers)
-                // regardless of the device language.
-                .environment(\.locale, Locale(identifier: "it_IT"))
+                // Lingua dell'app (testi, giorni, mesi, selettori) indipendente
+                // dalla lingua del dispositivo; cambiandola l'interfaccia si ricrea.
+                .environment(\.locale, languages.locale)
+                .id(languages.language)
+                .task { await languages.refineFromStorefront() }
         }
     }
 }

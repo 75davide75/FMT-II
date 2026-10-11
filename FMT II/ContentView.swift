@@ -183,6 +183,11 @@ struct ContentView: View {
                 default:     viewMode = .now
                 }
             }
+            // Prova del cambio lingua al volo (-FMTSwitchLanguage en|it dopo 3 s).
+            if let i = dbgArgs.firstIndex(of: "-FMTSwitchLanguage"), i + 1 < dbgArgs.count,
+               let target = AppLanguage(rawValue: dbgArgs[i + 1]) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { LanguageSettings.shared.choose(target) }
+            }
             #endif
             CloudSyncManager.shared.start(grades: gradesStore, notes: notesStore, schedule: store)
             SettingsSync.shared.start()
