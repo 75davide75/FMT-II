@@ -28,8 +28,8 @@ enum PDFParseError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noTextFound: return "Il PDF non contiene testo selezionabile."
-        case .noLessonsFound: return "Nessuna lezione trovata nel PDF."
+        case .noTextFound: return L("Il PDF non contiene testo selezionabile.")
+        case .noLessonsFound: return L("Nessuna lezione trovata nel PDF.")
         }
     }
 }
@@ -380,10 +380,10 @@ enum ScheduleField: String, CaseIterable, Equatable {
 
     var label: String {
         switch self {
-        case .classes: return "classi"
-        case .dayTime: return "giorni e ore"
-        case .subject: return "materie"
-        case .teacher: return "docenti"
+        case .classes: return L("classi")
+        case .dayTime: return L("giorni e ore")
+        case .subject: return L("materie")
+        case .teacher: return L("docenti")
         }
     }
 }
@@ -400,19 +400,20 @@ enum ScheduleRejectReason: Equatable {
     var message: String {
         switch self {
         case .invalidPDF:
-            return "Il file non è un PDF valido."
+            return L("Il file non è un PDF valido.")
         case .unrecognizedStructure:
-            return "La struttura dell'orario non è riconoscibile."
+            return L("La struttura dell'orario non è riconoscibile.")
         case .missingElements(let fields):
-            return "Nel PDF mancano troppi elementi (\(fields.map { $0.label }.joined(separator: ", ")))."
+            let list = fields.map { $0.label }.joined(separator: ", ")
+            return L("Nel PDF mancano troppi elementi (\(list)).")
         case .teacherConflict(let teacher, let day, let time):
-            return "Conflitto: il docente \(teacher) risulta in due classi diverse (\(day) \(time))."
+            return L("Conflitto: il docente \(teacher) risulta in due classi diverse (\(day) \(time)).")
         case .subjectConflict(let className, let day, let time):
-            return "Conflitto: la classe \(className) ha due materie nella stessa ora (\(day) \(time))."
+            return L("Conflitto: la classe \(className) ha due materie nella stessa ora (\(day) \(time)).")
         case .implausibleDay(let label):
-            return "Orario non plausibile: contiene il giorno \(label)."
+            return L("Orario non plausibile: contiene il giorno \(label).")
         case .implausibleTime(let time):
-            return "Orario non plausibile: lezioni alle \(time)."
+            return L("Orario non plausibile: lezioni alle \(time).")
         }
     }
 }

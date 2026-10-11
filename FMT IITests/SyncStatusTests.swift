@@ -3,6 +3,11 @@ import XCTest
 
 /// Stato della sincronizzazione mostrato in Impostazioni.
 final class SyncStatusTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        LanguageSettings.current = .italian   // i testi attesi sono quelli italiani
+    }
+
     func testLabels() {
         XCTAssertEqual(CloudSyncManager.Status.noAccount.label, "Accedi a iCloud")
         XCTAssertEqual(CloudSyncManager.Status.quotaExceeded.label, "Spazio iCloud esaurito")

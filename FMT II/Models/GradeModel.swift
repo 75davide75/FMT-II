@@ -65,10 +65,10 @@ enum GradeType: String, Codable, CaseIterable {
 
     var label: String {
         switch self {
-        case .oral:       return "Orale"
-        case .written:    return "Scritto"
-        case .practical:  return "Pratico"
-        case .giustifica: return "Giustifica"
+        case .oral:       return L("Orale")
+        case .written:    return L("Scritto")
+        case .practical:  return L("Pratico")
+        case .giustifica: return L("Giustifica")
         }
     }
 

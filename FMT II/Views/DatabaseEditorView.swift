@@ -38,8 +38,8 @@ struct DatabaseEditorView: View {
         List {
             Section {
                 AuroraTitle(
-                    title: "Dati orario",
-                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · \(draft.lessons.count) lezioni · \(draft.teachers.count) docenti · \(draft.classes.count) classi"
+                    title: L("Dati orario"),
+                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · " + L("\(draft.lessons.count) lezioni · \(draft.teachers.count) docenti · \(draft.classes.count) classi")
                 )
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -115,7 +115,7 @@ struct DatabaseEditorView: View {
     private var timeSlotsSection: some View {
         Section {
             HStack {
-                Text(draft.perClassStartTimes ? "Inizio predefinito" : "Inizio 1ª ora").font(.system(size: 14.5, weight: .semibold))
+                Text(draft.perClassStartTimes ? L("Inizio predefinito") : L("Inizio 1ª ora")).font(.system(size: 14.5, weight: .semibold))
                 Spacer()
                 DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
                     .labelsHidden()
@@ -159,11 +159,11 @@ struct DatabaseEditorView: View {
                 .padding(.vertical, 2)
             }
         } header: {
-            SettingsView.header("Fasce orarie")
+            SettingsView.header(L("Fasce orarie"))
         } footer: {
             Text(draft.perClassStartTimes
-                 ? "La durata delle lezioni resta uguale per tutte le classi."
-                 : "Calcolate da inizio e durata — nessun inserimento manuale.")
+                 ? L("La durata delle lezioni resta uguale per tutte le classi.")
+                 : L("Calcolate da inizio e durata — nessun inserimento manuale."))
         }
         .listRowBackground(Color.sectionCard)
     }
@@ -215,9 +215,9 @@ struct DatabaseEditorView: View {
 
     private var teachersSection: some View {
         Section {
-            entityChips(draft.teachers, kind: .teacher, addLabel: "Aggiungi")
+            entityChips(draft.teachers, kind: .teacher, addLabel: L("Aggiungi"))
         } header: {
-            SettingsView.header("Docenti · \(draft.teachers.count)")
+            SettingsView.header(L("Docenti · \(draft.teachers.count)"))
         } footer: {
             Text("Tocca un docente per rinominarlo ovunque nell'orario.")
         }
@@ -264,9 +264,9 @@ struct DatabaseEditorView: View {
 
     private var classesSection: some View {
         Section {
-            entityChips(draft.classes, kind: .class_, addLabel: "Aggiungi")
+            entityChips(draft.classes, kind: .class_, addLabel: L("Aggiungi"))
         } header: {
-            SettingsView.header("Classi · \(draft.classes.count)")
+            SettingsView.header(L("Classi · \(draft.classes.count)"))
         } footer: {
             Text("Tocca una classe per rinominarla ovunque nell'orario.")
         }
@@ -300,7 +300,7 @@ struct DatabaseEditorView: View {
                 }
             }
         } header: {
-            SettingsView.header("Materie")
+            SettingsView.header(L("Materie"))
         } footer: {
             Text("Assegna o correggi la materia di ogni ora, classe per classe: la materia inserita per un docente si propaga alle sue altre ore.")
         }
@@ -329,7 +329,7 @@ struct DatabaseEditorView: View {
                         draft.lessons.removeAll { ids.contains($0.id) }
                     }
                 } header: {
-                    SettingsView.header(dayLabels[day] ?? day.rawValue)
+                    SettingsView.header(day.displayName)
                 }
                 .listRowBackground(Color.sectionCard)
             }
@@ -527,7 +527,7 @@ struct SubjectAssignmentView: View {
                         .font(.subheadline.weight(.semibold))
                     FlowLayoutChips(items: draft.classes, selected: $selectedClasses)
                     HStack {
-                        Button(selectedClasses.count == draft.classes.count ? "Nessuna" : "Tutte") {
+                        Button(selectedClasses.count == draft.classes.count ? L("Nessuna") : L("Tutte")) {
                             if selectedClasses.count == draft.classes.count {
                                 selectedClasses.removeAll()
                             } else {
@@ -634,8 +634,8 @@ private struct RenameTarget: Identifiable {
     var title: String {
         let adding = current.isEmpty
         switch kind {
-        case .teacher: return adding ? "Nuovo docente" : "Modifica docente"
-        case .class_:  return adding ? "Nuova classe" : "Modifica classe"
+        case .teacher: return adding ? L("Nuovo docente") : L("Modifica docente")
+        case .class_:  return adding ? L("Nuova classe") : L("Modifica classe")
         }
     }
 }
@@ -696,7 +696,7 @@ private struct LessonEditorSheet: View {
             Form {
                 Picker("Giorno", selection: $day) {
                     ForEach(days, id: \.self) { d in
-                        Text(dayLabels[d] ?? d.rawValue).tag(d)
+                        Text(d.displayName).tag(d)
                     }
                 }
                 Picker("Ora", selection: $period) {
@@ -717,7 +717,7 @@ private struct LessonEditorSheet: View {
                     pickRow(teachers, onPick: { teacher = $0 })
                 }
             }
-            .navigationTitle(lesson == nil ? "Nuova lezione" : "Modifica lezione")
+            .navigationTitle(lesson == nil ? L("Nuova lezione") : L("Modifica lezione"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Annulla") { dismiss() } }

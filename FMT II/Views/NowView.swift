@@ -64,7 +64,7 @@ private struct CurrentLessonCard: View {
     private var remainingText: String {
         guard let l = lesson else { return "" }
         let mins = minutesFromMidnight(l.endTime) - minutesFromMidnight(activeTime)
-        return mins > 0 ? "termina tra \(mins) min" : "in chiusura"
+        return mins > 0 ? L("termina tra \(mins) min") : L("in chiusura")
     }
 
     var body: some View {
@@ -130,7 +130,7 @@ private struct CurrentLessonCard: View {
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(targetMode == .class_ ? l.dayLabel : (l.teacher.isEmpty ? l.subject : l.teacher))
+                    Text(targetMode == .class_ ? l.day.displayName : (l.teacher.isEmpty ? l.subject : l.teacher))
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

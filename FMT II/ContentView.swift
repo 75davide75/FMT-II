@@ -381,7 +381,7 @@ struct WelcomeView: View {
                 }
 
                 Button(action: onImport) {
-                    Label(isImporting ? "Caricamento..." : "Importa PDF", systemImage: "square.and.arrow.up")
+                    Label(isImporting ? L("Caricamento...") : L("Importa PDF"), systemImage: "square.and.arrow.up")
                         .font(.headline)
                         .padding(.horizontal, 28)
                         .padding(.vertical, 14)
@@ -609,11 +609,11 @@ func nearestTimeIndex(_ time: String, times: [String]) -> Int {
 }
 
 func weekendText(day: DayId?, time: String) -> String {
-    guard day != nil else { return "Oggi non è nel calendario scolastico." }
+    guard day != nil else { return L("Oggi non è nel calendario scolastico.") }
     let mins = minutesFromMidnight(time)
-    if mins < minutesFromMidnight("08:10") { return "Le lezioni non sono ancora iniziate." }
-    if mins >= minutesFromMidnight("14:10") { return "Le lezioni sono terminate." }
-    return "Nessun docente in questa fascia."
+    if mins < minutesFromMidnight("08:10") { return L("Le lezioni non sono ancora iniziate.") }
+    if mins >= minutesFromMidnight("14:10") { return L("Le lezioni sono terminate.") }
+    return L("Nessun docente in questa fascia.")
 }
 
 // MARK: - Document picker

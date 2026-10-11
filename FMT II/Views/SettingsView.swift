@@ -123,7 +123,7 @@ struct SettingsView: View {
                 if case .success(let url) = result {
                     loadBackup(from: url)
                 } else {
-                    importError = "Impossibile aprire il file."
+                    importError = L("Impossibile aprire il file.")
                 }
             }
             .alert("Ripristinare il backup?", isPresented: $showImportConfirm, presenting: pendingBackup) { backup in
@@ -134,7 +134,7 @@ struct SettingsView: View {
                     if let s = backup.schedule { store.restore(s) }
                 }
             } message: { backup in
-                let orario = backup.schedule != nil ? ", orario incluso" : ""
+                let orario = backup.schedule != nil ? L(", orario incluso") : ""
                 Text("I dati attuali verranno sostituiti con il backup: \(backup.notes.count) voci di diario e \(backup.grades.count) voti\(orario). L'azione non è reversibile.")
             }
             .alert("Errore", isPresented: Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })) {
@@ -203,7 +203,7 @@ struct SettingsView: View {
                 Text("Chiaro").tag("light")
                 Text("Scuro").tag("dark")
             } label: {
-                Self.row("Tema", icon: "circle.lefthalf.filled", "#8B5CF6")
+                Self.row(L("Tema"), icon: "circle.lefthalf.filled", "#8B5CF6")
             }
             Picker(selection: $dynamicTypeLevel) {
                 Text("Automatica").tag(0)
@@ -211,20 +211,20 @@ struct SettingsView: View {
                 Text("Molto grande").tag(2)
                 Text("Enorme").tag(3)
             } label: {
-                Self.row("Dimensione testo", icon: "textformat.size", "#4E7CF6")
+                Self.row(L("Dimensione testo"), icon: "textformat.size", "#4E7CF6")
             }
             if let schedule = store.schedule {
                 NavigationLink {
                     EntityColorsView(schedule: schedule)
                 } label: {
-                    Self.row("Colori di classi e docenti", icon: "paintpalette.fill", "#F472B6")
+                    Self.row(L("Colori di classi e docenti"), icon: "paintpalette.fill", "#F472B6")
                 }
             }
         } header: {
-            Self.header("Aspetto")
+            Self.header(L("Aspetto"))
         } footer: {
             Text(store.schedule != nil
-                 ? "Scegli un colore per ogni classe, docente o materia: lo ritrovi nella settimana, nel giorno e nel builder."
+                 ? L("Scegli un colore per ogni classe, docente o materia: lo ritrovi nella settimana, nel giorno e nel builder.")
                  : "")
         }
         .listRowBackground(Color.sectionCard)
@@ -237,23 +237,23 @@ struct SettingsView: View {
                 LabeledContent {
                     Text(schedule.sourceName).lineLimit(1).truncationMode(.middle)
                 } label: {
-                    Self.row("Sorgente", icon: "doc.fill", "#38BDF8")
+                    Self.row(L("Sorgente"), icon: "doc.fill", "#38BDF8")
                 }
                 LabeledContent {
                     Text("\(schedule.lessons.count) lezioni · \(schedule.classes.count) classi · \(schedule.teachers.count) docenti")
                 } label: {
-                    Self.row("Contenuto", icon: "square.grid.3x3.fill", "#4E7CF6")
+                    Self.row(L("Contenuto"), icon: "square.grid.3x3.fill", "#4E7CF6")
                 }
                 Toggle(isOn: $useLiveTime) {
-                    Self.row("Usa ora corrente", icon: "clock.arrow.circlepath", "#34D399")
+                    Self.row(L("Usa ora corrente"), icon: "clock.arrow.circlepath", "#34D399")
                 }
                 if !useLiveTime {
                     Picker(selection: manualDay) {
                         ForEach(schedule.days) { day in
-                            Text(day.label).tag(day.id)
+                            Text(day.id.displayName).tag(day.id)
                         }
                     } label: {
-                        Self.row("Giorno", icon: "calendar", "#2DD4BF")
+                        Self.row(L("Giorno"), icon: "calendar", "#2DD4BF")
                     }
                     if !schoolTimes.isEmpty {
                         Picker(selection: $manualTime) {
@@ -261,33 +261,33 @@ struct SettingsView: View {
                                 Text(time).tag(time)
                             }
                         } label: {
-                            Self.row("Ora", icon: "clock", "#60A5FA")
+                            Self.row(L("Ora"), icon: "clock", "#60A5FA")
                         }
                         .pickerStyle(.menu)
                     }
                 }
                 if store.schedule?.edited == true {
                     Button { showBuilder = true } label: {
-                        Self.row("Modifica orario", icon: "square.and.pencil", "#FB923C")
+                        Self.row(L("Modifica orario"), icon: "square.and.pencil", "#FB923C")
                             .foregroundStyle(.primary)
                     }
                 }
                 if store.savedPDFURL != nil {
                     Button { showPDFViewer = true } label: {
-                        Self.row("PDF originale", icon: "doc.text.magnifyingglass", "#A78BFA")
+                        Self.row(L("PDF originale"), icon: "doc.text.magnifyingglass", "#A78BFA")
                             .foregroundStyle(.primary)
                     }
                 }
                 Button { showDBDisclaimer = true } label: {
-                    Self.row("Dati orario", icon: "slider.horizontal.3", "#F59E0B")
+                    Self.row(L("Dati orario"), icon: "slider.horizontal.3", "#F59E0B")
                         .foregroundStyle(.primary)
                 }
             } header: {
-                Self.header("Orario")
+                Self.header(L("Orario"))
             } footer: {
                 Text(useLiveTime
-                     ? "Con l'ora corrente attiva, la vista Adesso segue l'orologio del dispositivo."
-                     : "Giorno e ora fissati manualmente per consultare un momento specifico.")
+                     ? L("Con l'ora corrente attiva, la vista Adesso segue l'orologio del dispositivo.")
+                     : L("Giorno e ora fissati manualmente per consultare un momento specifico."))
             }
             .listRowBackground(Color.sectionCard)
         }
@@ -301,15 +301,15 @@ struct SettingsView: View {
                     dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFilePicker = true }
                 } label: {
-                    Self.row("Importa orario PDF", icon: "square.and.arrow.up", "#38BDF8")
+                    Self.row(L("Importa orario PDF"), icon: "square.and.arrow.up", "#38BDF8")
                         .foregroundStyle(.primary)
                 }
                 Button { showBuilder = true } label: {
-                    Self.row("Crea il mio orario", icon: "square.and.pencil", "#4E7CF6")
+                    Self.row(L("Crea il mio orario"), icon: "square.and.pencil", "#4E7CF6")
                         .foregroundStyle(.primary)
                 }
             } header: {
-                Self.header("Orario")
+                Self.header(L("Orario"))
             } footer: {
                 Text("Importa il PDF dell'orario, oppure crealo a mano.")
             }
@@ -330,13 +330,13 @@ struct SettingsView: View {
             Button {
                 Task { await sync.syncNow() }
             } label: {
-                Self.row("Sincronizza ora", icon: "arrow.triangle.2.circlepath", "#4E7CF6")
+                Self.row(L("Sincronizza ora"), icon: "arrow.triangle.2.circlepath", "#4E7CF6")
                     .foregroundStyle(.primary)
                     .opacity(canSyncNow ? 1 : 0.4)
             }
             .disabled(!canSyncNow)
         } header: {
-            Self.header("Sincronizzazione iCloud")
+            Self.header(L("Sincronizzazione iCloud"))
         } footer: {
             switch sync.status {
             case .noAccount:
@@ -354,7 +354,7 @@ struct SettingsView: View {
         Section {
             Stepper(value: $sufficientGrade, in: 1...(max(maxGrade - 1, 2)), step: 0.5) {
                 HStack {
-                    Self.row("Voto sufficiente", icon: "checkmark.seal.fill", "#34D399")
+                    Self.row(L("Voto sufficiente"), icon: "checkmark.seal.fill", "#34D399")
                     Spacer()
                     Text(sufficientGrade.italianGrade)
                         .font(.system(size: 15, weight: .heavy))
@@ -363,7 +363,7 @@ struct SettingsView: View {
             }
             Stepper(value: $maxGrade, in: (sufficientGrade + 1)...20, step: 1) {
                 HStack {
-                    Self.row("Voto massimo", icon: "star.fill", "#FBBF24")
+                    Self.row(L("Voto massimo"), icon: "star.fill", "#FBBF24")
                     Spacer()
                     Text(maxGrade.italianGrade)
                         .font(.system(size: 15, weight: .heavy))
@@ -374,15 +374,15 @@ struct SettingsView: View {
                 Text("Quadrimestri").tag(PeriodSystem.quadrimestri.rawValue)
                 Text("Trimestre + Pentamestre").tag(PeriodSystem.trimestre.rawValue)
             } label: {
-                Self.row("Periodi", icon: "calendar.badge.clock", "#8B5CF6")
+                Self.row(L("Periodi"), icon: "calendar.badge.clock", "#8B5CF6")
             }
             MonthDayField(
                 timestamp: $period1EndTimestamp,
                 system: PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri,
-                label: "Fine \(period1Label)"
+                label: L("Fine \(period1Label)")
             )
         } header: {
-            Self.header("Voti")
+            Self.header(L("Voti"))
         } footer: {
             Text("Scala dei voti e periodi: colori, obiettivi e medie si adattano subito. La fine del primo periodo usa solo giorno e mese.")
         }
@@ -394,7 +394,7 @@ struct SettingsView: View {
             LabeledContent("Versione", value: appVersion)
             LabeledContent("Sviluppatore", value: "Davide Sogos")
         } header: {
-            Self.header("Informazioni")
+            Self.header(L("Informazioni"))
         }
         .listRowBackground(Color.sectionCard)
     }
@@ -402,19 +402,19 @@ struct SettingsView: View {
     private var supportSection: some View {
         Section {
             NavigationLink { TutorialView() } label: {
-                Self.row("Tutorial", icon: "graduationcap.fill", "#4E7CF6")
+                Self.row(L("Tutorial"), icon: "graduationcap.fill", "#4E7CF6")
             }
             NavigationLink { ManualView() } label: {
-                Self.row("Manuale", icon: "book.fill", "#8B5CF6")
+                Self.row(L("Manuale"), icon: "book.fill", "#8B5CF6")
             }
             NavigationLink { BugReportView() } label: {
-                Self.row("Segnala un problema", icon: "exclamationmark.bubble.fill", "#FB923C")
+                Self.row(L("Segnala un problema"), icon: "exclamationmark.bubble.fill", "#FB923C")
             }
             NavigationLink { AboutAppView() } label: {
-                Self.row("Chi sono", icon: "person.fill", "#F472B6")
+                Self.row(L("Chi sono"), icon: "person.fill", "#F472B6")
             }
         } header: {
-            Self.header("Supporto")
+            Self.header(L("Supporto"))
         }
         .listRowBackground(Color.sectionCard)
     }
@@ -425,18 +425,18 @@ struct SettingsView: View {
             Section {
                 if let backupURL {
                     ShareLink(item: backupURL) {
-                        Self.row("Esporta backup", icon: "square.and.arrow.up", "#38BDF8")
+                        Self.row(L("Esporta backup"), icon: "square.and.arrow.up", "#38BDF8")
                             .foregroundStyle(.primary)
                     }
                 }
                 Button {
                     showImporter = true
                 } label: {
-                    Self.row("Importa backup", icon: "square.and.arrow.down", "#34D399")
+                    Self.row(L("Importa backup"), icon: "square.and.arrow.down", "#34D399")
                         .foregroundStyle(.primary)
                 }
             } header: {
-                Self.header("Dati e backup")
+                Self.header(L("Dati e backup"))
             } footer: {
                 Text("Un unico file con orario, diario e voti: esportalo per sicurezza o per passare a un altro dispositivo.")
             }
@@ -456,23 +456,23 @@ struct SettingsView: View {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFilePicker = true }
                         }
                     } label: {
-                        Self.row("Cambia PDF", icon: "arrow.triangle.2.circlepath", "#FB923C")
+                        Self.row(L("Cambia PDF"), icon: "arrow.triangle.2.circlepath", "#FB923C")
                             .foregroundStyle(.primary)
                     }
                     Button(role: .destructive) { showClearConfirmation = true } label: {
-                        Self.row("Rimuovi orario", icon: "trash.fill", "#FB7185")
+                        Self.row(L("Rimuovi orario"), icon: "trash.fill", "#FB7185")
                             .foregroundStyle(.red)
                     }
                 }
                 if notesStore != nil {
                     Button(role: .destructive) { showDeleteNotesConfirm = true } label: {
-                        Self.row("Cancella tutto il diario", icon: "trash.fill", "#F43F5E")
+                        Self.row(L("Cancella tutto il diario"), icon: "trash.fill", "#F43F5E")
                             .foregroundStyle(.red)
                     }
                 }
                 if gradesStore != nil {
                     Button(role: .destructive) { showDeleteGradesConfirm = true } label: {
-                        Self.row("Cancella tutti i voti", icon: "trash.fill", "#E11D48")
+                        Self.row(L("Cancella tutti i voti"), icon: "trash.fill", "#E11D48")
                             .foregroundStyle(.red)
                     }
                 }
@@ -481,7 +481,7 @@ struct SettingsView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(Color(hex: "#FB7185")!)
-                    Self.header("Zona di rischio", tint: Color(hex: "#FB7185")!)
+                    Self.header(L("Zona di rischio"), tint: Color(hex: "#FB7185")!)
                 }
             } footer: {
                 Text("Azioni definitive: prima di procedere viene sempre chiesta conferma.")
@@ -502,7 +502,7 @@ struct SettingsView: View {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let data = try? Data(contentsOf: url),
               let backup = try? JSONDecoder().decode(BackupData.self, from: data) else {
-            importError = "File di backup non valido."
+            importError = L("File di backup non valido.")
             return
         }
         pendingBackup = backup
@@ -510,7 +510,7 @@ struct SettingsView: View {
     }
 
     private var period1Label: String {
-        periodSystemRaw == PeriodSystem.quadrimestri.rawValue ? "1° Quadrimestre" : "Trimestre"
+        periodSystemRaw == PeriodSystem.quadrimestri.rawValue ? L("1° Quadrimestre") : L("Trimestre")
     }
 
     private var period1EndBinding: Binding<Date> {
@@ -536,7 +536,7 @@ struct SettingsView: View {
         let display = DateFormatter()
         display.dateStyle = .medium
         display.timeStyle = .short
-        display.locale = Locale(identifier: "it_IT")
+        display.locale = LanguageSettings.currentLocale
         return display.string(from: date)
     }
 }
@@ -550,8 +550,8 @@ private struct MonthDayField: View {
     let system: PeriodSystem
     let label: String
 
-    private static let months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-                                 "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
+    private static let months = [L("Gennaio"), L("Febbraio"), L("Marzo"), L("Aprile"), L("Maggio"), L("Giugno"),
+                                 L("Luglio"), L("Agosto"), L("Settembre"), L("Ottobre"), L("Novembre"), L("Dicembre")]
 
     private var date: Date {
         timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : defaultPeriod1End(for: system)
@@ -604,10 +604,10 @@ private struct DangerZoneView: View {
 
     private var rows: [Row] {
         var r: [Row] = []
-        if let a = onChangePDF { r.append(Row(label: "Cambia PDF", icon: "arrow.triangle.2.circlepath", destructive: false, action: a)) }
-        if let a = onRemove { r.append(Row(label: "Rimuovi orario", icon: "trash", destructive: true, action: a)) }
-        if let a = onDeleteNotes { r.append(Row(label: "Cancella tutto il diario", icon: "trash", destructive: true, action: a)) }
-        if let a = onDeleteGrades { r.append(Row(label: "Cancella tutti i voti", icon: "trash", destructive: true, action: a)) }
+        if let a = onChangePDF { r.append(Row(label: L("Cambia PDF"), icon: "arrow.triangle.2.circlepath", destructive: false, action: a)) }
+        if let a = onRemove { r.append(Row(label: L("Rimuovi orario"), icon: "trash", destructive: true, action: a)) }
+        if let a = onDeleteNotes { r.append(Row(label: L("Cancella tutto il diario"), icon: "trash", destructive: true, action: a)) }
+        if let a = onDeleteGrades { r.append(Row(label: L("Cancella tutti i voti"), icon: "trash", destructive: true, action: a)) }
         return r
     }
 
@@ -859,7 +859,7 @@ struct PDFViewerSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        ShareLink(item: url, preview: SharePreview("PDF Orario", image: Image(systemName: "doc.fill")))
+                        ShareLink(item: url, preview: SharePreview(L("PDF Orario"), image: Image(systemName: "doc.fill")))
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Chiudi") { dismiss() }
@@ -907,19 +907,19 @@ struct EntityColorsView: View {
             if !schedule.classes.isEmpty {
                 Section {
                     ForEach(schedule.classes, id: \.self) { colorRow($0) }
-                } header: { SettingsView.header("Classi · \(schedule.classes.count)") }
+                } header: { SettingsView.header(L("Classi · \(schedule.classes.count)")) }
                 .listRowBackground(Color.sectionCard)
             }
             if !schedule.teachers.isEmpty {
                 Section {
                     ForEach(schedule.teachers, id: \.self) { colorRow($0) }
-                } header: { SettingsView.header("Docenti · \(schedule.teachers.count)") }
+                } header: { SettingsView.header(L("Docenti · \(schedule.teachers.count)")) }
                 .listRowBackground(Color.sectionCard)
             }
             if !subjects.isEmpty {
                 Section {
                     ForEach(subjects, id: \.self) { colorRow($0) }
-                } header: { SettingsView.header("Materie · \(subjects.count)") }
+                } header: { SettingsView.header(L("Materie · \(subjects.count)")) }
                 .listRowBackground(Color.sectionCard)
             }
         }

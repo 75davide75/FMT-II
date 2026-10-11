@@ -111,7 +111,7 @@ struct MainScheduleView: View {
     /// "5GSA · Giovedì · 13:00" — sottotitolo del titolo grande (design 3a).
     var orarioSubtitle: String {
         let target = targetMode == .class_ ? selectedClass : (selectedTeacher ?? "—")
-        let day = schedule.days.first { $0.id == activeDay }?.label ?? "Weekend"
+        let day = schedule.days.first { $0.id == activeDay }?.id.displayName ?? L("Weekend")
         return "\(target) · \(day) · \(activeTime)"
     }
 
@@ -135,7 +135,7 @@ struct MainScheduleView: View {
         case .day:
             DayView(
                 dayPlan: dayPlan,
-                dayLabel: schedule.days.first { $0.id == dayForDayView }?.label ?? "",
+                dayLabel: schedule.days.first { $0.id == dayForDayView }?.id.displayName ?? "",
                 targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
                 targetMode: targetMode,
                 dayId: dayForDayView,
@@ -221,7 +221,7 @@ struct MainScheduleView: View {
                 }
 
                 // «Orario» + sottotitolo restano fissi, senza sfondo.
-                AuroraTitle(title: "Orario", subtitle: orarioSubtitle)
+                AuroraTitle(title: L("Orario"), subtitle: orarioSubtitle)
                     .padding(.horizontal, 16)
                     .padding(.top, 2)
                     .padding(.bottom, 10)
@@ -285,7 +285,7 @@ struct MainScheduleView: View {
                     ShareLink(
                         item: url,
                         preview: SharePreview(
-                            "Orario \(schedule.sourceName)",
+                            L("Orario \(schedule.sourceName)"),
                             image: Image(systemName: "calendar.badge.clock")
                         )
                     ) {
@@ -324,17 +324,17 @@ struct MainScheduleView: View {
     @ViewBuilder
     private var statusPills: some View {
         Button(action: onLessonCountTap) {
-            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: "lezioni", color: .purple)
+            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: L("lezioni"), color: .purple)
         }
         .buttonStyle(.plain)
         Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
-            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: "classi", color: .blue)
+            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: L("classi"), color: .blue)
         }
         .buttonStyle(.plain)
         Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
             StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
                      value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
-                     label: usesSubjectEntities ? "materie" : "docenti",
+                     label: usesSubjectEntities ? L("materie") : L("docenti"),
                      color: .orange)
         }
         .buttonStyle(.plain)
@@ -363,8 +363,8 @@ struct MainScheduleView: View {
     var controlPanel: some View {
         VStack(spacing: 10) {
             AuroraSegmented(
-                options: [(TargetMode.class_, "Classe"),
-                          (TargetMode.teacher, usesSubjectEntities ? "Materia" : "Docente")],
+                options: [(TargetMode.class_, L("Classe")),
+                          (TargetMode.teacher, usesSubjectEntities ? L("Materia") : L("Docente"))],
                 selection: $targetMode.animation()
             )
 
@@ -396,7 +396,7 @@ struct MainScheduleView: View {
                         selectedTeacher: selectedTeacher,
                         onSelect: { teacher in teacherQuery = teacher; showTeacherMenu = false },
                         accentColor: panelAccent,
-                        placeholder: usesSubjectEntities ? "Es. MATEMATICA" : "Es. GRECO"
+                        placeholder: usesSubjectEntities ? L("Es. MATEMATICA") : L("Es. GRECO")
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 }
@@ -404,7 +404,7 @@ struct MainScheduleView: View {
             .animation(.spring(response: 0.4, dampingFraction: 0.9), value: targetMode)
 
             AuroraSegmented(
-                options: [(ViewMode.now, "Adesso"), (ViewMode.day, "Giorno"), (ViewMode.week, "Settimana")],
+                options: [(ViewMode.now, L("Adesso")), (ViewMode.day, L("Giorno")), (ViewMode.week, L("Settimana"))],
                 selection: $viewMode
             )
         }
@@ -417,8 +417,8 @@ struct MainScheduleView: View {
 
     var timeIndicator: some View {
         let dayLabel = viewMode == .day
-            ? (schedule.days.first { $0.id == dayForDayView }?.label ?? "")
-            : (schedule.days.first { $0.id == activeDay }?.label ?? (useLiveTime ? "Weekend" : "—"))
+            ? (schedule.days.first { $0.id == dayForDayView }?.id.displayName ?? "")
+            : (schedule.days.first { $0.id == activeDay }?.id.displayName ?? (useLiveTime ? L("Weekend") : "—"))
         return HStack(spacing: 8) {
             Text("\(dayLabel) · \(activeTime)")
                 .font(.system(size: 13, weight: .semibold))
@@ -433,7 +433,7 @@ struct MainScheduleView: View {
                         .fill(useLiveTime ? Color(hex: "#34D399")! : .orange)
                         .frame(width: 5, height: 5)
                         .shadow(color: (useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.9), radius: 3.5)
-                    Text(useLiveTime ? "Live" : "Manuale")
+                    Text(useLiveTime ? L("Live") : L("Manuale"))
                         .font(.system(size: 11, weight: .bold))
                 }
                 .foregroundStyle(useLiveTime ? Color(hex: "#6EE7B7")! : .orange)
@@ -515,7 +515,7 @@ struct TeacherPickerField: View {
     let selectedTeacher: String?
     let onSelect: (String) -> Void
     var accentColor: Color = .orange
-    var placeholder: String = "Es. GRECO"
+    var placeholder: String = L("Es. GRECO")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -613,14 +613,14 @@ struct QuickTimePickerSheet: View {
                         Label("Usa ora corrente", systemImage: "clock.arrow.circlepath")
                     }
                 } footer: {
-                    Text(useLiveTime ? "L'orario si aggiorna automaticamente ogni 30 secondi." : "Imposta un giorno e un'ora manualmente.")
+                    Text(useLiveTime ? L("L'orario si aggiorna automaticamente ogni 30 secondi.") : L("Imposta un giorno e un'ora manualmente."))
                 }
 
                 if !useLiveTime {
                     Section("Giorno") {
                         Picker("Giorno", selection: manualDay) {
                             ForEach(schedule.days) { day in
-                                Text(day.label).tag(day.id)
+                                Text(day.id.displayName).tag(day.id)
                             }
                         }
                         .pickerStyle(.segmented)

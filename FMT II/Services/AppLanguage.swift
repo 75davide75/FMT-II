@@ -112,6 +112,20 @@ final class LanguageSettings: ObservableObject {
     }
 }
 
+extension LanguageSettings {
+    /// Locale della lingua corrente, utilizzabile fuori dal MainActor.
+    nonisolated static var currentLocale: Locale {
+        current.locale(region: Locale.current.region?.identifier)
+    }
+}
+
+extension Date {
+    /// Data/ora nella lingua dell'app (non in quella del dispositivo).
+    func appFormatted(date: Date.FormatStyle.DateStyle, time: Date.FormatStyle.TimeStyle) -> String {
+        formatted(Date.FormatStyle(date: date, time: time).locale(LanguageSettings.currentLocale))
+    }
+}
+
 /// Testo tradotto nella lingua dell'app, per le stringhe fuori da `Text`
 /// (etichette dei modelli, messaggi, notifiche).
 func L(_ key: String.LocalizationValue) -> String {

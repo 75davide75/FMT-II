@@ -125,8 +125,8 @@ struct ScheduleBuilderView: View {
             Menu {
                 ForEach(draft.classes, id: \.self) { c in
                     Button { selectedClass = c } label: {
-                        if c == selectedClass { Label(c.isEmpty ? "(senza nome)" : c, systemImage: "checkmark") }
-                        else { Text(c.isEmpty ? "(senza nome)" : c) }
+                        if c == selectedClass { Label(c.isEmpty ? L("(senza nome)") : c, systemImage: L("checkmark")) }
+                        else { Text(c.isEmpty ? L("(senza nome)") : c) }
                     }
                 }
                 Divider()
@@ -142,7 +142,7 @@ struct ScheduleBuilderView: View {
                     Image(systemName: "graduationcap.fill")
                         .font(.caption)
                         .foregroundStyle(Color(hex: "#7DD3FC")!)
-                    Text(selectedClass.isEmpty ? "Classe" : selectedClass)
+                    Text(selectedClass.isEmpty ? L("Classe") : selectedClass)
                         .font(.system(size: 15, weight: .heavy))
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.caption2.bold())
@@ -700,19 +700,19 @@ struct ScheduleBuilderView: View {
     }
 
     private func shortLabel(_ day: DayId) -> String {
-        ["monday": "Lun", "tuesday": "Mar", "wednesday": "Mer", "thursday": "Gio", "friday": "Ven", "saturday": "Sab"][day.rawValue] ?? day.rawValue
+        [L("monday"): L("Lun"), L("tuesday"): L("Mar"), L("wednesday"): L("Mer"), L("thursday"): L("Gio"), L("friday"): L("Ven"), L("saturday"): L("Sab")][day.rawValue] ?? day.rawValue
     }
 
     // MARK: Data helpers
 
     private static let commonSubjects = [
-        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-        "Diritto", "Economia", "Informatica", "Tecnologia",
-        "Scienze motorie", "Educazione fisica", "Educazione civica",
-        "Religione", "Musica", "Arte e immagine"
+        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
+        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
+        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
+        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
+        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
+        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
+        L("Religione"), L("Musica"), L("Arte e immagine")
     ]
 
     private var subjectPool: [String] {
@@ -780,7 +780,7 @@ struct ScheduleBuilderView: View {
     static func blank() -> ScheduleData {
         ScheduleData(
             id: UUID().uuidString,
-            sourceName: "Orario personale",
+            sourceName: L("Orario personale"),
             importedAt: ISO8601DateFormatter().string(from: Date()),
             startsFrom: nil,
             days: dayOrder.map { DayInfo(id: $0, label: dayLabels[$0] ?? $0.rawValue) },

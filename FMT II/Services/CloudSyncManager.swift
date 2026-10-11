@@ -21,16 +21,16 @@ final class CloudSyncManager: ObservableObject {
 
         var label: String {
             switch self {
-            case .off:            return "Non attiva"
-            case .checking:       return "Verifica…"
-            case .syncing:        return "In corso…"
+            case .off:            return L("Non attiva")
+            case .checking:       return L("Verifica…")
+            case .syncing:        return L("In corso…")
             case .upToDate(let d):
-                guard let d else { return "Attiva" }
-                return "Aggiornata alle " + d.formatted(date: .omitted, time: .shortened)
-            case .noAccount:      return "Accedi a iCloud"
-            case .quotaExceeded:  return "Spazio iCloud esaurito"
-            case .paused:         return "In pausa"
-            case .failed:         return "Errore"
+                guard let d else { return L("Attiva") }
+                return L("Aggiornata alle \(d.appFormatted(date: .omitted, time: .shortened))")
+            case .noAccount:      return L("Accedi a iCloud")
+            case .quotaExceeded:  return L("Spazio iCloud esaurito")
+            case .paused:         return L("In pausa")
+            case .failed:         return L("Errore")
             }
         }
 

@@ -200,6 +200,9 @@ struct GlassSectionBar: View {
                     let active = abs(clamped - CGFloat(i)) < 0.5
                     Text(titles[i])
                         .font(.footnote.weight(active ? .bold : .semibold))
+                        // «Timetable» è più lungo di «Orario»: si riduce appena invece di troncarsi.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                         .foregroundStyle(active ? Color.white : .primary)
                         .opacity(labelOpacity(for: i, progress: clamped))
                         .frame(width: segWidth, height: height)

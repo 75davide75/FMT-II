@@ -47,15 +47,15 @@ struct WhatsNewBanner: View {
                 Spacer(minLength: 0)
             }
             feature(icon: "icloud.fill", hex: "#38BDF8",
-                    title: "Sincronizzazione iCloud",
-                    text: "Voti, diario e orario uguali su iPhone e iPad con lo stesso Apple ID.")
+                    title: L("Sincronizzazione iCloud"),
+                    text: L("Voti, diario e orario uguali su iPhone e iPad con lo stesso Apple ID."))
             feature(icon: "clock.fill", hex: "#8B5CF6",
-                    title: "Ora d'inizio per classe",
-                    text: "Ogni classe può entrare a un orario diverso: Impostazioni → Dati orario.")
+                    title: L("Ora d'inizio per classe"),
+                    text: L("Ogni classe può entrare a un orario diverso: Impostazioni → Dati orario."))
             if UIDevice.current.userInterfaceIdiom == .pad {
                 feature(icon: "ipad.landscape", hex: "#F472B6",
-                        title: "Pensata per iPad",
-                        text: "Settimana a tutto schermo e schermate su due colonne in orizzontale.")
+                        title: L("Pensata per iPad"),
+                        text: L("Settimana a tutto schermo e schermate su due colonne in orizzontale."))
             }
             Button(action: onDismiss) {
                 Text("Ho capito")

@@ -89,9 +89,9 @@ struct NotesListView: View {
         guard !q.isEmpty else { return base }
         // Full-text find — matches note content, plus its time and day.
         return base.filter { n in
-            let day = n.dayId.flatMap { dayLabels[$0] } ?? ""
-            let created = n.createdAt.formatted(date: .abbreviated, time: .omitted)
-            let dated = n.date?.formatted(date: .abbreviated, time: .omitted) ?? ""
+            let day = n.dayId?.displayName ?? ""
+            let created = n.createdAt.appFormatted(date: .abbreviated, time: .omitted)
+            let dated = n.date?.appFormatted(date: .abbreviated, time: .omitted) ?? ""
             let hay = (n.attributedText.string + " " + (n.time ?? "") + " " + day + " " + created + " " + dated).lowercased()
             return hay.contains(q)
         }
@@ -104,8 +104,8 @@ struct NotesListView: View {
     private var diarioSubtitle: String {
         let n = displayNotes.count
         let verifiche = displayNotes.filter { $0.taskType == NoteTaskType.verifica.rawValue }.count
-        var parts = ["\(n) impegn\(n == 1 ? "o" : "i")"]
-        if verifiche > 0 { parts.append("\(verifiche) verific\(verifiche == 1 ? "a" : "he")") }
+        var parts = [n == 1 ? L("1 impegno") : L("\(n) impegni")]
+        if verifiche > 0 { parts.append(verifiche == 1 ? L("1 verifica") : L("\(verifiche) verifiche")) }
         return parts.joined(separator: " · ")
     }
 
@@ -138,7 +138,7 @@ struct NotesListView: View {
     /// puntini per tipo, filtri rapidi sempre visibili.
     private var diarioHeader: some View {
         VStack(alignment: .leading, spacing: 13) {
-            AuroraTitle(title: showArchive ? "Archivio" : "Diario",
+            AuroraTitle(title: showArchive ? L("Archivio") : L("Diario"),
                         subtitle: diarioSubtitle)
                 .padding(.top, 2)
 
@@ -171,11 +171,11 @@ struct NotesListView: View {
             // Filtri rapidi Verifiche / Compiti / Interrogazioni.
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 7) {
-                    quickFilter(nil, label: "Tutti")
+                    quickFilter(nil, label: L("Tutti"))
                     ForEach(NoteTaskType.allCases) { t in
-                        quickFilter(t, label: t.label == "Compito" ? "Compiti"
-                                              : t.label == "Verifica" ? "Verifiche"
-                                              : "Interrogazioni")
+                        quickFilter(t, label: t == .compito ? L("Compiti")
+                                              : t == .verifica ? L("Verifiche")
+                                              : L("Interrogazioni"))
                     }
                 }
             }
@@ -203,7 +203,7 @@ struct NotesListView: View {
             jumpToDate = date
         } label: {
             VStack(spacing: 2) {
-                Text(String((dayLabels[day] ?? "").prefix(3)).uppercased())
+                Text(day.shortName.uppercased())
                     .font(.system(size: 10, weight: isActiveTile ? .heavy : .bold))
                     .kerning(0.8)
                     .foregroundStyle(isActiveTile ? .white.opacity(0.85) : Color.secondary)
@@ -367,13 +367,14 @@ struct NotesListView: View {
 
     private func dateGroupLabel(_ day: Date) -> String {
         let cal = Calendar.current
-        if cal.isDateInToday(day) { return "Oggi" }
-        if cal.isDateInTomorrow(day) { return "Domani" }
-        if cal.isDateInYesterday(day) { return "Ieri" }
+        if cal.isDateInToday(day) { return L("Oggi") }
+        if cal.isDateInTomorrow(day) { return L("Domani") }
+        if cal.isDateInYesterday(day) { return L("Ieri") }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "it_IT")
-        f.dateFormat = cal.component(.year, from: day) == cal.component(.year, from: Date())
-            ? "EEEE d MMMM" : "EEEE d MMMM yyyy"
+        f.locale = LanguageSettings.shared.locale
+        // Ordine di giorno/mese secondo la lingua (it: «lunedì 13 ottobre», en: «Monday, October 13»).
+        f.setLocalizedDateFormatFromTemplate(cal.component(.year, from: day) == cal.component(.year, from: Date())
+            ? "EEEEdMMMM" : "EEEEdMMMMyyyy")
         return f.string(from: day).capitalized
     }
 
@@ -527,7 +528,7 @@ struct NotesListView: View {
                             } label: {
                                 Image(systemName: allSelected ? "xmark.circle" : "checkmark.circle")
                             }
-                            .accessibilityLabel(allSelected ? "Deseleziona tutto" : "Seleziona tutto")
+                            .accessibilityLabel(allSelected ? L("Deseleziona tutto") : L("Seleziona tutto"))
                         }
                         ToolbarItem(id: "endSelect", placement: .topBarTrailing) {
                             Button("Fine") {
@@ -567,7 +568,7 @@ struct NotesListView: View {
                                             Menu("Classi") { tagButtons(.class_, availableClasses) }
                                         }
                                     } label: {
-                                        Label((tagFilter == nil && taskFilter == nil) ? "Filtra" : "Filtro attivo",
+                                        Label((tagFilter == nil && taskFilter == nil) ? L("Filtra") : L("Filtro attivo"),
                                               systemImage: "line.3.horizontal.decrease.circle")
                                     }
                                 }
@@ -580,7 +581,7 @@ struct NotesListView: View {
                                 Button {
                                     withAnimation { showArchive.toggle() }
                                 } label: {
-                                    Label(showArchive ? "Mostra il diario" : "Mostra l'archivio",
+                                    Label(showArchive ? L("Mostra il diario") : L("Mostra l'archivio"),
                                           systemImage: showArchive ? "book.closed" : "archivebox")
                                 }
                                 Button { showSettings = true } label: {
@@ -707,9 +708,9 @@ struct NotesListView: View {
                 Image(systemName: t.icon)
                     .font(.system(size: 56))
                     .foregroundStyle(.quaternary)
-                Text(t == .verifica ? "Nessuna verifica in programma"
-                     : t == .compito ? "Nessun compito in programma"
-                     : "Nessuna interrogazione in programma")
+                Text(t == .verifica ? L("Nessuna verifica in programma")
+                     : t == .compito ? L("Nessun compito in programma")
+                     : L("Nessuna interrogazione in programma"))
                     .font(.title3.bold())
                     .multilineTextAlignment(.center)
                 Text("Le note con questa etichetta compariranno qui.")
@@ -735,7 +736,7 @@ struct NotesListView: View {
                         .font(.system(size: 44))
                         .foregroundStyle(AuroraSection.diario.accent)
                 }
-                Text(showArchive ? "Archivio vuoto" : "Diario vuoto")
+                Text(showArchive ? L("Archivio vuoto") : L("Diario vuoto"))
                     .font(.title3.bold())
                 if !showArchive {
                     Text("Tieni premuto su un docente o una classe per aggiungere una voce al diario.")
@@ -857,7 +858,7 @@ private struct NoteRowView: View {
     private var dateMatches: Bool {
         let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return false }
-        return note.createdAt.formatted(date: .abbreviated, time: .omitted).lowercased().contains(q)
+        return note.createdAt.appFormatted(date: .abbreviated, time: .omitted).lowercased().contains(q)
     }
 
     private var barGradient: LinearGradient {
@@ -910,7 +911,7 @@ private struct NoteRowView: View {
                             AuroraChip(text: cls, color: Color(hex: "#FB923C")!, icon: "graduationcap.fill")
                         }
                         if !note.reminders.isEmpty || note.reminder {
-                            AuroraChip(text: "Promemoria", color: Color(hex: "#34D399")!, icon: "bell.fill")
+                            AuroraChip(text: L("Promemoria"), color: Color(hex: "#34D399")!, icon: "bell.fill")
                         }
                     }
                 }
@@ -1053,13 +1054,13 @@ struct NoteEditorSheet: View {
     // MARK: Autocomplete
 
     private static let commonSubjects = [
-        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-        "Diritto", "Economia", "Informatica", "Tecnologia",
-        "Scienze motorie", "Educazione fisica", "Educazione civica",
-        "Religione", "Musica", "Arte e immagine"
+        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
+        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
+        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
+        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
+        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
+        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
+        L("Religione"), L("Musica"), L("Arte e immagine")
     ]
 
     private func suggest(_ text: String, from pool: [String]) -> [String] {
@@ -1112,7 +1113,7 @@ struct NoteEditorSheet: View {
                 .padding(.top, 14)
                 .padding(.bottom, 6)
 
-            RichTextEditor(attributedText: $attributedText, placeholder: "Scrivi la nota…")
+            RichTextEditor(attributedText: $attributedText, placeholder: L("Scrivi la nota…"))
                 .frame(maxHeight: .infinity)
                 .padding(.horizontal, 8)
 
@@ -1134,7 +1135,7 @@ struct NoteEditorSheet: View {
     /// gradiente (spento a opacità 0.4 finché il testo è vuoto).
     private var editorHeader: some View {
         ZStack {
-            Text(isNew ? "Nuova nota" : "Modifica nota")
+            Text(isNew ? L("Nuova nota") : L("Modifica nota"))
                 .font(.system(size: 16, weight: .bold))
             HStack {
                 Button { dismiss() } label: {
@@ -1182,10 +1183,10 @@ struct NoteEditorSheet: View {
                 if let t = taskType {
                     summaryChip(t.label, tint: t.auroraColor, dot: true)
                 } else {
-                    summaryChip("Nota", tint: plainNoteColor, dot: true)
+                    summaryChip(L("Nota"), tint: plainNoteColor, dot: true)
                 }
                 if let d = noteDate {
-                    summaryChip(d.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                    summaryChip(d.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(LanguageSettings.currentLocale)))
                 }
                 if let time {
                     summaryChip(time)
@@ -1292,7 +1293,7 @@ struct NoteEditorSheet: View {
                 Text("Tipo").font(.system(size: 14, weight: .semibold))
             }
             ChipFlowLayout(spacing: 6) {
-                tipoChip(nil, label: "Nota", tint: plainNoteColor, gradient: plainNoteGradient)
+                tipoChip(nil, label: L("Nota"), tint: plainNoteColor, gradient: plainNoteGradient)
                 ForEach(NoteTaskType.allCases) { t in
                     tipoChip(t, label: t.label, tint: t.auroraColor, gradient: t.auroraGradient)
                 }
@@ -1448,10 +1449,10 @@ struct NoteEditorSheet: View {
                 HStack(spacing: 8) {
                     Menu {
                         ForEach(weekOrder, id: \.self) { d in
-                            Button(dayLabels[d] ?? d.rawValue) { $r.day.wrappedValue = d.rawValue }
+                            Button(d.displayName) { $r.day.wrappedValue = d.rawValue }
                         }
                     } label: {
-                        Text(dayLabels[r.dayId ?? .monday] ?? "Giorno")
+                        Text(r.dayId?.displayName ?? L("Giorno"))
                             .font(.system(size: 12.5, weight: .bold))
                             .foregroundStyle(entityLabelColor(Color(hex: "#34D399")!, scheme))
                             .padding(.horizontal, 11)
@@ -1662,11 +1663,11 @@ struct RichTextEditor: UIViewRepresentable {
             let formatBtn = UIButton(configuration: formatCfg)
             formatBtn.tintColor = .label
             formatBtn.showsMenuAsPrimaryAction = true
-            formatBtn.menu = UIMenu(title: "Stile del paragrafo", children: [
-                UIAction(title: "Titolo", image: UIImage(systemName: "textformat.size.larger")) { [weak self] _ in self?.applyParagraph(.title) },
-                UIAction(title: "Intestazione", image: UIImage(systemName: "textformat")) { [weak self] _ in self?.applyParagraph(.heading) },
-                UIAction(title: "Sottotitolo", image: UIImage(systemName: "textformat.size.smaller")) { [weak self] _ in self?.applyParagraph(.subheading) },
-                UIAction(title: "Corpo", image: UIImage(systemName: "text.alignleft")) { [weak self] _ in self?.applyParagraph(.body) }
+            formatBtn.menu = UIMenu(title: L("Stile del paragrafo"), children: [
+                UIAction(title: L("Titolo"), image: UIImage(systemName: "textformat.size.larger")) { [weak self] _ in self?.applyParagraph(.title) },
+                UIAction(title: L("Intestazione"), image: UIImage(systemName: L("textformat"))) { [weak self] _ in self?.applyParagraph(.heading) },
+                UIAction(title: L("Sottotitolo"), image: UIImage(systemName: "textformat.size.smaller")) { [weak self] _ in self?.applyParagraph(.subheading) },
+                UIAction(title: L("Corpo"), image: UIImage(systemName: "text.alignleft")) { [weak self] _ in self?.applyParagraph(.body) }
             ])
 
             let boldBtn      = makeImgBtn("bold",          action: #selector(toggleBold))
@@ -1689,7 +1690,7 @@ struct RichTextEditor: UIViewRepresentable {
             var doneCfg = UIButton.Configuration.plain()
             doneCfg.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 8)
             let doneBtn = UIButton(configuration: doneCfg)
-            doneBtn.setTitle("Fine", for: .normal)
+            doneBtn.setTitle(L("Fine"), for: .normal)
             doneBtn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .bold)
             doneBtn.setTitleColor(UIColor(red: 0.486, green: 0.627, blue: 1.0, alpha: 1), for: .normal)  // #7CA0FF
             doneBtn.addTarget(self, action: #selector(done), for: .touchUpInside)

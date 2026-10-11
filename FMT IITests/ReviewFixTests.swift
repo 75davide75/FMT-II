@@ -5,6 +5,11 @@ import CloudKit
 /// Correzioni dalla revisione finale della 2.2 (sync iCloud + inizio per classe).
 @MainActor
 final class ReviewFixTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        LanguageSettings.current = .italian   // i testi attesi sono quelli italiani
+    }
+
 
     // Critico: gli store sono unici per l'app, non per finestra (multi-scena iPad,
     // scene scollegate da iOS): la sync non deve mai restare senza store.

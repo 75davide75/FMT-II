@@ -31,13 +31,13 @@ struct PendingSubjectEdit: Identifiable {
 /// Materie comuni alla maggior parte delle scuole italiane, proposte come
 /// suggerimenti nel completamento/modifica delle materie.
 let commonItalianSubjects = [
-    "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-    "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-    "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-    "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-    "Diritto", "Economia", "Informatica", "Tecnologia",
-    "Scienze motorie", "Educazione fisica", "Educazione civica",
-    "Religione", "Musica", "Arte e immagine"
+    L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
+    L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
+    L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
+    L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
+    L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
+    L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
+    L("Religione"), L("Musica"), L("Arte e immagine")
 ]
 
 /// Sezione (una classe) di campi materia: suggerimenti, invio che accetta il
@@ -71,7 +71,7 @@ struct SubjectCompletionSection: View {
         VStack(alignment: .trailing, spacing: 6) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(lesson.dayLabel) · \(lesson.startTime)")
+                    Text(verbatim: "\(lesson.day.displayName) · \(lesson.startTime)")
                         .font(.callout)
                     Text(lesson.teacher)
                         .font(.caption)
@@ -206,10 +206,10 @@ struct ImportReviewView: View {
 
     private var missingDescription: String {
         switch missing {
-        case .teacher: return "Nel PDF non sono indicati i docenti."
-        case .subject: return "Nel PDF non sono indicate le materie."
-        case .classes: return "Nel PDF non è indicato il nome della classe."
-        case .dayTime: return "Nel PDF mancano giorni e ore delle lezioni."
+        case .teacher: return L("Nel PDF non sono indicati i docenti.")
+        case .subject: return L("Nel PDF non sono indicate le materie.")
+        case .classes: return L("Nel PDF non è indicato il nome della classe.")
+        case .dayTime: return L("Nel PDF mancano giorni e ore delle lezioni.")
         }
     }
 
@@ -245,8 +245,8 @@ struct ImportReviewView: View {
                     Text(missingDescription)
                         .font(.subheadline)
                     Text(missing == .dayTime
-                         ? "Puoi assegnare giorni e ore con la creazione manuale."
-                         : "Scegli tu per quali classi completare i dati: le altre restano come nel PDF.")
+                         ? L("Puoi assegnare giorni e ore con la creazione manuale.")
+                         : L("Scegli tu per quali classi completare i dati: le altre restano come nel PDF."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -272,7 +272,7 @@ struct ImportReviewView: View {
                         FlowLayoutChips(items: schedule.classes,
                                         selected: $selectedClasses)
                         HStack {
-                            Button(selectedClasses.count == schedule.classes.count ? "Nessuna" : "Tutte") {
+                            Button(selectedClasses.count == schedule.classes.count ? L("Nessuna") : L("Tutte")) {
                                 if selectedClasses.count == schedule.classes.count {
                                     selectedClasses.removeAll()
                                 } else {
@@ -363,7 +363,7 @@ struct ImportReviewView: View {
     private func teacherRow(_ lesson: Lesson) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(lesson.dayLabel) · \(lesson.startTime)")
+                Text(verbatim: "\(lesson.day.displayName) · \(lesson.startTime)")
                     .font(.callout)
                 Text(lesson.subject)
                     .font(.caption)

@@ -89,7 +89,7 @@ struct WeekView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: timeW, height: 36)
                 ForEach(schedule.days) { day in
-                    Text(shortLabel(day.label).uppercased())
+                    Text(day.id.shortName.uppercased())
                         .font(.system(size: large ? 11.5 : 10, weight: .bold))
                         .kerning(0.4)
                         .foregroundStyle(.secondary)
@@ -135,10 +135,6 @@ struct WeekView: View {
         }
     }
 
-    private func shortLabel(_ label: String) -> String {
-        let map = ["Lunedì": "Lun", "Martedì": "Mar", "Mercoledì": "Mer", "Giovedì": "Gio", "Venerdì": "Ven"]
-        return map[label] ?? String(label.prefix(3))
-    }
 }
 
 struct WeekCell: View {

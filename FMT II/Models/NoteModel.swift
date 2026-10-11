@@ -43,9 +43,9 @@ enum NoteTaskType: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .compito:        return "Compito"
-        case .verifica:       return "Verifica"
-        case .interrogazione: return "Interrogazione"
+        case .compito:        return L("Compito")
+        case .verifica:       return L("Verifica")
+        case .interrogazione: return L("Interrogazione")
         }
     }
 }
@@ -111,7 +111,7 @@ struct Note: Identifiable, Codable {
         let str = attributedText.string
         let first = str.components(separatedBy: .newlines)
             .first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? ""
-        return first.isEmpty ? "Nota senza titolo" : String(first.prefix(60))
+        return first.isEmpty ? L("Nota senza titolo") : String(first.prefix(60))
     }
 
     var displayPreview: String {

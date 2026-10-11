@@ -18,6 +18,33 @@ let dayLabels: [DayId: String] = [
 
 enum DayId: String, Codable, CaseIterable, Hashable {
     case monday, tuesday, wednesday, thursday, friday, saturday, sunday
+
+    /// Nome nella lingua dell'app. I `dayLabel` salvati negli orari restano in
+    /// italiano (dati): a schermo si usa sempre questo.
+    var displayName: String {
+        switch self {
+        case .monday:    return L("Lunedì")
+        case .tuesday:   return L("Martedì")
+        case .wednesday: return L("Mercoledì")
+        case .thursday:  return L("Giovedì")
+        case .friday:    return L("Venerdì")
+        case .saturday:  return L("Sabato")
+        case .sunday:    return L("Domenica")
+        }
+    }
+
+    /// Abbreviazione (intestazioni della Settimana e del Diario).
+    var shortName: String {
+        switch self {
+        case .monday:    return L("Lun")
+        case .tuesday:   return L("Mar")
+        case .wednesday: return L("Mer")
+        case .thursday:  return L("Gio")
+        case .friday:    return L("Ven")
+        case .saturday:  return L("Sab")
+        case .sunday:    return L("Dom")
+        }
+    }
 }
 
 struct DayInfo: Codable, Identifiable, Equatable {

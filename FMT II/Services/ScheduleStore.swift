@@ -59,7 +59,7 @@ final class ScheduleStore: ObservableObject {
             let decoded = try decoder.decode(ScheduleData.self, from: data)
             commit(decoded.edited ? decoded : normalizeScheduleTimes(decoded))
         } catch {
-            errorMessage = "File non valido o danneggiato."
+            errorMessage = L("File non valido o danneggiato.")
         }
     }
 
@@ -145,7 +145,7 @@ final class ScheduleStore: ObservableObject {
         let baseName = schedule.sourceName
             .replacingOccurrences(of: ".pdf", with: "", options: .caseInsensitive)
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Orario \(baseName).json")
+            .appendingPathComponent("\(L("Orario")) \(baseName).json")
         try? data.write(to: url)
         return url
     }

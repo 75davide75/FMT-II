@@ -29,15 +29,15 @@ struct GradesView: View {
         return defaultPeriod1End(for: periodSystem)
     }
     private var periodSystem: PeriodSystem { PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri }
-    private var periodLabel1: String { periodSystem == .quadrimestri ? "1° Quadrimestre" : "Trimestre" }
-    private var periodLabel2: String { periodSystem == .quadrimestri ? "2° Quadrimestre" : "Pentamestre" }
+    private var periodLabel1: String { periodSystem == .quadrimestri ? L("1° Quadrimestre") : L("Trimestre") }
+    private var periodLabel2: String { periodSystem == .quadrimestri ? L("2° Quadrimestre") : L("Pentamestre") }
 
     private var sortedGrades: [Grade] {
         store.grades.sorted { $0.date > $1.date }
     }
 
     private var votiSubtitle: String {
-        "\(periodLabel2) · \(store.grades.count) vot\(store.grades.count == 1 ? "o" : "i")"
+        "\(periodLabel2) · " + gradesCountLabel(store.grades.count)
     }
 
     var body: some View {
@@ -154,7 +154,7 @@ struct GradesView: View {
     /// Titolo, media e ultimi voti (in cima su iPhone, colonna sinistra su iPad).
     @ViewBuilder
     private var gradesHeader: some View {
-        AuroraTitle(title: "Voti", subtitle: votiSubtitle)
+        AuroraTitle(title: L("Voti"), subtitle: votiSubtitle)
             .padding(.horizontal, 16)
             .padding(.top, 2)
         GradesSummaryCard(
@@ -247,6 +247,11 @@ struct GradesView: View {
     }
 }
 
+/// «1 voto» / «N voti» nella lingua dell'app.
+func gradesCountLabel(_ n: Int) -> String {
+    n == 1 ? L("1 voto") : L("\(n) voti")
+}
+
 // MARK: - Grade home row
 
 private struct GradeHomeRow: View {
@@ -270,7 +275,7 @@ private struct GradeHomeRow: View {
                     .foregroundStyle(.primary)
                 HStack(spacing: 6) {
                     AuroraChip(text: grade.type.label, color: grade.type.color)
-                    Text(grade.date.formatted(date: .abbreviated, time: .omitted))
+                    Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                     if grade.countsForAverage && grade.weight != 1.0 {
@@ -594,14 +599,14 @@ struct SubjectDetailView: View {
     @AppStorage("maxGrade") private var maxGrade: Double = 10
 
     private static let motivations = [
-        "Un voto alla volta: la media si costruisce con costanza. 💪",
-        "Non è la singola interrogazione, è la rotta che tieni. 🚀",
-        "Ogni studio di oggi è un voto migliore domani. 📚",
-        "La distanza tra il 6 e l'8 è solo un po' di costanza in più. ⭐️",
-        "Sbagliare fa parte del percorso: conta rialzare la media. 🌱",
-        "Piccoli passi, grandi risultati. Continua così! 🎯",
-        "Il prossimo voto è un'occasione, non una minaccia. 😉",
-        "Credici: la media più alta è più vicina di quanto pensi. ✨"
+        L("Un voto alla volta: la media si costruisce con costanza. 💪"),
+        L("Non è la singola interrogazione, è la rotta che tieni. 🚀"),
+        L("Ogni studio di oggi è un voto migliore domani. 📚"),
+        L("La distanza tra il 6 e l'8 è solo un po' di costanza in più. ⭐️"),
+        L("Sbagliare fa parte del percorso: conta rialzare la media. 🌱"),
+        L("Piccoli passi, grandi risultati. Continua così! 🎯"),
+        L("Il prossimo voto è un'occasione, non una minaccia. 😉"),
+        L("Credici: la media più alta è più vicina di quanto pensi. ✨")
     ]
 
     private var targetOptions: [Double] {
@@ -646,7 +651,7 @@ struct SubjectDetailView: View {
                         .font(.system(size: 32, weight: .heavy))
                         .kerning(-0.6)
                     HStack(spacing: 6) {
-                        AuroraChip(text: "\(grades.count) vot\(grades.count == 1 ? "o" : "i")",
+                        AuroraChip(text: gradesCountLabel(grades.count),
                                    color: store.color(for: subject))
                         if let t = subjectTeacher {
                             AuroraChip(text: t, color: Color(hex: "#60A5FA")!, icon: "person.fill")
@@ -711,7 +716,7 @@ struct SubjectDetailView: View {
 
     private var statItems: [(label: String, value: Double)] {
         var items: [(String, Double)] = []
-        if let a = store.average(for: subject) { items.append(("Media", a)) }
+        if let a = store.average(for: subject) { items.append((L("Media"), a)) }
         if let a = store.average(for: subject, period: 1, periodBoundary: period1End) { items.append((periodLabel1, a)) }
         if let a = store.average(for: subject, period: 2, periodBoundary: period1End) { items.append((periodLabel2, a)) }
         return items
@@ -880,7 +885,7 @@ struct SubjectDetailView: View {
 
     private var gradesListCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SettingsView.header("Voti · \(grades.count)")
+            SettingsView.header(L("Voti · \(grades.count)"))
                 .padding(.leading, 6)
             VStack(spacing: 0) {
                 let ordered = Array(grades.reversed())
@@ -1032,19 +1037,19 @@ private struct GradeChartView: View {
 
             Chart {
                 // Linea della sufficienza: rosa, tratteggiata (canvas 2d)
-                RuleMark(y: .value("Sufficienza", sufficientGrade))
+                RuleMark(y: .value(L("Sufficienza"), sufficientGrade))
                     .foregroundStyle(rose.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
 
                 ForEach(Array(sorted.enumerated()), id: \.offset) { i, grade in
-                    LineMark(x: .value("n", i), y: .value("Voto", grade.value))
+                    LineMark(x: .value("n", i), y: .value(L("Voto"), grade.value))
                         .interpolationMethod(.catmullRom)
                         .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                         .foregroundStyle(tint)
 
                     // Punto: anello colorato con interno scuro; alone violetto
                     // quando selezionato; insufficienze in rosa con valore sotto.
-                    PointMark(x: .value("n", i), y: .value("Voto", grade.value))
+                    PointMark(x: .value("n", i), y: .value(L("Voto"), grade.value))
                         .symbolSize(0)
                         .annotation(position: .overlay) {
                             ZStack {
@@ -1126,7 +1131,7 @@ struct GradeRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Label(grade.type.label, systemImage: grade.type.icon)
                     .font(.callout.weight(.medium))
-                Text(grade.date.formatted(date: .abbreviated, time: .omitted))
+                Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 if !grade.note.isEmpty {
@@ -1142,9 +1147,9 @@ struct GradeRowView: View {
                     Image(systemName: trend.systemImage)
                         .font(.footnote.weight(.bold))
                         .foregroundStyle(trend.color)
-                        .accessibilityLabel(trend == .improved ? "Ha alzato la media della materia"
-                                             : trend == .declined ? "Ha abbassato la media della materia"
-                                             : "Media della materia invariata")
+                        .accessibilityLabel(trend == .improved ? L("Ha alzato la media della materia")
+                                             : trend == .declined ? L("Ha abbassato la media della materia")
+                                             : L("Media della materia invariata"))
                 }
                 Text(grade.displayValue)
                     .font(.system(.title, design: .rounded, weight: .bold))
@@ -1169,13 +1174,13 @@ struct GradeEntrySheet: View {
     /// before the user has ever entered them. Anything missing the user can add,
     /// and it becomes a suggestion from then on (via `store.subjects`).
     private static let commonSubjects = [
-        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-        "Diritto", "Economia", "Informatica", "Tecnologia",
-        "Scienze motorie", "Educazione fisica", "Educazione civica",
-        "Religione", "Musica", "Arte e immagine"
+        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
+        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
+        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
+        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
+        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
+        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
+        L("Religione"), L("Musica"), L("Arte e immagine")
     ]
 
     @Environment(\.dismiss) private var dismiss
@@ -1202,9 +1207,9 @@ struct GradeEntrySheet: View {
     private var gradePeriodLabel: String {
         let period = store.gradePeriod(for: date, boundary: period1End)
         if period == 1 {
-            return periodSystem == .quadrimestri ? "1° Quadrimestre" : "Trimestre"
+            return periodSystem == .quadrimestri ? L("1° Quadrimestre") : L("Trimestre")
         } else {
-            return periodSystem == .quadrimestri ? "2° Quadrimestre" : "Pentamestre"
+            return periodSystem == .quadrimestri ? L("2° Quadrimestre") : L("Pentamestre")
         }
     }
 
@@ -1249,7 +1254,7 @@ struct GradeEntrySheet: View {
                     TextField(
                         "",
                         text: $subject,
-                        prompt: Text(subjectError ? "Campo obbligatorio" : "Es. Matematica")
+                        prompt: Text(subjectError ? L("Campo obbligatorio") : L("Es. Matematica"))
                             .foregroundStyle(subjectError ? Color.red : Color.secondary)
                     )
                     .autocorrectionDisabled()
@@ -1309,8 +1314,8 @@ struct GradeEntrySheet: View {
                     DatePicker("Data", selection: $date, displayedComponents: .date)
                 } footer: {
                     Text(type == .giustifica
-                         ? "La giustifica viene registrata come «G»: non ha voto, non ha peso e non fa media."
-                         : "Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo.")
+                         ? L("La giustifica viene registrata come «G»: non ha voto, non ha peso e non fa media.")
+                         : L("Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo."))
                 }
 
                 if type != .giustifica {
@@ -1330,8 +1335,8 @@ struct GradeEntrySheet: View {
                         }
                     } footer: {
                         Text(countsForAverage
-                             ? "Il peso determina quanto incide nella media ponderata."
-                             : "Il voto verrà mostrato in blu e non conterà nella media.")
+                             ? L("Il peso determina quanto incide nella media ponderata.")
+                             : L("Il voto verrà mostrato in blu e non conterà nella media."))
                     }
                 }
 
@@ -1357,7 +1362,7 @@ struct GradeEntrySheet: View {
                     }
                 }
             }
-            .navigationTitle(isNew ? "Nuovo voto" : "Modifica voto")
+            .navigationTitle(isNew ? L("Nuovo voto") : L("Modifica voto"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
