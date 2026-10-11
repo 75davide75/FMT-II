@@ -16,6 +16,7 @@ struct GradesView: View {
     // Observed so grade colours refresh live when the scale changes in Settings.
     @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
     @AppStorage("maxGrade") private var maxGrade: Double = 10
+    @Environment(\.deviceLayout) private var layout
 
     @State private var showGradeEntry = false
     @State private var showAllSubjects = false
@@ -150,46 +151,97 @@ struct GradesView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var gradesList: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                // L'id lega le righe alla scala voti: cambiandola in
-                // Impostazioni i colori suff./insuff. si aggiornano subito.
-                let _ = (sufficientGrade, maxGrade)
-                AuroraTitle(title: "Voti", subtitle: votiSubtitle)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 2)
-                GradesSummaryCard(
-                    overall: store.overallAverage(),
-                    period1Avg: store.overallAverage(period: 1, periodBoundary: period1End),
-                    period2Avg: store.overallAverage(period: 2, periodBoundary: period1End),
-                    period1Label: periodLabel1,
-                    period2Label: periodLabel2
-                )
+    /// Titolo, media e ultimi voti (in cima su iPhone, colonna sinistra su iPad).
+    @ViewBuilder
+    private var gradesHeader: some View {
+        AuroraTitle(title: "Voti", subtitle: votiSubtitle)
+            .padding(.horizontal, 16)
+            .padding(.top, 2)
+        GradesSummaryCard(
+            overall: store.overallAverage(),
+            period1Avg: store.overallAverage(period: 1, periodBoundary: period1End),
+            period2Avg: store.overallAverage(period: 2, periodBoundary: period1End),
+            period1Label: periodLabel1,
+            period2Label: periodLabel2
+        )
+        .padding(.horizontal, 16)
+
+        if sortedGrades.count >= 2 {
+            RecentGradesRow(grades: Array(sortedGrades.prefix(20)), onSeeAll: { showAllSubjects = true })
                 .padding(.horizontal, 16)
+        }
+    }
 
-                if sortedGrades.count >= 2 {
-                    RecentGradesRow(grades: Array(sortedGrades.prefix(20)), onSeeAll: { showAllSubjects = true })
-                        .padding(.horizontal, 16)
-                }
+    /// Un voto dell'elenco: tocco per modificare, menu (uguale ovunque).
+    private func gradeRow(_ grade: Grade) -> some View {
+        GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
+            .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
+            .contentShape(Rectangle())
+            .onTapGesture { gradeToEdit = grade }
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contextMenu {
+                Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
+                Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }
+                Button(role: .destructive) {
+                    store.delete(ids: [grade.id])
+                } label: { Label("Elimina", systemImage: "trash") }
+            }
+    }
 
-                ForEach(sortedGrades) { grade in
-                    GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
-                        .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
-                        .contentShape(Rectangle())
-                        .onTapGesture { gradeToEdit = grade }
-                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .contextMenu {
-                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
-                            Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }
-                            Button(role: .destructive) {
-                                store.delete(ids: [grade.id])
-                            } label: { Label("Elimina", systemImage: "trash") }
+    private var gradesList: some View {
+        // L'id lega le righe alla scala voti: cambiandola in
+        // Impostazioni i colori suff./insuff. si aggiornano subito.
+        let _ = (sufficientGrade, maxGrade)
+        return Group {
+            switch layout {
+            case .wide:
+                // iPad in orizzontale: riepilogo a sinistra, elenco a destra.
+                HStack(alignment: .top, spacing: 2) {
+                    ScrollView {
+                        VStack(spacing: 12) { gradesHeader }
+                            .padding(.vertical, 12)
+                    }
+                    .scrollIndicators(.hidden)
+                    .frame(width: 380)
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(sortedGrades) { grade in
+                                gradeRow(grade)
+                            }
                         }
                         .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 90)
+                    }
+                }
+            case .regular:
+                // iPad in verticale: elenco su due colonne.
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        gradesHeader
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                                  spacing: 12) {
+                            ForEach(sortedGrades) { grade in
+                                gradeRow(grade)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.bottom, 78)
+                }
+            case .compact:
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        gradesHeader
+                        ForEach(sortedGrades) { grade in
+                            gradeRow(grade)
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.vertical, 12)
                 }
             }
-            .padding(.vertical, 12)
         }
         .id("scale-\(sufficientGrade)-\(maxGrade)")
     }
