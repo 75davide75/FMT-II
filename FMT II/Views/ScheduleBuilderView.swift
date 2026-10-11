@@ -125,7 +125,7 @@ struct ScheduleBuilderView: View {
             Menu {
                 ForEach(draft.classes, id: \.self) { c in
                     Button { selectedClass = c } label: {
-                        if c == selectedClass { Label(c.isEmpty ? L("(senza nome)") : c, systemImage: L("checkmark")) }
+                        if c == selectedClass { Label(c.isEmpty ? L("(senza nome)") : c, systemImage: "checkmark") }
                         else { Text(c.isEmpty ? L("(senza nome)") : c) }
                     }
                 }
@@ -350,7 +350,7 @@ struct ScheduleBuilderView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     // Classe: nome attuale + rinomina inline.
                     settingsCard {
-                        settingsRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: "Classe") {
+                        settingsRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: L("Classe")) {
                             Text(selectedClass.isEmpty ? "—" : selectedClass)
                                 .font(.system(size: 14, weight: .heavy))
                                 .foregroundStyle(entityLabelColor(Color(hex: "#6EE7B7")!, scheme))
@@ -360,7 +360,7 @@ struct ScheduleBuilderView: View {
                                 .overlay(Capsule().strokeBorder(Color(hex: "#6EE7B7")!.opacity(0.26), lineWidth: 1))
                         }
                         settingsHairline
-                        settingsRow(icon: "pencil", tint: Color(hex: "#93C5FD")!, label: "Rinomina") {
+                        settingsRow(icon: "pencil", tint: Color(hex: "#93C5FD")!, label: L("Rinomina")) {
                             TextField("Nuovo nome", text: $renameDraft)
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.characters)
@@ -387,18 +387,18 @@ struct ScheduleBuilderView: View {
 
                     // Ore: inizio, numero e durata.
                     settingsCard {
-                        settingsRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: "Inizio 1ª ora") {
+                        settingsRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: L("Inizio 1ª ora")) {
                             DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                         }
                         settingsHairline
-                        settingsRow(icon: "number", tint: Color(hex: "#93C5FD")!, label: "Ore al giorno") {
+                        settingsRow(icon: "number", tint: Color(hex: "#93C5FD")!, label: L("Ore al giorno")) {
                             stepperPill(value: "\(periodCount)",
                                         minus: { periodCount = max(1, periodCount - 1) },
                                         plus: { periodCount = min(12, periodCount + 1) })
                         }
                         settingsHairline
-                        settingsRow(icon: "timer", tint: Color(hex: "#C4B5FD")!, label: "Durata ora") {
+                        settingsRow(icon: "timer", tint: Color(hex: "#C4B5FD")!, label: L("Durata ora")) {
                             stepperPill(value: "\(slotMinutes) min",
                                         minus: { slotMinutes = max(30, slotMinutes - 5) },
                                         plus: { slotMinutes = min(90, slotMinutes + 5) })
@@ -407,7 +407,7 @@ struct ScheduleBuilderView: View {
 
                     // Giorni.
                     settingsCard {
-                        settingsRow(icon: "calendar", tint: Color(hex: "#F0ABFC")!, label: "Includi sabato") {
+                        settingsRow(icon: "calendar", tint: Color(hex: "#F0ABFC")!, label: L("Includi sabato")) {
                             Toggle("", isOn: $includeSaturday)
                                 .labelsHidden()
                                 .tint(Color(hex: "#4E7CF6")!)
@@ -700,20 +700,12 @@ struct ScheduleBuilderView: View {
     }
 
     private func shortLabel(_ day: DayId) -> String {
-        [L("monday"): L("Lun"), L("tuesday"): L("Mar"), L("wednesday"): L("Mer"), L("thursday"): L("Gio"), L("friday"): L("Ven"), L("saturday"): L("Sab")][day.rawValue] ?? day.rawValue
+        day.shortName
     }
 
     // MARK: Data helpers
 
-    private static let commonSubjects = [
-        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
-        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
-        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
-        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
-        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
-        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
-        L("Religione"), L("Musica"), L("Arte e immagine")
-    ]
+    private static var commonSubjects: [String] { SubjectSuggestions.all }
 
     private var subjectPool: [String] {
         var seen = Set<String>(); var out: [String] = []

@@ -48,6 +48,16 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         return .english
     }
 
+    /// Lingua scelta nelle Impostazioni di iOS (Impostazioni › FindMyTeacher ›
+    /// Lingua): `AppleLanguages` dell'app diverso da quello scritto dall'app
+    /// l'ultima volta. Solo italiano o inglese.
+    static func systemOverride(appleLanguages: [String]?, lastWritten: String?) -> AppLanguage? {
+        guard let first = appleLanguages?.first,
+              let lang = AppLanguage(rawValue: String(first.prefix(2))),
+              lang.rawValue != lastWritten else { return nil }
+        return lang
+    }
+
     /// Bundle `.lproj` della lingua, per le stringhe fuori da `Text`.
     var bundle: Bundle {
         Bundle.main.path(forResource: rawValue, ofType: "lproj").flatMap(Bundle.init(path:)) ?? .main
@@ -60,6 +70,7 @@ final class LanguageSettings: ObservableObject {
     static let shared = LanguageSettings()
     static let storageKey = "appLanguage"
     private static let manualKey = "appLanguageChosenManually"
+    private static let writtenKey = "appLanguageWrittenToSystem"
 
     /// Lingua corrente, letta da `L()` anche fuori dal MainActor.
     nonisolated(unsafe) static var current: AppLanguage = .italian
@@ -80,8 +91,19 @@ final class LanguageSettings: ObservableObject {
             defaults.set(language.rawValue, forKey: Self.storageKey)
             needsStorefrontCheck = !existingUser
         }
+        // Lingua cambiata dalle Impostazioni di iOS dopo l'ultimo avvio: vince.
+        let appDomain = Bundle.main.bundleIdentifier.flatMap { defaults.persistentDomain(forName: $0) }
+        if let fromSystem = AppLanguage.systemOverride(appleLanguages: appDomain?["AppleLanguages"] as? [String],
+                                                       lastWritten: defaults.string(forKey: Self.writtenKey)),
+           defaults.string(forKey: Self.writtenKey) != nil {
+            language = fromSystem
+            defaults.set(fromSystem.rawValue, forKey: Self.storageKey)
+            defaults.set(true, forKey: Self.manualKey)
+            needsStorefrontCheck = false
+        }
         Self.current = language
         defaults.set([language.rawValue], forKey: "AppleLanguages")
+        defaults.set(language.rawValue, forKey: Self.writtenKey)
     }
 
     var locale: Locale { language.locale(region: Locale.current.region?.identifier) }
@@ -95,7 +117,8 @@ final class LanguageSettings: ObservableObject {
     /// Primo avvio: il paese dell'account App Store decide la lingua (se
     /// l'utente non l'ha già scelta a mano).
     func refineFromStorefront() async {
-        guard needsStorefrontCheck else { return }
+        guard needsStorefrontCheck,
+              ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         needsStorefrontCheck = false
         guard let country = await Storefront.current?.countryCode,
               !UserDefaults.standard.bool(forKey: Self.manualKey) else { return }
@@ -108,7 +131,10 @@ final class LanguageSettings: ObservableObject {
         UserDefaults.standard.set(newLanguage.rawValue, forKey: Self.storageKey)
         // Anche i componenti di sistema seguono la lingua, dal prossimo avvio.
         UserDefaults.standard.set([newLanguage.rawValue], forKey: "AppleLanguages")
+        UserDefaults.standard.set(newLanguage.rawValue, forKey: Self.writtenKey)
         language = newLanguage
+        // Promemoria già programmati: titolo nella nuova lingua.
+        NotificationManager.shared.reschedule(notes: AppStores.shared.notes.notes)
     }
 }
 

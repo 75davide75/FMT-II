@@ -8,7 +8,7 @@ private struct TutorialSlide {
     var iconOffset: CGSize = .zero
 }
 
-private let slides: [TutorialSlide] = [
+private var slides: [TutorialSlide] { [
     TutorialSlide(
         icon: "magnifyingglass",
         iconColors: [.blue, .purple],
@@ -39,7 +39,7 @@ private let slides: [TutorialSlide] = [
         title: L("Voti sotto controllo"),
         description: L("Segna i voti, scegli il peso e tieni d'occhio media, andamento e obiettivi.")
     )
-]
+] }
 
 struct TutorialView: View {
     var onDismiss: (() -> Void)? = nil

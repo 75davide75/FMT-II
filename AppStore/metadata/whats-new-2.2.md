@@ -14,7 +14,7 @@ Novità della versione 2.2
 ## English
 
 What's new in 2.2
-• iCloud sync: grades, diary, timetable and school settings stay up to date on iPhone and iPad with the same Apple ID.
+• iCloud sync: grades, planner, timetable and school settings stay up to date on iPhone and iPad with the same Apple ID.
 • Per-class start time: each class can start at a different time (Settings → Timetable data → Different start per class).
 • Designed for iPad: full-width week and two-column screens in landscape.
 • Italian and English: the app is now also available in English; choose the language in Settings → Appearance.

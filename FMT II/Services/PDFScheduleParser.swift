@@ -392,9 +392,9 @@ enum ScheduleRejectReason: Equatable {
     case invalidPDF
     case unrecognizedStructure
     case missingElements([ScheduleField])
-    case teacherConflict(teacher: String, dayLabel: String, time: String)
-    case subjectConflict(className: String, dayLabel: String, time: String)
-    case implausibleDay(String)
+    case teacherConflict(teacher: String, day: DayId, time: String)
+    case subjectConflict(className: String, day: DayId, time: String)
+    case implausibleDay(DayId)
     case implausibleTime(String)
 
     var message: String {
@@ -407,11 +407,11 @@ enum ScheduleRejectReason: Equatable {
             let list = fields.map { $0.label }.joined(separator: ", ")
             return L("Nel PDF mancano troppi elementi (\(list)).")
         case .teacherConflict(let teacher, let day, let time):
-            return L("Conflitto: il docente \(teacher) risulta in due classi diverse (\(day) \(time)).")
+            return L("Conflitto: il docente \(teacher) risulta in due classi diverse (\(day.displayName) \(time)).")
         case .subjectConflict(let className, let day, let time):
-            return L("Conflitto: la classe \(className) ha due materie nella stessa ora (\(day) \(time)).")
-        case .implausibleDay(let label):
-            return L("Orario non plausibile: contiene il giorno \(label).")
+            return L("Conflitto: la classe \(className) ha due materie nella stessa ora (\(day.displayName) \(time)).")
+        case .implausibleDay(let day):
+            return L("Orario non plausibile: contiene il giorno \(day.displayName).")
         case .implausibleTime(let time):
             return L("Orario non plausibile: lezioni alle \(time).")
         }
@@ -566,7 +566,7 @@ private func finalizeImport(_ schedule: ScheduleData, missingClasses: Bool) -> S
     // Plausibility: days within Mon-Sat.
     let allowedDays: Set<DayId> = [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday]
     if let bad = lessons.first(where: { !allowedDays.contains($0.day) }) {
-        return .rejected(.implausibleDay(dayLabels[bad.day] ?? bad.day.rawValue))
+        return .rejected(.implausibleDay(bad.day))
     }
     // Plausibility: times within 07:00-19:00.
     for l in lessons {
@@ -581,7 +581,7 @@ private func finalizeImport(_ schedule: ScheduleData, missingClasses: Bool) -> S
     for l in lessons where !l.teacher.isEmpty {
         let key = "\(l.teacher)|\(l.day.rawValue)|\(l.period)"
         if let other = teacherSlots[key], other != l.className {
-            return .rejected(.teacherConflict(teacher: l.teacher, dayLabel: l.dayLabel, time: l.startTime))
+            return .rejected(.teacherConflict(teacher: l.teacher, day: l.day, time: l.startTime))
         }
         teacherSlots[key] = l.className
     }
@@ -593,7 +593,7 @@ private func finalizeImport(_ schedule: ScheduleData, missingClasses: Bool) -> S
             if ProcessInfo.processInfo.environment["PARSER_DEBUG"] != nil {
                 print("DEBUG subject conflict: \(key) '\(other)' vs '\(l.subject)'")
             }
-            return .rejected(.subjectConflict(className: l.className, dayLabel: l.dayLabel, time: l.startTime))
+            return .rejected(.subjectConflict(className: l.className, day: l.day, time: l.startTime))
         }
         subjectSlots[key] = l.subject
     }

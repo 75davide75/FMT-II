@@ -177,8 +177,8 @@ final class PDFScheduleParserTests: XCTestCase {
 
     func testDayOutsideMonSatIsRejected() {
         let reason = assertRejected(importSchedulePDF(data: SyntheticPDF.implausibleDay(), sourceName: "x.pdf"))
-        if case .implausibleDay(let label)? = reason {
-            XCTAssertEqual(label, "Domenica")
+        if case .implausibleDay(let day)? = reason {
+            XCTAssertEqual(day, .sunday)
         } else {
             XCTFail("atteso implausibleDay, ottenuto \(String(describing: reason))")
         }

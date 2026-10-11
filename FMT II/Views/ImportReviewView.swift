@@ -30,15 +30,7 @@ struct PendingSubjectEdit: Identifiable {
 
 /// Materie comuni alla maggior parte delle scuole italiane, proposte come
 /// suggerimenti nel completamento/modifica delle materie.
-let commonItalianSubjects = [
-    L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
-    L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
-    L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
-    L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
-    L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
-    L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
-    L("Religione"), L("Musica"), L("Arte e immagine")
-]
+var commonItalianSubjects: [String] { SubjectSuggestions.all }
 
 /// Sezione (una classe) di campi materia: suggerimenti, invio che accetta il
 /// primo, propagazione per docente e conferma multi-materia. Riusata dal

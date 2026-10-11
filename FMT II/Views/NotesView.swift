@@ -1053,15 +1053,7 @@ struct NoteEditorSheet: View {
 
     // MARK: Autocomplete
 
-    private static let commonSubjects = [
-        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
-        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
-        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
-        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
-        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
-        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
-        L("Religione"), L("Musica"), L("Arte e immagine")
-    ]
+    private static var commonSubjects: [String] { SubjectSuggestions.all }
 
     private func suggest(_ text: String, from pool: [String]) -> [String] {
         let q = text.trimmingCharacters(in: .whitespaces).lowercased()
@@ -1334,7 +1326,7 @@ struct NoteEditorSheet: View {
     private var fieldsCard: some View {
         VStack(spacing: 0) {
             // Giorno — data completa, azzerabile.
-            fieldRow(icon: "calendar", tint: Color(hex: "#93C5FD")!, label: "Giorno") {
+            fieldRow(icon: "calendar", tint: Color(hex: "#93C5FD")!, label: L("Giorno")) {
                 if noteDate != nil {
                     // Binding con fallback: `Binding($noteDate)` force-unwrappa
                     // e crashava quando si toglieva la data col picker ancora
@@ -1350,7 +1342,7 @@ struct NoteEditorSheet: View {
             }
             fieldHairline
             // Ora — chip azzerabile.
-            fieldRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: "Ora") {
+            fieldRow(icon: "clock", tint: Color(hex: "#7DD3FC")!, label: L("Ora")) {
                 if time != nil {
                     DatePicker("", selection: timeDateBinding, displayedComponents: .hourAndMinute)
                         .labelsHidden()
@@ -1362,7 +1354,7 @@ struct NoteEditorSheet: View {
                 }
             }
             fieldHairline
-            fieldRow(icon: "person.fill", tint: Color(hex: "#93C5FD")!, label: "Docente") {
+            fieldRow(icon: "person.fill", tint: Color(hex: "#93C5FD")!, label: L("Docente")) {
                 TextField("Cognome", text: $teacherTag)
                     .multilineTextAlignment(.trailing).font(.system(size: 13))
                     .autocorrectionDisabled()
@@ -1372,7 +1364,7 @@ struct NoteEditorSheet: View {
             }
             suggestionsRow(teacherSuggestions) { teacherTag = $0 }
             fieldHairline
-            fieldRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: "Classe") {
+            fieldRow(icon: "graduationcap.fill", tint: Color(hex: "#6EE7B7")!, label: L("Classe")) {
                 TextField("Es. 5GSA", text: $classTag)
                     .multilineTextAlignment(.trailing).font(.system(size: 13))
                     .autocorrectionDisabled()
@@ -1382,7 +1374,7 @@ struct NoteEditorSheet: View {
             }
             suggestionsRow(classSuggestions) { classTag = $0 }
             fieldHairline
-            fieldRow(icon: "book.closed.fill", tint: Color(hex: "#F0ABFC")!, label: "Materia") {
+            fieldRow(icon: "book.closed.fill", tint: Color(hex: "#F0ABFC")!, label: L("Materia")) {
                 TextField("Es. Matematica", text: $subjectTag)
                     .multilineTextAlignment(.trailing).font(.system(size: 13))
                     .autocorrectionDisabled()
@@ -1665,7 +1657,7 @@ struct RichTextEditor: UIViewRepresentable {
             formatBtn.showsMenuAsPrimaryAction = true
             formatBtn.menu = UIMenu(title: L("Stile del paragrafo"), children: [
                 UIAction(title: L("Titolo"), image: UIImage(systemName: "textformat.size.larger")) { [weak self] _ in self?.applyParagraph(.title) },
-                UIAction(title: L("Intestazione"), image: UIImage(systemName: L("textformat"))) { [weak self] _ in self?.applyParagraph(.heading) },
+                UIAction(title: L("Intestazione"), image: UIImage(systemName: "textformat")) { [weak self] _ in self?.applyParagraph(.heading) },
                 UIAction(title: L("Sottotitolo"), image: UIImage(systemName: "textformat.size.smaller")) { [weak self] _ in self?.applyParagraph(.subheading) },
                 UIAction(title: L("Corpo"), image: UIImage(systemName: "text.alignleft")) { [weak self] _ in self?.applyParagraph(.body) }
             ])

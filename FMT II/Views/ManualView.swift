@@ -36,7 +36,7 @@ struct ManualView: View {
                         detail: L("Dalle Impostazioni scegli tema chiaro/scuro/automatico e assegni un colore personale a ogni classe, docente o materia: lo ritrovi in tutte le viste dell'orario."),
                         icon: "paintpalette.fill")
         ]),
-        ManualSection(screen: L("Orario"), icon: L("calendar"), tintHex: "#38BDF8", entries: [
+        ManualSection(screen: L("Orario"), icon: "calendar", tintHex: "#38BDF8", entries: [
             ManualEntry(title: L("Le tre viste"),
                         detail: L("Adesso mostra l'ora corrente con la barra di avanzamento e la prossima ora; Giorno l'intera giornata; Settimana la griglia completa con le etichette colorate."),
                         icon: "clock.fill"),

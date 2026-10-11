@@ -559,8 +559,8 @@ private struct MonthDayField: View {
     let system: PeriodSystem
     let label: String
 
-    private static let months = [L("Gennaio"), L("Febbraio"), L("Marzo"), L("Aprile"), L("Maggio"), L("Giugno"),
-                                 L("Luglio"), L("Agosto"), L("Settembre"), L("Ottobre"), L("Novembre"), L("Dicembre")]
+    private static var months: [String] { [L("Gennaio"), L("Febbraio"), L("Marzo"), L("Aprile"), L("Maggio"), L("Giugno"),
+                                 L("Luglio"), L("Agosto"), L("Settembre"), L("Ottobre"), L("Novembre"), L("Dicembre")] }
 
     private var date: Date {
         timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : defaultPeriod1End(for: system)

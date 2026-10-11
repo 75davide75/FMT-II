@@ -48,12 +48,6 @@
             "state": "translated",
             "value": "%@ · %@"
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@"
-          }
         }
       }
     },
@@ -64,12 +58,6 @@
             "state": "translated",
             "value": "%@ – %@"
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ – %2$@"
-          }
         }
       }
     },
@@ -79,12 +67,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@–%@"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@–%2$@"
           }
         }
       }
@@ -147,12 +129,6 @@
             "state": "translated",
             "value": "%lld lessons · %lld classes · %lld teachers"
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld lezioni · %2$lld classi · %3$lld docenti"
-          }
         }
       }
     },
@@ -163,12 +139,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld lessons · %lld teachers · %lld classes"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld lezioni · %2$lld docenti · %3$lld classi"
           }
         }
       }
@@ -230,12 +200,6 @@
             "state": "translated",
             "value": "Period %lld (%@)"
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lldª (%2$@)"
-          }
         }
       }
     },
@@ -255,12 +219,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "P%lld · %@–%@"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lldª · %2$@–%3$@"
           }
         }
       }
@@ -1232,12 +1190,6 @@
             "state": "translated",
             "value": "Conflict: teacher %@ appears in two different classes (%@ %@)."
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Conflitto: il docente %1$@ risulta in due classi diverse (%2$@ %3$@)."
-          }
         }
       }
     },
@@ -1247,12 +1199,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Conflict: class %@ has two subjects in the same period (%@ %@)."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Conflitto: la classe %1$@ ha due materie nella stessa ora (%2$@ %3$@)."
           }
         }
       }
@@ -1633,6 +1579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lesson length"
+          }
+        }
+      }
+    },
+    "Durata ora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period length"
           }
         }
       }
@@ -2114,12 +2070,6 @@
             "state": "translated",
             "value": "Your current data will be replaced with the backup: %lld planner items and %lld grades%@. This cannot be undone."
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "new",
-            "value": "I dati attuali verranno sostituiti con il backup: %1$lld voci di diario e %2$lld voti%3$@. L'azione non è reversibile."
-          }
         }
       }
     },
@@ -2399,6 +2349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paused"
+          }
+        }
+      }
+    },
+    "Includi sabato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include Saturday"
           }
         }
       }
@@ -3173,6 +3133,16 @@
         }
       }
     },
+    "N/D": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "N/A"
+          }
+        }
+      }
+    },
     "NOVITÀ · %@": {
       "localizations": {
         "en": {
@@ -3779,6 +3749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Personal timetable"
+          }
+        }
+      }
+    },
+    "Ore al giorno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Periods per day"
           }
         }
       }
@@ -5263,26 +5243,6 @@
         }
       }
     },
-    "calendar": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "calendar"
-          }
-        }
-      }
-    },
-    "checkmark": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "checkmark"
-          }
-        }
-      }
-    },
     "classe": {
       "localizations": {
         "en": {
@@ -5329,16 +5289,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "teachers"
-          }
-        }
-      }
-    },
-    "friday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "friday"
           }
         }
       }
@@ -5403,62 +5353,12 @@
         }
       }
     },
-    "monday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "monday"
-          }
-        }
-      }
-    },
-    "n": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "n"
-          }
-        }
-      }
-    },
-    "saturday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "saturday"
-          }
-        }
-      }
-    },
     "termina tra %lld min": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "ends in %lld min"
-          }
-        }
-      }
-    },
-    "textformat": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "textformat"
-          }
-        }
-      }
-    },
-    "thursday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "thursday"
           }
         }
       }
@@ -5473,32 +5373,12 @@
         }
       }
     },
-    "tuesday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "tuesday"
-          }
-        }
-      }
-    },
     "voti da %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "grades of %@"
-          }
-        }
-      }
-    },
-    "wednesday": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "wednesday"
           }
         }
       }

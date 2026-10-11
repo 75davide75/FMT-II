@@ -252,6 +252,14 @@ func gradesCountLabel(_ n: Int) -> String {
     n == 1 ? L("1 voto") : L("\(n) voti")
 }
 
+/// «+1,5» / «−0,5» (in inglese «+1.5»), senza decimali inutili.
+func gradeDeltaText(_ delta: Double) -> String {
+    let sign = delta >= 0 ? "+" : "−"
+    let v = abs(delta)
+    let text = v.formatted(.number.precision(.fractionLength(0...1)).locale(LanguageSettings.currentLocale))
+    return sign + text
+}
+
 // MARK: - Grade home row
 
 private struct GradeHomeRow: View {
@@ -392,7 +400,7 @@ private struct PeriodBarRow: View {
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(avg?.italianGrade ?? "N/D")
+                Text(avg?.italianGrade ?? L("N/D"))
                     .font(.system(size: 13, weight: .heavy))
                     .foregroundStyle(avg?.gradeColor ?? Color(.tertiaryLabel))
                     .contentTransition(.numericText())
@@ -598,7 +606,7 @@ struct SubjectDetailView: View {
     @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
     @AppStorage("maxGrade") private var maxGrade: Double = 10
 
-    private static let motivations = [
+    private static var motivations: [String] { [
         L("Un voto alla volta: la media si costruisce con costanza. 💪"),
         L("Non è la singola interrogazione, è la rotta che tieni. 🚀"),
         L("Ogni studio di oggi è un voto migliore domani. 📚"),
@@ -607,7 +615,7 @@ struct SubjectDetailView: View {
         L("Piccoli passi, grandi risultati. Continua così! 🎯"),
         L("Il prossimo voto è un'occasione, non una minaccia. 😉"),
         L("Credici: la media più alta è più vicina di quanto pensi. ✨")
-    ]
+    ] }
 
     private var targetOptions: [Double] {
         stride(from: sufficientGrade, through: maxGrade, by: 0.5).map { $0 }
@@ -809,15 +817,6 @@ struct SubjectDetailView: View {
             .padding(.leading, 14)
     }
 
-    /// "+1,5" / "-0,5" con la virgola italiana, senza decimali inutili.
-    private func deltaText(_ delta: Double) -> String {
-        let sign = delta >= 0 ? "+" : "−"
-        let v = abs(delta)
-        let text = v.truncatingRemainder(dividingBy: 1) == 0
-            ? String(Int(v))
-            : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
-        return sign + text
-    }
 
     @ViewBuilder
     private var goalResultRow: some View {
@@ -830,7 +829,7 @@ struct SubjectDetailView: View {
                     .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
                 Spacer()
                 if let avg = store.average(for: subject) {
-                    Text("\(deltaText(avg - targetAverage)) sopra")
+                    Text("\(gradeDeltaText(avg - targetAverage)) sopra")
                         .font(.system(size: 11.5, weight: .bold))
                         .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
                         .padding(.horizontal, 9)
@@ -1173,15 +1172,7 @@ struct GradeEntrySheet: View {
     /// Subjects common to most Italian schools, offered as suggestions even
     /// before the user has ever entered them. Anything missing the user can add,
     /// and it becomes a suggestion from then on (via `store.subjects`).
-    private static let commonSubjects = [
-        L("Italiano"), L("Matematica"), L("Storia"), L("Geografia"), L("Geostoria"),
-        L("Inglese"), L("Francese"), L("Spagnolo"), L("Tedesco"), L("Latino"), L("Greco"),
-        L("Scienze"), L("Scienze naturali"), L("Biologia"), L("Chimica"), L("Fisica"),
-        L("Filosofia"), L("Storia dell'arte"), L("Disegno e storia dell'arte"),
-        L("Diritto"), L("Economia"), L("Informatica"), L("Tecnologia"),
-        L("Scienze motorie"), L("Educazione fisica"), L("Educazione civica"),
-        L("Religione"), L("Musica"), L("Arte e immagine")
-    ]
+    private static var commonSubjects: [String] { SubjectSuggestions.all }
 
     @Environment(\.dismiss) private var dismiss
     @State private var subject = ""
