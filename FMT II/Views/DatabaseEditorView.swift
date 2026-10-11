@@ -114,7 +114,7 @@ struct DatabaseEditorView: View {
     private var timeSlotsSection: some View {
         Section {
             HStack {
-                Text("Inizio 1ª ora").font(.system(size: 14.5, weight: .semibold))
+                Text(draft.perClassStartTimes ? "Inizio predefinito" : "Inizio 1ª ora").font(.system(size: 14.5, weight: .semibold))
                 Spacer()
                 DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
                     .labelsHidden()
@@ -130,25 +130,91 @@ struct DatabaseEditorView: View {
                 }
             }
             .onChange(of: slotMinutes) { _, _ in recomputePeriods() }
-            // Fasce calcolate, come chip (design 3e)
-            ChipFlowLayout(spacing: 6) {
-                ForEach(sortedPeriods) { p in
-                    Text("\(p.number)ª · \(p.startTime)–\(p.endTime)")
-                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(.white.opacity(0.06), in: Capsule())
-                        .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+            Toggle(isOn: perClassBinding.animation(.easeInOut(duration: 0.25))) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Inizio diverso per classe").font(.system(size: 14.5, weight: .semibold))
+                    Text("Es. 1C alle 8:10, 3C alle 9:10")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
                 }
             }
-            .padding(.vertical, 2)
+            .tint(AuroraSection.orario.tintB)
+            if draft.perClassStartTimes {
+                ForEach(draft.classes, id: \.self) { cls in
+                    classStartRow(cls)
+                }
+            } else {
+                // Fasce calcolate, come chip (design 3e)
+                ChipFlowLayout(spacing: 6) {
+                    ForEach(sortedPeriods) { p in
+                        Text("\(p.number)ª · \(p.startTime)–\(p.endTime)")
+                            .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(.white.opacity(0.06), in: Capsule())
+                            .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+                    }
+                }
+                .padding(.vertical, 2)
+            }
         } header: {
             SettingsView.header("Fasce orarie")
         } footer: {
-            Text("Calcolate da inizio e durata — nessun inserimento manuale.")
+            Text(draft.perClassStartTimes
+                 ? "La durata delle lezioni resta uguale per tutte le classi."
+                 : "Calcolate da inizio e durata — nessun inserimento manuale.")
         }
         .listRowBackground(Color.sectionCard)
+    }
+
+    // MARK: Inizio per classe
+
+    private var perClassBinding: Binding<Bool> {
+        Binding(
+            get: { draft.perClassStartTimes },
+            set: { on in
+                draft.perClassStartTimes = on
+                // Le classi senza orario partono dall'inizio globale.
+                if on, let first = sortedPeriods.first {
+                    for cls in draft.classes where draft.classStartTimes[cls] == nil {
+                        draft.classStartTimes[cls] = first.startTime
+                    }
+                }
+            }
+        )
+    }
+
+    private func classStartBinding(_ cls: String) -> Binding<Date> {
+        Binding(
+            get: { dateFrom(draft.classStartTimes[cls] ?? sortedPeriods.first?.startTime ?? "08:00") },
+            set: { d in
+                let cal = Calendar.current
+                draft.classStartTimes[cls] = hhmm(cal.component(.hour, from: d) * 60 + cal.component(.minute, from: d))
+            }
+        )
+    }
+
+    /// Riga classe: chip colorato, fascia «prima–ultima ora», orario d'inizio.
+    private func classStartRow(_ cls: String) -> some View {
+        let ps = draft.periods(forClass: cls)
+        return HStack(spacing: 10) {
+            Text(cls)
+                .font(.system(size: 11.5, weight: .bold))
+                .kerning(0.3)
+                .foregroundStyle(entityLabelColor(entityTint(cls), scheme))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background(entityTint(cls).opacity(0.13), in: Capsule())
+                .overlay(Capsule().strokeBorder(entityTint(cls).opacity(0.28), lineWidth: 1))
+            if let f = ps.first, let l = ps.last {
+                Text("\(f.startTime)–\(l.endTime)")
+                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            DatePicker("", selection: classStartBinding(cls), displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
     }
 
     // MARK: Docenti
@@ -370,6 +436,7 @@ struct DatabaseEditorView: View {
                     draft.lessons[i].className = new
                 }
                 draft.classes = dedup(draft.classes.map { $0 == target.current ? new : $0 })
+                draft.renameClassStartTime(from: target.current, to: new)
             }
         }
     }
