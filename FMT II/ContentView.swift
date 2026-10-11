@@ -29,6 +29,10 @@ struct ContentView: View {
     /// questo lancio (= aggiornamento)? Chi installa da zero non lo vede mai.
     @State private var showWhatsNew = ContentView.initialShowWhatsNew
 
+    /// Layout iPad: dalla size class e dalla larghezza della finestra.
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    @State private var windowWidth: CGFloat = 0
+
     @State private var showFilePicker = false
     @State private var showTutorial = false
     @State private var targetMode: TargetMode = .class_
@@ -77,6 +81,14 @@ struct ContentView: View {
                 pagedSectionContent
             }
         }
+        .background {
+            GeometryReader { g in
+                Color.clear
+                    .onAppear { windowWidth = g.size.width }
+                    .onChange(of: g.size.width) { _, w in windowWidth = w }
+            }
+        }
+        .environment(\.deviceLayout, DeviceLayout.resolve(horizontalSizeClass: hSizeClass, width: windowWidth))
         .animation(.easeInOut(duration: 0.55), value: hasSeenTutorial)
         .onChange(of: appearanceMode) { _, mode in applyAppearanceMode(mode) }
         .task {
