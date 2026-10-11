@@ -13,6 +13,7 @@ struct MainScheduleView: View {
     var gradesStore: GradesStore? = nil
 
     @AppStorage("useLiveTime") private var useLiveTime = true
+    @Environment(\.deviceLayout) private var layout
     // Cambia quando l'utente personalizza i colori: forza il refresh delle tinte.
     @AppStorage("entityColorsVersion") private var entityColorsVersion = 0
     @AppStorage("manualDayRaw") private var manualDayRaw = "monday"
@@ -114,54 +115,87 @@ struct MainScheduleView: View {
         return "\(target) · \(day) · \(activeTime)"
     }
 
+    /// Adesso / Giorno / Settimana (uguale in tutti i layout).
+    @ViewBuilder
+    private var scheduleContent: some View {
+        let _ = entityColorsVersion
+        switch viewMode {
+        case .now:
+            NowView(
+                currentLesson: currentLesson,
+                nextLesson: nextLesson,
+                targetMode: targetMode,
+                activeDay: activeDay,
+                activeTime: activeTime,
+                schoolTimes: schoolTimes,
+                onOpenWeek: { withAnimation { viewMode = .week } },
+                onJumpToLesson: jumpToLessonTime,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        case .day:
+            DayView(
+                dayPlan: dayPlan,
+                dayLabel: schedule.days.first { $0.id == dayForDayView }?.label ?? "",
+                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
+                targetMode: targetMode,
+                dayId: dayForDayView,
+                onOpenCounterpart: openCounterpartDay,
+                onJumpToLesson: jumpToLessonTime,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        case .week:
+            WeekView(
+                schedule: schedule,
+                periods: schedule.displayPeriods(forClass: periodClass),
+                targetLessons: targetLessons,
+                targetMode: targetMode,
+                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
+                onOpenCounterpart: openCounterpartWeek,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-                ScrollView {
-                    VStack(spacing: 14) {
-                        statusStrip
-                        controlPanel
-                        if viewMode != .week { timeIndicator }
-
-                        let _ = entityColorsVersion
-                        switch viewMode {
-                        case .now:
-                            NowView(
-                                currentLesson: currentLesson,
-                                nextLesson: nextLesson,
-                                targetMode: targetMode,
-                                activeDay: activeDay,
-                                activeTime: activeTime,
-                                schoolTimes: schoolTimes,
-                                onOpenWeek: { withAnimation { viewMode = .week } },
-                                onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
-                            )
-                        case .day:
-                            DayView(
-                                dayPlan: dayPlan,
-                                dayLabel: schedule.days.first { $0.id == dayForDayView }?.label ?? "",
-                                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
-                                targetMode: targetMode,
-                                dayId: dayForDayView,
-                                onOpenCounterpart: openCounterpartDay,
-                                onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
-                            )
-                        case .week:
-                            WeekView(
-                                schedule: schedule,
-                                periods: schedule.displayPeriods(forClass: periodClass),
-                                targetLessons: targetLessons,
-                                targetMode: targetMode,
-                                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
-                                onOpenCounterpart: openCounterpartWeek,
-                                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
-                            )
+                Group {
+                    if layout == .wide {
+                        // iPad in orizzontale: controlli a sinistra, contenuto a destra.
+                        HStack(alignment: .top, spacing: 18) {
+                            ScrollView {
+                                VStack(spacing: 14) {
+                                    statusStrip
+                                    controlPanel
+                                    if viewMode != .week { timeIndicator }
+                                }
+                                .padding(.top, headerHeight + 6)
+                                .padding(.bottom, 32)
+                            }
+                            .scrollIndicators(.hidden)
+                            .frame(width: 340)
+                            ScrollView {
+                                scheduleContent
+                                    .padding(.top, headerHeight + 6)
+                                    .padding(.bottom, 32)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 14) {
+                                statusStrip
+                                controlPanel
+                                if viewMode != .week { timeIndicator }
+                                // iPad in verticale: Adesso/Giorno non si stirano.
+                                scheduleContent
+                                    .frame(maxWidth: layout == .regular && viewMode != .week ? 760 : .infinity)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, headerHeight + 6)
+                            .padding(.bottom, 32)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, headerHeight + 6)
-                    .padding(.bottom, 32)
                 }
                 // Il contenuto svanisce avvicinandosi al titolo (mask sulla
                 // ScrollView): nessun velo dipinto sopra l'aurora, quindi
@@ -269,42 +303,52 @@ struct MainScheduleView: View {
     // MARK: - Status strip
 
     var statusStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button(action: onLessonCountTap) {
-                    StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: "lezioni", color: .purple)
+        Group {
+            if layout == .wide {
+                // Colonna laterale iPad: le pillole vanno a capo invece di scorrere.
+                ChipFlowLayout(spacing: 8) { statusPills }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) { statusPills }
+                        .padding(.vertical, 2)
                 }
-                .buttonStyle(.plain)
-                Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
-                    StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: "classi", color: .blue)
-                }
-                .buttonStyle(.plain)
-                Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
-                    StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
-                             value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
-                             label: usesSubjectEntities ? "materie" : "docenti",
-                             color: .orange)
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    showChangePDFConfirm = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text(schedule.sourceName)
-                            .lineLimit(1)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .auroraCard(radius: 999)
-                }
-                .buttonStyle(.plain)
             }
-            .padding(.vertical, 2)
         }
+    }
+
+    @ViewBuilder
+    private var statusPills: some View {
+        Button(action: onLessonCountTap) {
+            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: "lezioni", color: .purple)
+        }
+        .buttonStyle(.plain)
+        Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
+            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: "classi", color: .blue)
+        }
+        .buttonStyle(.plain)
+        Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
+            StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
+                     value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
+                     label: usesSubjectEntities ? "materie" : "docenti",
+                     color: .orange)
+        }
+        .buttonStyle(.plain)
+
+        Button {
+            showChangePDFConfirm = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text(schedule.sourceName)
+                    .lineLimit(1)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .auroraCard(radius: 999)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Control panel
