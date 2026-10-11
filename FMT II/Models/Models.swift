@@ -83,6 +83,10 @@ struct ScheduleData: Codable, Equatable {
     var edited: Bool = false
     /// Learned subject -> teacher pairs, used to auto-fill teachers while building.
     var subjectTeachers: [String: String] = [:]
+    /// v2.2: ogni classe può avere la sua ora d'inizio (durata e numero di ore restano globali).
+    var perClassStartTimes: Bool = false
+    /// Classe → "HH:mm" d'inizio della 1ª ora (usato solo con `perClassStartTimes`).
+    var classStartTimes: [String: String] = [:]
 
     /// Safe placeholder used during the brief render pass when the schedule is
     /// being removed, so views that assume a non-nil schedule don't crash.
@@ -109,18 +113,28 @@ extension ScheduleData {
         warnings = try c.decodeIfPresent([String].self, forKey: .warnings) ?? []
         edited = try c.decodeIfPresent(Bool.self, forKey: .edited) ?? false
         subjectTeachers = try c.decodeIfPresent([String: String].self, forKey: .subjectTeachers) ?? [:]
+        perClassStartTimes = try c.decodeIfPresent(Bool.self, forKey: .perClassStartTimes) ?? false
+        classStartTimes = try c.decodeIfPresent([String: String].self, forKey: .classStartTimes) ?? [:]
     }
 }
 
 /// Re-aligns lesson times to their period (respecting manually-set period times,
 /// unlike `normalizeScheduleTimes` which forces the fixed 08:10 formula),
 /// regenerates lesson ids, and marks the schedule as manually edited.
+/// Each lesson follows its own class's periods (per-class start time, v2.2).
 func applyManualEdits(_ s: ScheduleData) -> ScheduleData {
-    var periodByNumber: [Int: Period] = [:]
-    for p in s.periods { periodByNumber[p.number] = p }
+    var periodsByClass: [String: [Int: Period]] = [:]
+    func period(_ number: Int, of className: String) -> Period? {
+        if periodsByClass[className] == nil {
+            var map: [Int: Period] = [:]
+            for p in s.periods(forClass: className) { map[p.number] = p }
+            periodsByClass[className] = map
+        }
+        return periodsByClass[className]?[number]
+    }
 
     let lessons = s.lessons.map { lesson -> Lesson in
-        let p = periodByNumber[lesson.period]
+        let p = period(lesson.period, of: lesson.className)
         let start = p?.startTime ?? lesson.startTime
         let end = p?.endTime ?? lesson.endTime
         return Lesson(
