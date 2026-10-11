@@ -249,7 +249,7 @@ struct SettingsView: View {
                     Self.row(L("Sorgente"), icon: "doc.fill", "#38BDF8")
                 }
                 LabeledContent {
-                    Text("\(schedule.lessons.count) lezioni · \(schedule.classes.count) classi · \(schedule.teachers.count) docenti")
+                    Text(verbatim: [counted(schedule.lessons.count, .lessons), counted(schedule.classes.count, .classes), counted(schedule.teachers.count, .teachers)].joined(separator: " · "))
                 } label: {
                     Self.row(L("Contenuto"), icon: "square.grid.3x3.fill", "#4E7CF6")
                 }

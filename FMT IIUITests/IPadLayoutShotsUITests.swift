@@ -24,6 +24,10 @@ final class IPadLayoutShotsUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-FMTSeedDemo", "-hasSeenTutorial", "YES", "-hasCompletedOnboarding", "YES",
                                "-appSectionRaw", section, "-FMTViewMode", viewMode] + extra
+        // Lingua degli screenshot: TEST_RUNNER_FMT_LANG=en|it (default: quella salvata).
+        if let lang = ProcessInfo.processInfo.environment["FMT_LANG"] {
+            app.launchArguments += ["-appLanguage", lang]
+        }
         app.launch()
         return app
     }

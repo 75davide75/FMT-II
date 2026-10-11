@@ -39,7 +39,7 @@ struct DatabaseEditorView: View {
             Section {
                 AuroraTitle(
                     title: L("Dati orario"),
-                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · " + L("\(draft.lessons.count) lezioni · \(draft.teachers.count) docenti · \(draft.classes.count) classi")
+                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · " + [counted(draft.lessons.count, .lessons), counted(draft.teachers.count, .teachers), counted(draft.classes.count, .classes)].joined(separator: " · ")
                 )
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)

@@ -99,6 +99,26 @@
         }
       }
     },
+    "%lld classi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld classes"
+          }
+        }
+      }
+    },
+    "%lld docenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld teachers"
+          }
+        }
+      }
+    },
     "%lld impegni": {
       "localizations": {
         "en": {
@@ -109,7 +129,18 @@
         }
       }
     },
+    "%lld lezioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lessons"
+          }
+        }
+      }
+    },
     "%lld lezioni · %lld classi · %lld docenti": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -126,6 +157,7 @@
       }
     },
     "%lld lezioni · %lld docenti · %lld classi": {
+      "extractionState": "stale",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -137,6 +169,16 @@
           "stringUnit": {
             "state": "new",
             "value": "%1$lld lezioni · %2$lld docenti · %3$lld classi"
+          }
+        }
+      }
+    },
+    "%lld materie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld subjects"
           }
         }
       }
@@ -253,12 +295,52 @@
         }
       }
     },
+    "1 classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 class"
+          }
+        }
+      }
+    },
+    "1 docente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 teacher"
+          }
+        }
+      }
+    },
     "1 impegno": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "1 item"
+          }
+        }
+      }
+    },
+    "1 lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 lesson"
+          }
+        }
+      }
+    },
+    "1 materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 subject"
           }
         }
       }
@@ -5201,6 +5283,16 @@
         }
       }
     },
+    "classe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "class"
+          }
+        }
+      }
+    },
     "classi": {
       "localizations": {
         "en": {
@@ -5217,6 +5309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "developed by davide 😗"
+          }
+        }
+      }
+    },
+    "docente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "teacher"
           }
         }
       }
@@ -5261,12 +5363,32 @@
         }
       }
     },
+    "lezione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lesson"
+          }
+        }
+      }
+    },
     "lezioni": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "lessons"
+          }
+        }
+      }
+    },
+    "materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subject"
           }
         }
       }

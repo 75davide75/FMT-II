@@ -69,4 +69,14 @@ final class LocalizationCompletenessTests: XCTestCase {
         XCTAssertEqual(NoteTaskType.interrogazione.label, "Oral test")
         XCTAssertEqual(CloudSyncManager.Status.noAccount.label, "Sign in to iCloud")
     }
+
+    func testCountedNounsUseSingular() {
+        LanguageSettings.current = .english
+        XCTAssertEqual(counted(1, .classes), "1 class")
+        XCTAssertEqual(counted(3, .classes), "3 classes")
+        XCTAssertEqual(counted(1, .teachers), "1 teacher")
+        LanguageSettings.current = .italian
+        XCTAssertEqual(counted(1, .classes), "1 classe")
+        XCTAssertEqual(counted(25, .lessons), "25 lezioni")
+    }
 }

@@ -324,17 +324,19 @@ struct MainScheduleView: View {
     @ViewBuilder
     private var statusPills: some View {
         Button(action: onLessonCountTap) {
-            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: L("lezioni"), color: .purple)
+            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: schedule.lessons.count == 1 ? L("lezione") : L("lezioni"), color: .purple)
         }
         .buttonStyle(.plain)
         Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
-            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: L("classi"), color: .blue)
+            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: schedule.classes.count == 1 ? L("classe") : L("classi"), color: .blue)
         }
         .buttonStyle(.plain)
         Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
             StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
                      value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
-                     label: usesSubjectEntities ? L("materie") : L("docenti"),
+                     label: usesSubjectEntities
+                                ? (scheduleSubjects.count == 1 ? L("materia") : L("materie"))
+                                : (schedule.teachers.count == 1 ? L("docente") : L("docenti")),
                      color: .orange)
         }
         .buttonStyle(.plain)

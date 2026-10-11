@@ -126,6 +126,19 @@ extension Date {
     }
 }
 
+/// Cose che si contano nei riepiloghi dell'orario.
+enum CountedNoun { case lessons, classes, teachers, subjects }
+
+/// «1 classe» / «3 classi» nella lingua dell'app.
+func counted(_ n: Int, _ noun: CountedNoun) -> String {
+    switch noun {
+    case .lessons:  return n == 1 ? L("1 lezione") : L("\(n) lezioni")
+    case .classes:  return n == 1 ? L("1 classe")  : L("\(n) classi")
+    case .teachers: return n == 1 ? L("1 docente") : L("\(n) docenti")
+    case .subjects: return n == 1 ? L("1 materia") : L("\(n) materie")
+    }
+}
+
 /// Testo tradotto nella lingua dell'app, per le stringhe fuori da `Text`
 /// (etichette dei modelli, messaggi, notifiche).
 func L(_ key: String.LocalizationValue) -> String {
