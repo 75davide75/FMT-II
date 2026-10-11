@@ -52,6 +52,11 @@ struct WhatsNewBanner: View {
             feature(icon: "clock.fill", hex: "#8B5CF6",
                     title: "Ora d'inizio per classe",
                     text: "Ogni classe può entrare a un orario diverso: Impostazioni → Dati orario.")
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                feature(icon: "ipad.landscape", hex: "#F472B6",
+                        title: "Pensata per iPad",
+                        text: "Settimana a tutto schermo e schermate su due colonne in orizzontale.")
+            }
             Button(action: onDismiss) {
                 Text("Ho capito")
                     .font(.system(size: 15, weight: .bold))
