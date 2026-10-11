@@ -955,8 +955,7 @@ struct NoteEditorSheet: View {
 
     var schoolDays: [DayInfo] { schedule?.days ?? [] }
     var schoolTimes: [String] {
-        guard let s = schedule, let last = s.periods.last else { return [] }
-        return s.periods.map { $0.startTime } + [last.endTime]
+        schedule?.timeSlots(forClass: classTag.isEmpty ? nil : classTag) ?? []
     }
 
     /// Binding sicuro per la data: se nel frattempo è stata azzerata, il get

@@ -77,9 +77,12 @@ struct MainScheduleView: View {
         }
     }
 
+    /// Classe di cui mostrare le fasce: quella selezionata in vista classe,
+    /// nil in vista docente (unione degli orari di tutte le classi).
+    var periodClass: String? { targetMode == .class_ ? selectedClass : nil }
+
     var schoolTimes: [String] {
-        guard let last = schedule.periods.last else { return [] }
-        return schedule.periods.map { $0.startTime } + [last.endTime]
+        schedule.timeSlots(forClass: periodClass)
     }
 
     var currentLesson: Lesson? {
@@ -93,7 +96,7 @@ struct MainScheduleView: View {
     var dayForDayView: DayId { useLiveTime ? (activeDay ?? .monday) : manualDay }
 
     var dayPlan: [(period: Period, lessons: [Lesson])] {
-        schedule.periods.map { period in
+        schedule.displayPeriods(forClass: periodClass).map { period in
             let day = dayForDayView
             let ls = targetLessons
                 .filter { $0.day == day && $0.startTime == period.startTime }
@@ -147,6 +150,7 @@ struct MainScheduleView: View {
                         case .week:
                             WeekView(
                                 schedule: schedule,
+                                periods: schedule.displayPeriods(forClass: periodClass),
                                 targetLessons: targetLessons,
                                 targetMode: targetMode,
                                 targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
@@ -549,8 +553,7 @@ struct QuickTimePickerSheet: View {
     }
 
     var schoolTimes: [String] {
-        guard let last = schedule.periods.last else { return [] }
-        return schedule.periods.map { $0.startTime } + [last.endTime]
+        schedule.timeSlots(forClass: nil)
     }
 
     var body: some View {

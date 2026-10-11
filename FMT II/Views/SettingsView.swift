@@ -54,8 +54,7 @@ struct SettingsView: View {
     }
 
     var schoolTimes: [String] {
-        guard let s = store.schedule, let last = s.periods.last else { return [] }
-        return s.periods.map { $0.startTime } + [last.endTime]
+        store.schedule?.timeSlots(forClass: nil) ?? []
     }
 
     var body: some View {

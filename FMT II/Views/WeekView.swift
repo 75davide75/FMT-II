@@ -2,6 +2,8 @@ import SwiftUI
 
 struct WeekView: View {
     let schedule: ScheduleData
+    /// Righe orarie: fasce della classe o unione (vista docente).
+    let periods: [Period]
     let targetLessons: [Lesson]
     let targetMode: TargetMode
     let targetName: String
@@ -63,7 +65,7 @@ struct WeekView: View {
                     Divider()
 
                     // Period rows
-                    ForEach(schedule.periods) { period in
+                    ForEach(periods) { period in
                         HStack(spacing: 0) {
                             // Time cell
                             VStack(spacing: 1) {
