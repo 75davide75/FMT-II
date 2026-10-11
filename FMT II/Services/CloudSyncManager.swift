@@ -54,6 +54,8 @@ final class CloudSyncManager: ObservableObject {
     /// così un salvataggio aggiorna il record invece di generare un conflitto.
     private var systemFields: [String: Data] = [:]
     private let lastSyncKey = "fmt_lastCloudSync"
+    /// Esito dell'ultimo controllo dell'account iCloud.
+    private var accountAvailable = false
     private let pausedKey = "fmt_syncPausedAfterICloudDelete"
 
     /// In pausa dopo che l'utente ha eliminato i dati di FMT da iCloud: niente
@@ -64,6 +66,29 @@ final class CloudSyncManager: ObservableObject {
     }
 
     // MARK: - Regole (pure, testate)
+
+    /// Solo gli eventi del motore attuale contano (dopo un cambio di account il
+    /// vecchio può ancora inviare eventi in ritardo).
+    nonisolated static func isFromCurrentEngine(_ source: AnyObject, current: AnyObject?) -> Bool {
+        guard let current else { return false }
+        return source === current
+    }
+
+    /// Nuovo stato dopo una sincronizzazione riuscita (nil = nessun cambio e
+    /// nessun timestamp): niente senza account o in pausa; «spazio esaurito»
+    /// sparisce solo quando dei record tornano a salvarsi senza errori di quota.
+    nonisolated static func statusAfterSync(current: Status, accountAvailable: Bool,
+                                            savedRecords: Int, quotaFailures: Int, now: Date) -> Status? {
+        guard accountAvailable else { return nil }
+        switch current {
+        case .paused:
+            return nil
+        case .quotaExceeded:
+            return savedRecords > 0 && quotaFailures == 0 ? .upToDate(now) : nil
+        default:
+            return quotaFailures > 0 ? .quotaExceeded : .upToDate(now)
+        }
+    }
 
     /// Un cambio di account non carica mai da solo i dati locali: potrebbero
     /// appartenere a un'altra persona (voti e diario sono dati sensibili).
@@ -161,6 +186,7 @@ final class CloudSyncManager: ObservableObject {
 
     private func refreshAccountStatus() async {
         let account = try? await CKContainer(identifier: Self.containerIdentifier).accountStatus()
+        accountAvailable = account == .available
         if account != .available {
             status = .noAccount
         } else if isPaused {
@@ -182,13 +208,61 @@ final class CloudSyncManager: ObservableObject {
         CKRecord.ID(recordName: item.recordName, zoneID: Self.zoneID)
     }
 
-    private func markSynced() {
+    private func markSynced(savedRecords: Int = 0, quotaFailures: Int = 0) {
         let now = Date()
-        UserDefaults.standard.set(now, forKey: lastSyncKey)
-        switch status {
-        case .noAccount, .quotaExceeded, .paused: break
-        default: status = .upToDate(now)
+        if let next = Self.statusAfterSync(current: status, accountAvailable: accountAvailable,
+                                           savedRecords: savedRecords, quotaFailures: quotaFailures, now: now) {
+            status = next
+            if case .upToDate = next { UserDefaults.standard.set(now, forKey: lastSyncKey) }
+        } else if status == .syncing {
+            // Nessuna sync reale (es. senza account): non restare su «In corso…».
+            status = accountAvailable ? .upToDate(lastSync) : .noAccount
         }
+    }
+
+    /// Data di modifica attuale nello store per un elemento (per i conflitti).
+    private func storeModifiedAt(_ item: SyncItem) -> Date? {
+        switch item {
+        case .grade(let id): return grades?.grades.first { $0.id == id }?.modifiedAt
+        case .note(let id):  return notes?.notes.first { $0.id == id }?.modifiedAt
+        case .schedule:      return scheduleStore?.schedule?.modifiedAt ?? scheduleStore?.clearedAt
+        }
+    }
+
+    /// Nomi dei record con una cancellazione locale ancora da inviare.
+    private var pendingDeleteNames: Set<String> {
+        Set((engine?.state.pendingRecordZoneChanges ?? []).compactMap {
+            if case .deleteRecord(let id) = $0 { return id.recordName }
+            return nil
+        })
+    }
+
+    // MARK: - Campi di versioni future
+
+    /// Copie remote che contengono campi sconosciuti a questa versione: li
+    /// rimandiamo invariati, così una versione più nuova non li perde.
+    private var payloadsDirectory: URL {
+        let url = supportDirectory.appendingPathComponent("payloads", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    private func cachedRemotePayload(_ recordName: String) -> Data? {
+        try? Data(contentsOf: payloadsDirectory.appendingPathComponent(recordName + ".json"))
+    }
+
+    private func rememberRemotePayload(_ remote: Data, known: Data?, for recordName: String) {
+        let url = payloadsDirectory.appendingPathComponent(recordName + ".json")
+        if let known, SyncMerge.hasUnknownKeys(remote: remote, known: known) {
+            try? remote.write(to: url, options: .atomic)
+        } else {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private func outgoingPayload<T: Encodable>(_ model: T, recordName: String) -> Data? {
+        guard let ours = try? JSONEncoder().encode(model) else { return nil }
+        return SyncMerge.mergePayload(ours: ours, previousRemote: cachedRemotePayload(recordName))
     }
 
     private func handle(_ error: Error) {
@@ -204,21 +278,20 @@ final class CloudSyncManager: ObservableObject {
 
     private func record(for recordID: CKRecord.ID) -> CKRecord? {
         guard let item = SyncItem(recordName: recordID.recordName) else { return nil }
-        let enc = JSONEncoder()
         let record = existingRecord(recordID, type: item.recordType)
         switch item {
         case .grade(let id):
             guard let g = grades?.grades.first(where: { $0.id == id }),
-                  let data = try? enc.encode(g) else { return nil }
+                  let data = outgoingPayload(g, recordName: recordID.recordName) else { return nil }
             record["payload"] = data as NSData
             record["modifiedAt"] = g.modifiedAt as NSDate
         case .note(let id):
             guard let n = notes?.notes.first(where: { $0.id == id }),
-                  let data = try? enc.encode(n) else { return nil }
+                  let data = outgoingPayload(n, recordName: recordID.recordName) else { return nil }
             record["payload"] = data as NSData
             record["modifiedAt"] = n.modifiedAt as NSDate
         case .schedule:
-            if let s = scheduleStore?.schedule, let data = try? enc.encode(s) {
+            if let s = scheduleStore?.schedule, let data = outgoingPayload(s, recordName: recordID.recordName) {
                 let url = assetsDirectory.appendingPathComponent("schedule-\(UUID().uuidString).json")
                 guard (try? data.write(to: url, options: .atomic)) != nil else { return nil }
                 record["payloadAsset"] = CKAsset(fileURL: url)
@@ -258,18 +331,31 @@ final class CloudSyncManager: ObservableObject {
         let dec = JSONDecoder()
         var gradeUps: [Grade] = [], noteUps: [Note] = []
         var gradeDels = Set<UUID>(), noteDels = Set<UUID>()
+        let enc = JSONEncoder()
+        let applicable = Set(SyncMerge.skippingPendingDeletes(records.map(\.recordID.recordName),
+                                                              pendingDeletes: pendingDeleteNames))
         for record in records {
             remember(record)
-            switch SyncItem(recordName: record.recordID.recordName) {
+            let name = record.recordID.recordName
+            // Cancellato qui ma non ancora inviato: non deve ricomparire.
+            guard applicable.contains(name) else { continue }
+            switch SyncItem(recordName: name) {
             case .grade?:
-                if let d = record["payload"] as? Data, let g = try? dec.decode(Grade.self, from: d) { gradeUps.append(g) }
+                if let d = record["payload"] as? Data, let g = try? dec.decode(Grade.self, from: d) {
+                    gradeUps.append(g)
+                    rememberRemotePayload(d, known: try? enc.encode(g), for: name)
+                }
             case .note?:
-                if let d = record["payload"] as? Data, let n = try? dec.decode(Note.self, from: d) { noteUps.append(n) }
+                if let d = record["payload"] as? Data, let n = try? dec.decode(Note.self, from: d) {
+                    noteUps.append(n)
+                    rememberRemotePayload(d, known: try? enc.encode(n), for: name)
+                }
             case .schedule?:
                 let deleted = (record["deleted"] as? Int ?? 0) == 1
                 let modified = record["modifiedAt"] as? Date ?? .distantPast
                 let data = (record["payloadAsset"] as? CKAsset)?.fileURL.flatMap { try? Data(contentsOf: $0) }
                 let s = data.flatMap { try? dec.decode(ScheduleData.self, from: $0) }
+                if let data, let s { rememberRemotePayload(data, known: try? enc.encode(s), for: name) }
                 scheduleStore?.applyRemote(schedule: s, remoteModifiedAt: modified, deleted: deleted)
             case nil:
                 break
@@ -277,6 +363,7 @@ final class CloudSyncManager: ObservableObject {
         }
         for id in ids {
             systemFields[id.recordName] = nil
+            try? FileManager.default.removeItem(at: payloadsDirectory.appendingPathComponent(id.recordName + ".json"))
             switch SyncItem(recordName: id.recordName) {
             case .grade(let uuid)?: gradeDels.insert(uuid)
             case .note(let uuid)?:  noteDels.insert(uuid)
@@ -293,16 +380,24 @@ final class CloudSyncManager: ObservableObject {
         for id in e.deletedRecordIDs { systemFields[id.recordName] = nil }
         var retry: [CKSyncEngine.PendingRecordZoneChange] = []
         var serverWinners: [CKRecord] = []
+        var quotaFailures = 0
         for failure in e.failedRecordSaves {
             let record = failure.record
             switch failure.error.code {
             case .serverRecordChanged:
                 guard let server = failure.error.serverRecord else { continue }
                 remember(server)
-                let local = record["modifiedAt"] as? Date
+                // Conta la copia attuale nello store: l'utente può averla
+                // modificata di nuovo mentre questa era in viaggio.
+                let current = SyncItem(recordName: record.recordID.recordName).flatMap(storeModifiedAt)
                 let remote = server["modifiedAt"] as? Date ?? .distantPast
-                if SyncMerge.remoteWins(local: local, remote: remote) { serverWinners.append(server) }
-                else { retry.append(.saveRecord(record.recordID)) }
+                if SyncMerge.conflictWinsLocally(storeModified: current,
+                                                 failedRecordModified: record["modifiedAt"] as? Date,
+                                                 serverModified: remote) {
+                    retry.append(.saveRecord(record.recordID))
+                } else {
+                    serverWinners.append(server)
+                }
             case .zoneNotFound:
                 engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
                 systemFields[record.recordID.recordName] = nil
@@ -311,7 +406,7 @@ final class CloudSyncManager: ObservableObject {
                 systemFields[record.recordID.recordName] = nil
                 retry.append(.saveRecord(record.recordID))
             case .quotaExceeded:
-                status = .quotaExceeded
+                quotaFailures += 1
             case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable,
                  .notAuthenticated, .operationCancelled, .requestRateLimited:
                 break   // CKSyncEngine riprova da solo
@@ -319,9 +414,23 @@ final class CloudSyncManager: ObservableObject {
                 log.error("save \(record.recordID.recordName, privacy: .public): \(failure.error.localizedDescription, privacy: .public)")
             }
         }
+        for (id, error) in e.failedRecordDeletes {
+            switch error.code {
+            case .unknownItem, .zoneNotFound:
+                systemFields[id.recordName] = nil   // già sparito dal server: va bene così
+            case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable,
+                 .notAuthenticated, .operationCancelled, .requestRateLimited:
+                break   // CKSyncEngine riprova da solo
+            default:
+                log.error("delete \(id.recordName, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
         saveSystemFields()
         if !serverWinners.isEmpty { apply(modified: serverWinners, deleted: []) }
         if !retry.isEmpty { engine.state.add(pendingRecordZoneChanges: retry) }
+        if quotaFailures > 0 || status == .quotaExceeded {
+            markSynced(savedRecords: e.savedRecords.count, quotaFailures: quotaFailures)
+        }
     }
 
     private func handleAccountChange(_ e: CKSyncEngine.Event.AccountChange) {
@@ -383,6 +492,8 @@ final class CloudSyncManager: ObservableObject {
 
 extension CloudSyncManager: CKSyncEngineDelegate {
     func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+        // Dopo un cambio di account il vecchio motore può mandare eventi in ritardo.
+        guard Self.isFromCurrentEngine(syncEngine, current: engine) else { return }
         switch event {
         case .stateUpdate(let e):
             saveState(e.stateSerialization)
@@ -419,6 +530,7 @@ extension CloudSyncManager: CKSyncEngineDelegate {
 
     func nextRecordZoneChangeBatch(_ context: CKSyncEngine.SendChangesContext,
                                    syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
+        guard Self.isFromCurrentEngine(syncEngine, current: engine) else { return nil }
         let pending = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
         guard !pending.isEmpty else { return nil }
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pending) { recordID in

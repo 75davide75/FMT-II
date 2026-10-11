@@ -113,8 +113,12 @@ final class ScheduleStore: ObservableObject {
         guard SyncMerge.remoteWins(local: localModified, remote: remoteModifiedAt) else { return }
         backUpBeforeRemoteChange(replacingWith: deleted ? nil : remote)
         if deleted {
+            // Come `clearSchedule`, ma senza rimandare la rimozione a iCloud.
             schedule = nil
+            isPDFUnsupported = false
+            pendingCompletion = nil
             UserDefaults.standard.removeObject(forKey: storageKey)
+            try? FileManager.default.removeItem(at: pdfStorageURL)
             UserDefaults.standard.set(remoteModifiedAt, forKey: clearedAtKey)
         } else if let remote {
             let s = remote.edited ? remote : normalizeScheduleTimes(remote)

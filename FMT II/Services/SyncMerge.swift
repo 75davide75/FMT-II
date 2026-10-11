@@ -45,6 +45,36 @@ enum SyncMerge {
         return remote >= local
     }
 
+    /// Conflitto all'invio: vince il locale se la copia attuale nello store
+    /// (o, se non c'è, quella inviata) è più recente di quella sul server.
+    static func conflictWinsLocally(storeModified: Date?, failedRecordModified: Date?,
+                                    serverModified: Date) -> Bool {
+        !remoteWins(local: storeModified ?? failedRecordModified, remote: serverModified)
+    }
+
+    /// Modifiche remote da applicare: esclusi gli elementi con una
+    /// cancellazione locale ancora da inviare (non devono ricomparire).
+    static func skippingPendingDeletes(_ recordNames: [String], pendingDeletes: Set<String>) -> [String] {
+        recordNames.filter { !pendingDeletes.contains($0) }
+    }
+
+    /// JSON da inviare: i nostri campi più quelli sconosciuti (di versioni
+    /// future dell'app) presenti nell'ultima copia ricevuta da iCloud.
+    static func mergePayload(ours: Data, previousRemote: Data?) -> Data {
+        guard let previousRemote,
+              let remote = try? JSONSerialization.jsonObject(with: previousRemote) as? [String: Any],
+              let mine = try? JSONSerialization.jsonObject(with: ours) as? [String: Any] else { return ours }
+        let merged = remote.merging(mine) { _, own in own }
+        return (try? JSONSerialization.data(withJSONObject: merged, options: [.sortedKeys])) ?? ours
+    }
+
+    /// La copia remota ha campi che questa versione non conosce?
+    static func hasUnknownKeys(remote: Data, known: Data) -> Bool {
+        guard let r = try? JSONSerialization.jsonObject(with: remote) as? [String: Any],
+              let k = try? JSONSerialization.jsonObject(with: known) as? [String: Any] else { return false }
+        return !Set(r.keys).subtracting(k.keys).isEmpty
+    }
+
     /// Applica modifiche remote a una lista locale: unione per id, mai
     /// sostituzione totale.
     static func apply<T: Identifiable>(upserts: [T], deletions: Set<T.ID>, to local: [T],

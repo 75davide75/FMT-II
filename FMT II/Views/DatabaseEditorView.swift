@@ -99,7 +99,8 @@ struct DatabaseEditorView: View {
             LessonEditorSheet(
                 lesson: target.lesson,
                 days: dayOrder,
-                periods: sortedPeriods,
+                // Orari della classe della lezione (inizio per classe, v2.2).
+                periods: target.lesson.map { draft.periods(forClass: $0.className) } ?? sortedPeriods,
                 classes: draft.classes,
                 teachers: draft.teachers
             ) { saved in

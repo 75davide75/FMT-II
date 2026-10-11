@@ -56,6 +56,8 @@ struct ScheduleBuilderView: View {
 
     private var activeDays: [DayId] { includeSaturday ? dayOrder + [.saturday] : dayOrder }
     private var sortedPeriods: [Period] { draft.periods.sorted { $0.number < $1.number } }
+    /// Fasce della classe in modifica (con l'eventuale inizio per classe).
+    private var classPeriods: [Period] { draft.periods(forClass: selectedClass) }
     private var canSave: Bool { !selectedClass.trimmingCharacters(in: .whitespaces).isEmpty && !draft.lessons.isEmpty }
 
     var body: some View {
@@ -554,7 +556,7 @@ struct ScheduleBuilderView: View {
                             .strokeBorder(.white.opacity(scheme == .dark ? 0.10 : 0.4), lineWidth: 1))
                 }
             }
-            ForEach(sortedPeriods) { period in
+            ForEach(classPeriods) { period in
                 HStack(spacing: 6) {
                     VStack(spacing: 1) {
                         Text(period.startTime)
@@ -731,7 +733,7 @@ struct ScheduleBuilderView: View {
         draft.lessons.removeAll { $0.className == selectedClass && $0.day == t.day && $0.period == t.period }
         guard !subj.isEmpty else { return }
 
-        let p = sortedPeriods.first { $0.number == t.period }
+        let p = classPeriods.first { $0.number == t.period }
         draft.lessons.append(Lesson(
             id: UUID().uuidString,
             className: selectedClass,
