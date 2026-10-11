@@ -20,6 +20,7 @@ struct SettingsView: View {
 
     @Binding var showFilePicker: Bool
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var sync = CloudSyncManager.shared
 
     /// Text-size override mirrored from the app root, re-applied here because a
     /// sheet doesn't always inherit it. Capped at "Enorme".
@@ -64,6 +65,7 @@ struct SettingsView: View {
                 orarioSection
                 importOrarioSection
                 valutazioneSection
+                iCloudSection
                 backupSection
                 supportSection
                 infoSection
@@ -313,6 +315,32 @@ struct SettingsView: View {
             }
             .listRowBackground(Color.sectionCard)
         }
+    }
+
+    private var iCloudSection: some View {
+        Section {
+            HStack {
+                Self.row("iCloud", icon: "icloud.fill", "#38BDF8")
+                Spacer()
+                Text(sync.status.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(sync.status.isProblem ? Color(hex: "#FB923C")! : .secondary)
+            }
+            Button {
+                Task { await sync.syncNow() }
+            } label: {
+                Self.row("Sincronizza ora", icon: "arrow.triangle.2.circlepath", "#4E7CF6")
+                    .foregroundStyle(.primary)
+            }
+            .disabled(sync.status == .off || sync.status == .syncing || sync.status == .noAccount)
+        } header: {
+            Self.header("Sincronizzazione iCloud")
+        } footer: {
+            Text(sync.status == .noAccount
+                 ? "Accedi a iCloud nelle Impostazioni di iOS per avere voti, diario e orario su tutti i tuoi dispositivi."
+                 : "Voti, diario, orario e impostazioni di scuola si aggiornano su tutti i dispositivi con lo stesso Apple ID.")
+        }
+        .listRowBackground(Color.sectionCard)
     }
 
     private var valutazioneSection: some View {
