@@ -71,6 +71,8 @@ struct Note: Identifiable, Codable {
     var isArchived: Bool = false
     var reminder: Bool = false   // legacy single-reminder flag (kept for migration)
     var reminders: [NoteReminder] = []   // weekly recurring reminders (day + time)
+    /// Ultima modifica (per la sync iCloud: vince la più recente).
+    var modifiedAt: Date = Date()
 
     var attributedText: NSAttributedString {
         guard !rtfData.isEmpty else { return NSAttributedString(string: "") }
@@ -137,6 +139,7 @@ extension Note {
         isArchived = try c.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
         reminder = try c.decodeIfPresent(Bool.self, forKey: .reminder) ?? false
         reminders = try c.decodeIfPresent([NoteReminder].self, forKey: .reminders) ?? []
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? createdAt
         // Migrate the old single-reminder flag into the new list.
         if reminders.isEmpty, reminder, let d = day, let t = time {
             reminders = [NoteReminder(day: d, time: t)]

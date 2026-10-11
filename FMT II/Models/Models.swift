@@ -87,6 +87,8 @@ struct ScheduleData: Codable, Equatable {
     var perClassStartTimes: Bool = false
     /// Classe → "HH:mm" d'inizio della 1ª ora (usato solo con `perClassStartTimes`).
     var classStartTimes: [String: String] = [:]
+    /// Ultima modifica locale (per la sync iCloud: vince la più recente).
+    var modifiedAt: Date = .distantPast
 
     /// Safe placeholder used during the brief render pass when the schedule is
     /// being removed, so views that assume a non-nil schedule don't crash.
@@ -115,6 +117,7 @@ extension ScheduleData {
         subjectTeachers = try c.decodeIfPresent([String: String].self, forKey: .subjectTeachers) ?? [:]
         perClassStartTimes = try c.decodeIfPresent(Bool.self, forKey: .perClassStartTimes) ?? false
         classStartTimes = try c.decodeIfPresent([String: String].self, forKey: .classStartTimes) ?? [:]
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? .distantPast
     }
 }
 

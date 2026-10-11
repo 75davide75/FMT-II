@@ -230,6 +230,8 @@ struct Grade: Identifiable, Codable {
     var type: GradeType = .oral
     var weight: Double = 1.0          // 0...1 (100% by default)
     var countsForAverage: Bool = true // when false, shown in blue and excluded from averages
+    /// Ultima modifica (per la sync iCloud: vince la più recente).
+    var modifiedAt: Date = Date()
 }
 
 extension Grade {
@@ -246,6 +248,7 @@ extension Grade {
         type = try c.decodeIfPresent(GradeType.self, forKey: .type) ?? .oral
         weight = try c.decodeIfPresent(Double.self, forKey: .weight) ?? 1.0
         countsForAverage = try c.decodeIfPresent(Bool.self, forKey: .countsForAverage) ?? true
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? date
     }
 }
 
