@@ -158,11 +158,19 @@ class NotesStore: ObservableObject {
 
     init() { load() }
 
-    func add(_ note: Note) { notes.insert(note, at: 0); save() }
+    private var sync: CloudSyncManager { .shared }
+
+    func add(_ note: Note) {
+        var n = note; n.modifiedAt = Date()
+        notes.insert(n, at: 0); save()
+        sync.enqueueSave([.note(n.id)])
+    }
 
     func update(_ note: Note) {
         if let idx = notes.firstIndex(where: { $0.id == note.id }) {
-            notes[idx] = note; save()
+            var n = note; n.modifiedAt = Date()
+            notes[idx] = n; save()
+            sync.enqueueSave([.note(n.id)])
         }
     }
 
@@ -170,32 +178,53 @@ class NotesStore: ObservableObject {
         notes.removeAll { ids.contains($0.id) }
         NotificationManager.shared.cancel(ids: ids)
         save()
+        sync.enqueueDelete(ids.map { .note($0) })
     }
 
     func deleteAll() {
-        NotificationManager.shared.cancel(ids: Set(notes.map(\.id)))
+        let ids = notes.map(\.id)
+        NotificationManager.shared.cancel(ids: Set(ids))
         notes.removeAll()
         save()
+        sync.enqueueDelete(ids.map { .note($0) })
     }
 
     func replaceAll(_ newNotes: [Note]) {
-        notes = newNotes
+        let removed = Set(notes.map(\.id)).subtracting(newNotes.map(\.id))
+        let now = Date()
+        notes = newNotes.map { var n = $0; n.modifiedAt = now; return n }
         save()
-        NotificationManager.shared.reschedule(notes: newNotes)
+        NotificationManager.shared.reschedule(notes: notes)
+        sync.enqueueDelete(removed.map { .note($0) })
+        sync.enqueueSave(notes.map { .note($0.id) })
     }
 
-    func archive(ids: Set<UUID>) {
+    func archive(ids: Set<UUID>) { setArchived(true, ids: ids) }
+
+    func unarchive(ids: Set<UUID>) { setArchived(false, ids: ids) }
+
+    private func setArchived(_ archived: Bool, ids: Set<UUID>) {
+        let now = Date()
         for idx in notes.indices where ids.contains(notes[idx].id) {
-            notes[idx].isArchived = true
+            notes[idx].isArchived = archived
+            notes[idx].modifiedAt = now
         }
         save()
+        sync.enqueueSave(ids.map { .note($0) })
     }
 
-    func unarchive(ids: Set<UUID>) {
-        for idx in notes.indices where ids.contains(notes[idx].id) {
-            notes[idx].isArchived = false
-        }
+    /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop);
+    /// i promemoria delle note cambiate vengono riprogrammati qui.
+    func applyRemote(upserts: [Note], deletions: Set<UUID>) {
+        notes = SyncMerge.apply(upserts: upserts.map { $0.migratingDate() }, deletions: deletions,
+                                to: notes, modifiedAt: \.modifiedAt)
         save()
+        NotificationManager.shared.cancel(ids: deletions)
+        let changed = Set(upserts.map(\.id))
+        for n in notes where changed.contains(n.id) {
+            if n.reminders.isEmpty { NotificationManager.shared.cancel(ids: [n.id]) }
+            else { NotificationManager.shared.schedule(note: n) }
+        }
     }
 
     private func load() {

@@ -42,13 +42,11 @@ final class ScheduleStore: ObservableObject {
         switch outcome {
         case .complete(let parsed):
             let normalized = normalizeScheduleTimes(parsed)
-            schedule = normalized
-            persist(normalized)
+            commit(normalized)
             savePDF(data: data)
         case .partial(let parsed, let missing):
             let normalized = normalizeScheduleTimes(parsed)
-            schedule = normalized
-            persist(normalized)
+            commit(normalized)
             savePDF(data: data)
             pendingCompletion = missing
         case .rejected(let reason):
@@ -59,8 +57,7 @@ final class ScheduleStore: ObservableObject {
     private func _importJSON(data: Data) async {
         do {
             let decoded = try decoder.decode(ScheduleData.self, from: data)
-            schedule = decoded.edited ? decoded : normalizeScheduleTimes(decoded)
-            persist(schedule!)
+            commit(decoded.edited ? decoded : normalizeScheduleTimes(decoded))
         } catch {
             errorMessage = "File non valido o danneggiato."
         }
@@ -69,15 +66,13 @@ final class ScheduleStore: ObservableObject {
     /// Saves a manually-edited schedule (from the database editor) without
     /// re-normalizing, so custom teacher/class names and times are preserved.
     func update(_ newSchedule: ScheduleData) {
-        schedule = newSchedule
-        persist(newSchedule)
+        commit(newSchedule)
     }
 
     /// Restores a schedule from a backup (normalizes unless it was manually edited).
     func restore(_ newSchedule: ScheduleData) {
         let s = newSchedule.edited ? newSchedule : normalizeScheduleTimes(newSchedule)
-        schedule = s
-        persist(s)
+        commit(s)
     }
 
     func clearSchedule() {
@@ -85,6 +80,40 @@ final class ScheduleStore: ObservableObject {
         isPDFUnsupported = false
         UserDefaults.standard.removeObject(forKey: storageKey)
         try? FileManager.default.removeItem(at: pdfStorageURL)
+        UserDefaults.standard.set(Date(), forKey: clearedAtKey)
+        CloudSyncManager.shared.enqueueSave([.schedule])
+    }
+
+    // MARK: - iCloud
+
+    private let clearedAtKey = "findmyteacher.scheduleClearedAt"
+    /// Quando l'orario è stato rimosso (tombstone per gli altri dispositivi).
+    var clearedAt: Date? { UserDefaults.standard.object(forKey: clearedAtKey) as? Date }
+
+    /// Salva un orario modificato localmente e lo accoda per iCloud.
+    private func commit(_ s: ScheduleData) {
+        var stamped = s
+        stamped.modifiedAt = Date()
+        schedule = stamped
+        persist(stamped)
+        UserDefaults.standard.removeObject(forKey: clearedAtKey)
+        CloudSyncManager.shared.enqueueSave([.schedule])
+    }
+
+    /// Orario arrivato da iCloud (o rimosso su un altro dispositivo).
+    func applyRemote(schedule remote: ScheduleData?, remoteModifiedAt: Date, deleted: Bool) {
+        let localModified = schedule?.modifiedAt ?? clearedAt
+        guard SyncMerge.remoteWins(local: localModified, remote: remoteModifiedAt) else { return }
+        if deleted {
+            schedule = nil
+            UserDefaults.standard.removeObject(forKey: storageKey)
+            UserDefaults.standard.set(remoteModifiedAt, forKey: clearedAtKey)
+        } else if let remote {
+            let s = remote.edited ? remote : normalizeScheduleTimes(remote)
+            schedule = s
+            persist(s)
+            UserDefaults.standard.removeObject(forKey: clearedAtKey)
+        }
     }
 
     func exportScheduleURL() -> URL? {

@@ -293,19 +293,47 @@ class GradesStore: ObservableObject {
         return subjects.filter { $0 != subject && color(for: $0).hexString == target }
     }
 
-    func add(_ grade: Grade) { grades.insert(grade, at: 0); save() }
+    private var sync: CloudSyncManager { .shared }
+
+    func add(_ grade: Grade) {
+        var g = grade; g.modifiedAt = Date()
+        grades.insert(g, at: 0); save()
+        sync.enqueueSave([.grade(g.id)])
+    }
 
     func update(_ grade: Grade) {
         if let idx = grades.firstIndex(where: { $0.id == grade.id }) {
-            grades[idx] = grade; save()
+            var g = grade; g.modifiedAt = Date()
+            grades[idx] = g; save()
+            sync.enqueueSave([.grade(g.id)])
         }
     }
 
-    func delete(ids: Set<UUID>) { grades.removeAll { ids.contains($0.id) }; save() }
+    func delete(ids: Set<UUID>) {
+        grades.removeAll { ids.contains($0.id) }; save()
+        sync.enqueueDelete(ids.map { .grade($0) })
+    }
 
-    func deleteAll() { grades.removeAll(); save() }
+    func deleteAll() {
+        let ids = grades.map(\.id)
+        grades.removeAll(); save()
+        sync.enqueueDelete(ids.map { .grade($0) })
+    }
 
-    func replaceAll(_ newGrades: [Grade]) { grades = newGrades; save() }
+    func replaceAll(_ newGrades: [Grade]) {
+        let removed = Set(grades.map(\.id)).subtracting(newGrades.map(\.id))
+        let now = Date()
+        grades = newGrades.map { var g = $0; g.modifiedAt = now; return g }
+        save()
+        sync.enqueueDelete(removed.map { .grade($0) })
+        sync.enqueueSave(grades.map { .grade($0.id) })
+    }
+
+    /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop).
+    func applyRemote(upserts: [Grade], deletions: Set<UUID>) {
+        grades = SyncMerge.apply(upserts: upserts, deletions: deletions, to: grades, modifiedAt: \.modifiedAt)
+        save()
+    }
 
     var subjects: [String] {
         var seen = Set<String>()
