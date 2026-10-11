@@ -161,25 +161,30 @@ struct MainScheduleView: View {
                 Group {
                     if layout == .wide {
                         // iPad in orizzontale: controlli a sinistra, contenuto a destra.
-                        HStack(alignment: .top, spacing: 18) {
+                        // Margini dentro le ScrollView: le ombre delle card non
+                        // vengono tagliate ai bordi delle colonne.
+                        HStack(alignment: .top, spacing: 0) {
                             ScrollView {
                                 VStack(spacing: 14) {
                                     statusStrip
                                     controlPanel
                                     if viewMode != .week { timeIndicator }
                                 }
+                                .padding(.leading, 16)
+                                .padding(.trailing, 12)
                                 .padding(.top, headerHeight + 6)
                                 .padding(.bottom, 32)
                             }
                             .scrollIndicators(.hidden)
-                            .frame(width: 340)
+                            .frame(width: 368)
                             ScrollView {
                                 scheduleContent
+                                    .padding(.leading, 12)
+                                    .padding(.trailing, 16)
                                     .padding(.top, headerHeight + 6)
                                     .padding(.bottom, 32)
                             }
                         }
-                        .padding(.horizontal, 16)
                     } else {
                         ScrollView {
                             VStack(spacing: 14) {

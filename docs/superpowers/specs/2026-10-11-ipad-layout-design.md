@@ -19,9 +19,9 @@ iPad sia in verticale sia in orizzontale. Fa parte della 2.2 (banner Novità).
 
 `DeviceLayout` (Models/DeviceLayout.swift), funzione pura
 `DeviceLayout.resolve(horizontalSizeClass:width:)`:
-- `.compact`: size class compatta o larghezza < 700 pt → layout iPhone.
-- `.regular`: size class regolare e 700 ≤ larghezza < 1000 (iPad verticale).
-- `.wide`: size class regolare e larghezza ≥ 1000 (iPad orizzontale).
+- `.compact`: size class orizzontale o verticale compatta (iPhone, anche Pro Max in orizzontale) o larghezza < 700 pt → layout iPhone.
+- `.regular`: size class regolari e 700 ≤ larghezza < 1100 (iPad verticale, anche 13").
+- `.wide`: size class regolari e larghezza ≥ 1100 (iPad orizzontale: ogni iPad è ≥ 1133 pt).
 
 Calcolata in `ContentView` dalla larghezza della finestra e passata a tutte le
 viste con `@Environment(\.deviceLayout)` (default `.compact`).

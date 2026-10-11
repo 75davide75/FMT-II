@@ -31,6 +31,7 @@ struct ContentView: View {
 
     /// Layout iPad: dalla size class e dalla larghezza della finestra.
     @Environment(\.horizontalSizeClass) private var hSizeClass
+    @Environment(\.verticalSizeClass) private var vSizeClass
     @State private var windowWidth: CGFloat = 0
 
     @State private var showFilePicker = false
@@ -88,7 +89,8 @@ struct ContentView: View {
                     .onChange(of: g.size.width) { _, w in windowWidth = w }
             }
         }
-        .environment(\.deviceLayout, DeviceLayout.resolve(horizontalSizeClass: hSizeClass, width: windowWidth))
+        .environment(\.deviceLayout, DeviceLayout.resolve(horizontalSizeClass: hSizeClass,
+                                                            verticalSizeClass: vSizeClass, width: windowWidth))
         .animation(.easeInOut(duration: 0.55), value: hasSeenTutorial)
         .onChange(of: appearanceMode) { _, mode in applyAppearanceMode(mode) }
         .task {

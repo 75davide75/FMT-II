@@ -438,6 +438,7 @@ struct NotesListView: View {
                                     ForEach(notesByDate, id: \.id) { group in
                                         VStack(alignment: .leading, spacing: 10) {
                                             dayHeader(group)
+                                                .accessibilityAddTraits(.isHeader)   // come le intestazioni della List
                                             ForEach(group.notes) { note in
                                                 noteCell(note)
                                             }
