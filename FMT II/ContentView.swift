@@ -13,15 +13,26 @@ enum AppSection: String, CaseIterable {
 // MARK: - Root
 
 struct ContentView: View {
-    @StateObject private var store = ScheduleStore()
-    @StateObject private var notesStore = NotesStore()
-    @StateObject private var gradesStore = GradesStore()
-    @AppStorage("appearanceMode") private var appearanceMode = "auto"
+    // Store condivisi da tutte le finestre (e dalla sync iCloud).
+    @ObservedObject private var store = AppStores.shared.schedule
+    @ObservedObject private var notesStore = AppStores.shared.notes
+    @ObservedObject private var gradesStore = AppStores.shared.grades
+    @AppStorage("appearanceMode") private var appearanceMode = "dark"   // scuro di default al primo avvio
     @AppStorage("useLiveTime") private var useLiveTime = true
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appSectionRaw") private var appSectionRaw = AppSection.notes.rawValue
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
+    @AppStorage(WhatsNew.storageKey) private var lastSeenWhatsNew = ""
+
+    /// Valutato una volta all'avvio: il tutorial era già stato fatto prima di
+    /// questo lancio (= aggiornamento)? Chi installa da zero non lo vede mai.
+    @State private var showWhatsNew = ContentView.initialShowWhatsNew
+
+    /// Layout iPad: dalla size class e dalla larghezza della finestra.
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    @Environment(\.verticalSizeClass) private var vSizeClass
+    @State private var windowWidth: CGFloat = 0
 
     @State private var showFilePicker = false
     @State private var showTutorial = false
@@ -35,13 +46,6 @@ struct ContentView: View {
     @State private var pagerProgress: CGFloat = 0
     @State private var showBuilder = false
 
-    var preferredColorScheme: ColorScheme? {
-        switch appearanceMode {
-        case "light": return .light
-        case "dark": return .dark
-        default: return nil
-        }
-    }
 
     /// Text-size override, re-applied to the toolbar bar because UIKit-hosted
     /// toolbar content doesn't always inherit the app-root setting.
@@ -57,7 +61,10 @@ struct ContentView: View {
     var body: some View {
         Group {
             if !hasSeenTutorial {
-                TutorialView(onDismiss: { withAnimation(.easeInOut(duration: 0.55)) { hasSeenTutorial = true } })
+                TutorialView(onDismiss: {
+                    lastSeenWhatsNew = WhatsNew.version   // nuova installazione: niente banner novità
+                    withAnimation(.easeInOut(duration: 0.55)) { hasSeenTutorial = true }
+                })
                     .transition(.opacity)
             } else if showEasterEgg {
                 EasterEggView { showEasterEgg = false; lessonTapCount = 0 }
@@ -75,8 +82,17 @@ struct ContentView: View {
                 pagedSectionContent
             }
         }
+        .background {
+            GeometryReader { g in
+                Color.clear
+                    .onAppear { windowWidth = g.size.width }
+                    .onChange(of: g.size.width) { _, w in windowWidth = w }
+            }
+        }
+        .environment(\.deviceLayout, DeviceLayout.resolve(horizontalSizeClass: hSizeClass,
+                                                            verticalSizeClass: vSizeClass, width: windowWidth))
         .animation(.easeInOut(duration: 0.55), value: hasSeenTutorial)
-        .preferredColorScheme(preferredColorScheme)
+        .onChange(of: appearanceMode) { _, mode in applyAppearanceMode(mode) }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
@@ -121,14 +137,29 @@ struct ContentView: View {
                     }
             }
         }
-        .alert("PDF non supportato", isPresented: $store.isPDFUnsupported) {
-            Button("Annulla", role: .cancel) { store.isPDFUnsupported = false }
+        .alert("Import non riuscito", isPresented: Binding(
+            get: { store.rejection != nil },
+            set: { if !$0 { store.rejection = nil } }
+        )) {
+            Button("Crea orario manualmente") {
+                store.rejection = nil
+                showBuilder = true
+            }
             Button("Prova un altro PDF") {
-                store.isPDFUnsupported = false
+                store.rejection = nil
                 showFilePicker = true
             }
+            Button("Annulla", role: .cancel) { store.rejection = nil }
         } message: {
-            Text("Non è stato possibile leggere l'orario. Il formato potrebbe non essere compatibile.")
+            Text("\(store.rejection?.message ?? "") Puoi creare l'orario manualmente.")
+        }
+        .sheet(isPresented: Binding(
+            get: { store.pendingCompletion != nil },
+            set: { if !$0 { store.pendingCompletion = nil } }
+        )) {
+            if let missing = store.pendingCompletion {
+                ImportReviewView(store: store, missing: missing, onOpenBuilder: { showBuilder = true })
+            }
         }
         .alert("Errore", isPresented: Binding(
             get: { store.errorMessage != nil },
@@ -139,7 +170,45 @@ struct ContentView: View {
             Text(store.errorMessage ?? "")
         }
         .onAppear {
+            applyAppearanceMode(appearanceMode)
             if hasSeenTutorial { hasCompletedOnboarding = true }
+            #if DEBUG
+            // Seed di dati demo per gli screenshot (solo con -FMTSeedDemo).
+            DemoSeed.seedIfRequested(schedule: store, notes: notesStore, grades: gradesStore)
+            let dbgArgs = ProcessInfo.processInfo.arguments
+            if let i = dbgArgs.firstIndex(of: "-FMTViewMode"), i + 1 < dbgArgs.count {
+                switch dbgArgs[i + 1] {
+                case "day":  viewMode = .day
+                case "week": viewMode = .week
+                default:     viewMode = .now
+                }
+            }
+            // Prova del cambio lingua al volo (-FMTSwitchLanguage en|it dopo 3 s).
+            if let i = dbgArgs.firstIndex(of: "-FMTSwitchLanguage"), i + 1 < dbgArgs.count,
+               let target = AppLanguage(rawValue: dbgArgs[i + 1]) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { LanguageSettings.shared.choose(target) }
+            }
+            #endif
+            CloudSyncManager.shared.start(grades: gradesStore, notes: notesStore, schedule: store)
+            SettingsSync.shared.start()
+            // A freddo la classe selezionata è vuota: riparti dalla
+            // predefinita, altrimenti l'Orario mostra solo ore libere.
+            if selectedClass.isEmpty, let s = store.schedule {
+                selectedClass = resolveDefaultClass(s.classes, current: selectedClass)
+            }
+            // Hook di test: consente di pilotare un import PDF dal simulatore
+            // (usato per demo/verifiche; inattivo in produzione).
+            if let path = ProcessInfo.processInfo.environment["FMT_IMPORT_PDF"],
+               let data = FileManager.default.contents(atPath: path) {
+                Task {
+                    await store.importFile(data: data, name: (path as NSString).lastPathComponent)
+                    if let s = store.schedule {
+                        selectedClass = resolveDefaultClass(s.classes, current: selectedClass)
+                        appSectionRaw = AppSection.schedule.rawValue
+                        hasCompletedOnboarding = true
+                    }
+                }
+            }
         }
         .onChange(of: store.schedule) { _, newSchedule in
             if let s = newSchedule {
@@ -171,8 +240,17 @@ struct ContentView: View {
         let activeIndex = indexBinding.wrappedValue
 
         NavigationStack {
-            SectionPager(count: sections.count, index: indexBinding, progress: $pagerProgress) { i in
-                pageView(for: sections[i], isActive: i == activeIndex)
+            ZStack {
+                // Sfondo unico: le aurore delle sezioni dissolvono l'una
+                // nell'altra seguendo il pager (design 3a).
+                AuroraCrossfadeBackground(
+                    sections: sections.map(\.aurora),
+                    progress: pagerProgress
+                )
+                SectionPager(count: sections.count, index: indexBinding, progress: $pagerProgress) { i in
+                    pageView(for: sections[i], isActive: i == activeIndex)
+                        .modifier(SectionEntrance(distance: CGFloat(i) - pagerProgress))
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -185,8 +263,30 @@ struct ContentView: View {
                     .modifier(FixedTypeSize(size: overrideTypeSize))
                 }
             }
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: appSectionRaw)
+            .overlay {
+                if showWhatsNew {
+                    WhatsNewBanner {
+                        withAnimation(.easeInOut(duration: 0.3)) { showWhatsNew = false }
+                        lastSeenWhatsNew = WhatsNew.version
+                    }
+                    .transition(.opacity)
+                }
+            }
         }
+    }
+
+    private static var initialShowWhatsNew: Bool {
+        let defaults = UserDefaults.standard
+        #if DEBUG
+        // Screenshot App Store: niente banner, a meno di chiederlo esplicitamente.
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-FMTShowWhatsNew") { return true }
+        if DemoSeed.isRequested { return false }
+        #endif
+        return WhatsNew.shouldShow(tutorialDoneAtLaunch: defaults.bool(forKey: "hasSeenTutorial"),
+                                   lastSeen: defaults.string(forKey: WhatsNew.storageKey) ?? "")
     }
 
     @ViewBuilder
@@ -247,25 +347,20 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            // Same backdrop as the tutorial, so the crossfade looks like a
-            // continuous gradient rather than a hard cut.
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.12), .clear, Color.purple.opacity(0.10)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Stesso sfondo aurora del tutorial, così la dissolvenza resta continua.
+            AuroraBackground(section: .neutral)
 
             VStack(spacing: 32) {
                 Spacer()
 
                 ZStack {
                     Circle()
-                        .fill(Color.accentColor.opacity(0.12))
+                        .fill(AuroraSection.neutral.gradient)
+                        .opacity(0.22)
                         .frame(width: 110, height: 110)
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 46))
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(AuroraSection.neutral.gradient)
                 }
 
                 VStack(spacing: 8) {
@@ -286,15 +381,15 @@ struct WelcomeView: View {
                 }
 
                 Button(action: onImport) {
-                    Label(isImporting ? "Caricamento..." : "Importa PDF", systemImage: "square.and.arrow.up")
+                    Label(isImporting ? L("Caricamento...") : L("Importa PDF"), systemImage: "square.and.arrow.up")
                         .font(.headline)
                         .padding(.horizontal, 28)
                         .padding(.vertical, 14)
-                        .background(Color.accentColor, in: Capsule())
+                        .background(AuroraSection.neutral.gradient, in: Capsule())
                         .foregroundStyle(.white)
                 }
                 .disabled(isImporting)
-                .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
+                .shadow(color: AuroraSection.neutral.tintB.opacity(0.35), radius: 8, y: 4)
 
                 if let onCreate {
                     Button(action: onCreate) {
@@ -302,8 +397,8 @@ struct WelcomeView: View {
                             .font(.headline)
                             .padding(.horizontal, 28)
                             .padding(.vertical, 14)
-                            .background(Color.accentColor.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.tint)
+                            .background(AuroraSection.neutral.tintB.opacity(0.16), in: Capsule())
+                            .foregroundStyle(AuroraSection.neutral.accent)
                     }
                 }
 
@@ -428,6 +523,21 @@ struct EasterEggView: View {
 
 // MARK: - Utility functions
 
+/// Applica il tema a livello di finestra: a differenza di
+/// `preferredColorScheme(nil)`, tornare ad «Automatico» segue subito il
+/// sistema anche negli sheet già aperti.
+func applyAppearanceMode(_ mode: String) {
+    let style: UIUserInterfaceStyle
+    switch mode {
+    case "light": style = .light
+    case "dark": style = .dark
+    default: style = .unspecified
+    }
+    for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+        for window in scene.windows { window.overrideUserInterfaceStyle = style }
+    }
+}
+
 enum TargetMode { case class_, teacher }
 enum ViewMode { case now, day, week }
 
@@ -499,11 +609,11 @@ func nearestTimeIndex(_ time: String, times: [String]) -> Int {
 }
 
 func weekendText(day: DayId?, time: String) -> String {
-    guard day != nil else { return "Oggi non è nel calendario scolastico." }
+    guard day != nil else { return L("Oggi non è nel calendario scolastico.") }
     let mins = minutesFromMidnight(time)
-    if mins < minutesFromMidnight("08:10") { return "Le lezioni non sono ancora iniziate." }
-    if mins >= minutesFromMidnight("14:10") { return "Le lezioni sono terminate." }
-    return "Nessun docente in questa fascia."
+    if mins < minutesFromMidnight("08:10") { return L("Le lezioni non sono ancora iniziate.") }
+    if mins >= minutesFromMidnight("14:10") { return L("Le lezioni sono terminate.") }
+    return L("Nessun docente in questa fascia.")
 }
 
 // MARK: - Document picker

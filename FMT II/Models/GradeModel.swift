@@ -61,29 +61,46 @@ enum GradeType: String, Codable, CaseIterable {
     case oral = "oral"
     case written = "written"
     case practical = "practical"
+    case giustifica = "giustifica"
 
     var label: String {
         switch self {
-        case .oral:      return "Orale"
-        case .written:   return "Scritto"
-        case .practical: return "Pratico"
+        case .oral:       return L("Orale")
+        case .written:    return L("Scritto")
+        case .practical:  return L("Pratico")
+        case .giustifica: return L("Giustifica")
         }
     }
 
     var icon: String {
         switch self {
-        case .oral:      return "bubble.left.fill"
-        case .written:   return "pencil.line"
-        case .practical: return "hand.raised.fill"
+        case .oral:       return "bubble.left.fill"
+        case .written:    return "pencil.line"
+        case .practical:  return "hand.raised.fill"
+        case .giustifica: return "g.circle.fill"
         }
     }
 
     var color: Color {
         switch self {
-        case .oral:      return .blue
-        case .written:   return .purple
-        case .practical: return .orange
+        case .oral:       return .blue
+        case .written:    return .purple
+        case .practical:  return .orange
+        case .giustifica: return .gray
         }
+    }
+}
+
+extension Grade {
+    /// La giustifica non è un voto numerico: si mostra come "G", non fa media
+    /// e non ha peso.
+    var isGiustifica: Bool { type == .giustifica }
+
+    var displayValue: String { isGiustifica ? "G" : value.italianGrade }
+
+    var displayColor: Color {
+        if isGiustifica { return .gray }
+        return countsForAverage ? value.gradeColor : .blue
     }
 }
 
@@ -122,7 +139,7 @@ extension Color {
     })
     static let sectionCard = Color(UIColor { tc in
         tc.userInterfaceStyle == .dark
-            ? UIColor.tertiarySystemBackground           // ~#2C2C2E, lighter than the page
+            ? UIColor(white: 1.0, alpha: 0.08)           // vetro chiaro sopra lo sfondo aurora
             : UIColor.secondarySystemGroupedBackground   // white
     })
 }
@@ -213,6 +230,8 @@ struct Grade: Identifiable, Codable {
     var type: GradeType = .oral
     var weight: Double = 1.0          // 0...1 (100% by default)
     var countsForAverage: Bool = true // when false, shown in blue and excluded from averages
+    /// Ultima modifica (per la sync iCloud: vince la più recente).
+    var modifiedAt: Date = Date()
 }
 
 extension Grade {
@@ -229,6 +248,7 @@ extension Grade {
         type = try c.decodeIfPresent(GradeType.self, forKey: .type) ?? .oral
         weight = try c.decodeIfPresent(Double.self, forKey: .weight) ?? 1.0
         countsForAverage = try c.decodeIfPresent(Bool.self, forKey: .countsForAverage) ?? true
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? date
     }
 }
 
@@ -247,6 +267,14 @@ class GradesStore: ObservableObject {
 
     init() {
         load()
+        reloadColors()
+        // Colori delle materie cambiati su un altro dispositivo (iCloud).
+        NotificationCenter.default.addObserver(forName: .fmtSyncedSettingsChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reloadColors() }
+        }
+    }
+
+    func reloadColors() {
         if let data = UserDefaults.standard.data(forKey: colorsKey),
            let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
             subjectColors = decoded
@@ -273,19 +301,47 @@ class GradesStore: ObservableObject {
         return subjects.filter { $0 != subject && color(for: $0).hexString == target }
     }
 
-    func add(_ grade: Grade) { grades.insert(grade, at: 0); save() }
+    private var sync: CloudSyncManager { .shared }
+
+    func add(_ grade: Grade) {
+        var g = grade; g.modifiedAt = Date()
+        grades.insert(g, at: 0); save()
+        sync.enqueueSave([.grade(g.id)])
+    }
 
     func update(_ grade: Grade) {
         if let idx = grades.firstIndex(where: { $0.id == grade.id }) {
-            grades[idx] = grade; save()
+            var g = grade; g.modifiedAt = Date()
+            grades[idx] = g; save()
+            sync.enqueueSave([.grade(g.id)])
         }
     }
 
-    func delete(ids: Set<UUID>) { grades.removeAll { ids.contains($0.id) }; save() }
+    func delete(ids: Set<UUID>) {
+        grades.removeAll { ids.contains($0.id) }; save()
+        sync.enqueueDelete(ids.map { .grade($0) })
+    }
 
-    func deleteAll() { grades.removeAll(); save() }
+    func deleteAll() {
+        let ids = grades.map(\.id)
+        grades.removeAll(); save()
+        sync.enqueueDelete(ids.map { .grade($0) })
+    }
 
-    func replaceAll(_ newGrades: [Grade]) { grades = newGrades; save() }
+    func replaceAll(_ newGrades: [Grade]) {
+        let removed = Set(grades.map(\.id)).subtracting(newGrades.map(\.id))
+        let now = Date()
+        grades = newGrades.map { var g = $0; g.modifiedAt = now; return g }
+        save()
+        sync.enqueueDelete(removed.map { .grade($0) })
+        sync.enqueueSave(grades.map { .grade($0.id) })
+    }
+
+    /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop).
+    func applyRemote(upserts: [Grade], deletions: Set<UUID>) {
+        grades = SyncMerge.apply(upserts: upserts, deletions: deletions, to: grades, modifiedAt: \.modifiedAt)
+        save()
+    }
 
     var subjects: [String] {
         var seen = Set<String>()

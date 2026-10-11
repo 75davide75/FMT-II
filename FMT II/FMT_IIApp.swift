@@ -16,7 +16,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         center.delegate = self
         // Ask early so permission is already granted by the time a reminder is
         // scheduled (otherwise the first scheduled notification is silently dropped).
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        #if DEBUG
+        // Durante il seed per gli screenshot non chiedere il permesso notifiche,
+        // così il dialog di sistema non compare nelle catture.
+        let seedingForScreenshots = ProcessInfo.processInfo.arguments.contains("-FMTSeedDemo")
+            || ProcessInfo.processInfo.environment["FMT_SEED_DEMO"] == "1"
+        #else
+        let seedingForScreenshots = false
+        #endif
+        if !seedingForScreenshots {
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        }
+        // Push silenziose di CloudKit: avvisano quando un altro dispositivo cambia i dati.
+        application.registerForRemoteNotifications()
         return true
     }
 
@@ -31,6 +43,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 struct FMT_IIApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
+    @ObservedObject private var languages = LanguageSettings.shared
 
     /// App-wide text-size override (nil = follow the system). Capped at "Enorme".
     private var overrideTypeSize: DynamicTypeSize? {
@@ -42,13 +55,22 @@ struct FMT_IIApp: App {
         }
     }
 
+    init() {
+        // Segmented control nello stile Aurora: pill selezionata tinta di blu.
+        let seg = UISegmentedControl.appearance()
+        seg.selectedSegmentTintColor = UIColor(red: 0.306, green: 0.486, blue: 0.965, alpha: 1)
+        seg.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .modifier(FixedTypeSize(size: overrideTypeSize))
-                // Force Italian date/number formatting (weekdays, months, pickers)
-                // regardless of the device language.
-                .environment(\.locale, Locale(identifier: "it_IT"))
+                // Lingua dell'app (testi, giorni, mesi, selettori) indipendente
+                // dalla lingua del dispositivo; cambiandola l'interfaccia si ricrea.
+                .environment(\.locale, languages.locale)
+                .id(languages.language)
+                .task { await languages.refineFromStorefront() }
         }
     }
 }

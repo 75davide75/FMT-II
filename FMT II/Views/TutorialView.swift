@@ -8,38 +8,38 @@ private struct TutorialSlide {
     var iconOffset: CGSize = .zero
 }
 
-private let slides: [TutorialSlide] = [
+private var slides: [TutorialSlide] { [
     TutorialSlide(
         icon: "magnifyingglass",
         iconColors: [.blue, .purple],
         title: "FindMyTeacher",
-        description: "L'orario della tua scuola, sempre in tasca. Trova dov'è ogni lezione in un attimo."
+        description: L("L'orario della tua scuola, sempre in tasca. Trova dov'è ogni lezione in un attimo.")
     ),
     TutorialSlide(
         icon: "arrow.up.doc.fill",
         iconColors: [.green, .teal],
-        title: "Carica una volta",
-        description: "Importa il PDF dell'orario: lo trasformiamo in un orario interattivo. Niente PDF? Puoi crearlo a mano in pochi tocchi."
+        title: L("Carica una volta"),
+        description: L("Importa il PDF dell'orario: lo trasformiamo in un orario interattivo. Niente PDF? Puoi crearlo a mano in pochi tocchi.")
     ),
     TutorialSlide(
         icon: "graduationcap.fill",
         iconColors: [.orange, .yellow],
-        title: "Cerca come vuoi",
-        description: "Per classe o per docente: vedi subito dov'è e cosa c'è adesso, oggi o in settimana."
+        title: L("Cerca come vuoi"),
+        description: L("Per classe o per docente: vedi subito dov'è e cosa c'è adesso, oggi o in settimana.")
     ),
     TutorialSlide(
         icon: "book.closed.fill",
         iconColors: [.indigo, .blue],
-        title: "Il tuo Diario",
-        description: "Tieni premuto su una lezione per annotare compiti e promemoria, ordinati per giorno e ora."
+        title: L("Il tuo Diario"),
+        description: L("Tieni premuto su una lezione per annotare compiti e promemoria, ordinati per giorno e ora.")
     ),
     TutorialSlide(
         icon: "chart.line.uptrend.xyaxis",
         iconColors: [.purple, .indigo],
-        title: "Voti sotto controllo",
-        description: "Segna i voti, scegli il peso e tieni d'occhio media, andamento e obiettivi."
+        title: L("Voti sotto controllo"),
+        description: L("Segna i voti, scegli il peso e tieni d'occhio media, andamento e obiettivi.")
     )
-]
+] }
 
 struct TutorialView: View {
     var onDismiss: (() -> Void)? = nil
@@ -48,13 +48,8 @@ struct TutorialView: View {
 
     var body: some View {
         ZStack {
-            // Soft grey + tinted gradient so the page bounce never reveals black.
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.12), .clear, Color.purple.opacity(0.10)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Sfondo aurora del design system (continuo con la Welcome).
+            AuroraBackground(section: .neutral)
 
             VStack(spacing: 0) {
                 TabView(selection: $currentPage) {
@@ -74,12 +69,11 @@ struct TutorialView: View {
                         handleFinish()
                     }
                 } label: {
-                    Text(currentPage < slides.count - 1 ? "Avanti" : "Inizia")
+                    Text(currentPage < slides.count - 1 ? L("Avanti") : L("Inizia"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                        .foregroundStyle(.white)
+                        .auroraProminent(.neutral)
                 }
 
                 Button("Salta", action: handleFinish)

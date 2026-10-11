@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuova nota — Scrittura (riferimento design)</title>
+<style>
+  body{margin:0;background:#1A1D28;display:flex;justify-content:center;padding:40px 0;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</head>
+<body>
+<!-- Schermo di riferimento 402×874 (iPhone). Safe-area top = 64px. -->
+<div style="width:402px;height:874px;position:relative;overflow:hidden;border-radius:44px;background:radial-gradient(420px 300px at 15% -4%, rgba(78,124,246,0.4), transparent 65%), radial-gradient(380px 300px at 95% 2%, rgba(139,92,246,0.34), transparent 62%), radial-gradient(320px 240px at 65% -8%, rgba(125,211,252,0.16), transparent 60%), linear-gradient(180deg, #070A15 0%, #05060D 45%, #04050A 100%);">
+  <div style="height:100%;box-sizing:border-box;display:flex;flex-direction:column;padding:64px 0 0;">
+
+    <!-- Header modale: Annulla (glass) / titolo / Salva (gradiente = attivo) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px;">
+      <span style="padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:650;color:#DCE4FF;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(20px);">Annulla</span>
+      <span style="font-size:16px;font-weight:750;color:#F4F6FF;">Nuova nota</span>
+      <!-- Stato disattivo: opacity 0.4, senza box-shadow -->
+      <span style="padding:9px 18px;border-radius:999px;font-size:13.5px;font-weight:750;color:#FFFFFF;background:linear-gradient(135deg,#4E7CF6,#8B5CF6);box-shadow:0 6px 18px rgba(105,96,246,0.45), inset 0 1px 0 rgba(255,255,255,0.3);">Salva</span>
+    </div>
+
+    <!-- Editor -->
+    <div style="flex:1;padding:20px 22px 0;">
+      <div style="display:flex;align-items:baseline;gap:2px;">
+        <span style="font-size:19px;font-weight:600;letter-spacing:-0.2px;color:#F4F6FF;">Ricevuta gita a Monaco</span>
+        <span style="width:2.5px;height:22px;border-radius:2px;background:#7CA0FF;box-shadow:0 0 8px rgba(124,160,255,0.8);transform:translateY(3px);"></span>
+      </div>
+      <div style="font-size:13px;color:rgba(226,232,255,0.35);margin-top:10px;">Scrivi la nota…</div>
+    </div>
+
+    <!-- Barra riepilogo Dettagli: tap → apre il foglio Dettagli. Le chip riflettono live i valori impostati. -->
+    <div style="margin:0 12px 8px;display:flex;align-items:center;gap:8px;padding:11px 13px;border-radius:18px;background:linear-gradient(150deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05));border:1px solid rgba(255,255,255,0.13);backdrop-filter:blur(22px) saturate(160%);box-shadow:0 10px 26px rgba(2,4,16,0.45), inset 0 1px 0 rgba(255,255,255,0.1);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A5B4FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-8.5-8.5A5 5 0 0 1 11 3.5L20 12z" transform="rotate(90 12 12)"></path><circle cx="9" cy="9" r="1.4" fill="#A5B4FC" stroke="none"></circle></svg>
+      <span style="font-size:13.5px;font-weight:700;color:#E7ECFF;">Dettagli</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:650;background:rgba(56,189,248,0.14);color:#7DD3FC;border:1px solid rgba(56,189,248,0.28);"><span style="width:4px;height:4px;border-radius:50%;background:#38BDF8;"></span>Nota</span>
+      <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:650;background:rgba(255,255,255,0.07);color:rgba(232,238,255,0.78);border:1px solid rgba(255,255,255,0.12);">Venerdì</span>
+      <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:650;background:rgba(255,255,255,0.07);color:rgba(232,238,255,0.78);border:1px solid rgba(255,255,255,0.12);">09:10</span>
+      <svg width="7" height="12" viewBox="0 0 8 14" fill="none" style="margin-left:auto;"><path d="M1 1l6 6-6 6" stroke="rgba(226,232,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+
+    <!-- Barra formattazione (accessory view sopra la tastiera) -->
+    <div style="display:flex;align-items:center;gap:18px;padding:10px 18px;background:rgba(12,14,26,0.6);border-top:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(24px);">
+      <span style="font-size:16px;font-weight:600;color:#E7ECFF;">Aa</span>
+      <span style="width:1px;height:18px;background:rgba(255,255,255,0.12);"></span>
+      <span style="font-size:16px;font-weight:800;color:#E7ECFF;">B</span>
+      <span style="font-size:16px;font-style:italic;font-weight:600;color:rgba(232,238,255,0.65);">I</span>
+      <span style="font-size:16px;font-weight:600;text-decoration:underline;color:rgba(232,238,255,0.65);">U</span>
+      <span style="font-size:16px;font-weight:600;text-decoration:line-through;color:rgba(232,238,255,0.65);">S</span>
+      <span style="margin-left:auto;font-size:15px;font-weight:700;background:linear-gradient(135deg,#7CA0FF,#B49AFF);-webkit-background-clip:text;background-clip:text;color:transparent;">Fine</span>
+    </div>
+
+    <!-- Da qui in giù: TASTIERA NATIVA iOS (non implementare — placeholder di ingombro ~300px) -->
+    <div style="height:300px;display:flex;align-items:center;justify-content:center;background:rgba(10,12,22,0.72);backdrop-filter:blur(26px);">
+      <span style="font-size:12px;font-weight:650;letter-spacing:1px;color:rgba(226,232,255,0.35);">TASTIERA NATIVA iOS</span>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

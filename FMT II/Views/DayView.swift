@@ -8,7 +8,7 @@ struct DayView: View {
     let dayId: DayId
     let onOpenCounterpart: (Lesson) -> Void
     let onJumpToLesson: (DayId, String) -> Void
-    let onAddNote: (DayId?, String?, String?, String?) -> Void
+    let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -24,7 +24,7 @@ struct DayView: View {
                 Spacer()
                 HStack(spacing: 12) {
                     Button {
-                        onAddNote(dayId, nil, nil, nil)
+                        onAddNote(dayId, nil, nil, nil, nil)
                     } label: {
                         Image(systemName: "square.and.pencil")
                             .font(.title3)
@@ -52,8 +52,7 @@ struct DayView: View {
                 )
             }
         }
-        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+        .auroraCard(radius: 18)
     }
 }
 
@@ -63,7 +62,8 @@ struct TimelineRow: View {
     let targetMode: TargetMode
     let isLast: Bool
     let onOpenCounterpart: (Lesson) -> Void
-    let onAddNote: (DayId?, String?, String?, String?) -> Void
+    let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
+    @Environment(\.colorScheme) private var scheme
 
     var hasLessons: Bool { !lessons.isEmpty }
 
@@ -88,7 +88,7 @@ struct TimelineRow: View {
             HStack(spacing: 0) {
                 VStack(spacing: 0) {
                     Circle()
-                        .fill(hasLessons ? Color.accentColor : Color.secondary.opacity(0.3))
+                        .fill(hasLessons ? AuroraSection.orario.tintB : Color.secondary.opacity(0.3))
                         .frame(width: 8, height: 8)
                         .padding(.top, 14)
                     if !isLast {
@@ -111,18 +111,22 @@ struct TimelineRow: View {
                         .padding(.bottom, 12)
                 } else {
                     ForEach(lessons) { lesson in
+                        let label = targetMode == .class_ ? lesson.classModeTitle : lesson.className
+                        let tint = entityTint(label)
                         Button {
                             onOpenCounterpart(lesson)
                         } label: {
                             HStack(spacing: 8) {
+                                // Stessa etichetta-colore della settimana, con
+                                // effetto gradiente.
                                 RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.accentColor)
+                                    .fill(entityGradient(label))
                                     .frame(width: 3)
 
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(targetMode == .class_ ? lesson.classModeTitle : lesson.className)
+                                    Text(label)
                                         .font(.callout.bold())
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(entityLabelColor(tint, scheme))
                                     if targetMode == .class_, let sub = lesson.classModeSubtitle {
                                         Text(sub)
                                             .font(.caption2)
@@ -134,18 +138,28 @@ struct TimelineRow: View {
 
                                 Image(systemName: "chevron.right")
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(tint.opacity(0.7))
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                            .background(
+                                LinearGradient(colors: [tint.opacity(0.16), tint.opacity(0.08)],
+                                               startPoint: .leading, endPoint: .trailing),
+                                in: RoundedRectangle(cornerRadius: 10)
+                            )
+                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(tint.opacity(0.28), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
+                        // La preview del context menu deve seguire gli angoli
+                        // arrotondati della cella, altrimenti il bordo viene
+                        // tagliato agli angoli.
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .contextMenu {
                             Button {
                                 onAddNote(lesson.day, lesson.startTime,
                                           targetMode == .class_ ? lesson.teacher : nil,
-                                          targetMode == .teacher ? lesson.className : nil)
+                                          targetMode == .teacher ? lesson.className : nil,
+                                          targetMode == .class_ && !lesson.subject.isEmpty ? lesson.subject : nil)
                             } label: {
                                 Label("Crea nota", systemImage: "note.text.badge.plus")
                             }

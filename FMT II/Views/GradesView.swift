@@ -16,8 +16,10 @@ struct GradesView: View {
     // Observed so grade colours refresh live when the scale changes in Settings.
     @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
     @AppStorage("maxGrade") private var maxGrade: Double = 10
+    @Environment(\.deviceLayout) private var layout
 
     @State private var showGradeEntry = false
+    @State private var showAllSubjects = false
     @State private var gradeToEdit: Grade? = nil
     @State private var showSettings = false
     @State private var openSubject: String? = nil
@@ -27,11 +29,15 @@ struct GradesView: View {
         return defaultPeriod1End(for: periodSystem)
     }
     private var periodSystem: PeriodSystem { PeriodSystem(rawValue: periodSystemRaw) ?? .quadrimestri }
-    private var periodLabel1: String { periodSystem == .quadrimestri ? "1° Quadrimestre" : "Trimestre" }
-    private var periodLabel2: String { periodSystem == .quadrimestri ? "2° Quadrimestre" : "Pentamestre" }
+    private var periodLabel1: String { periodSystem == .quadrimestri ? L("1° Quadrimestre") : L("Trimestre") }
+    private var periodLabel2: String { periodSystem == .quadrimestri ? L("2° Quadrimestre") : L("Pentamestre") }
 
     private var sortedGrades: [Grade] {
         store.grades.sorted { $0.date > $1.date }
+    }
+
+    private var votiSubtitle: String {
+        "\(periodLabel2) · " + gradesCountLabel(store.grades.count)
     }
 
     var body: some View {
@@ -39,13 +45,6 @@ struct GradesView: View {
         // grade colours) when the sufficient/max grade changes elsewhere.
         let _ = sufficientGrade + maxGrade
         ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [Color.accentColor.opacity(0.10), .clear],
-                startPoint: .top, endPoint: .bottom
-            )
-            .frame(height: 220)
-            .ignoresSafeArea()
-
             Group {
                 if store.grades.isEmpty {
                     emptyState
@@ -54,38 +53,47 @@ struct GradesView: View {
                 }
             }
         }
-        .background(Color.sectionPage.ignoresSafeArea())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isActive {
+                // Stesso bottone ⋯ in tutte e tre le sezioni.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showGradeEntry = true } label: { Image(systemName: "plus") }
-                        .accessibilityLabel("Aggiungi voto")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if !store.grades.isEmpty {
-                        NavigationLink {
-                            SubjectsListView(
-                                store: store,
-                                period1End: period1End,
-                                periodSystem: periodSystem,
-                                periodLabel1: periodLabel1,
-                                periodLabel2: periodLabel2,
-                                schedule: scheduleStore.schedule
-                            )
-                        } label: {
-                            Image(systemName: "list.bullet.below.rectangle")
+                    Menu {
+                        if !store.grades.isEmpty {
+                            Button { showAllSubjects = true } label: {
+                                Label("Materie", systemImage: "list.bullet.below.rectangle")
+                            }
                         }
-                        .accessibilityLabel("Elenco materie")
+                        Button { showSettings = true } label: {
+                            Label("Impostazioni", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
+                    .accessibilityLabel("Altre azioni")
                 }
-                if scheduleStore.schedule == nil {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                            .accessibilityLabel("Impostazioni")
-                    }
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // FAB "+" come nel Diario, con il gradiente della sezione Voti.
+            if isActive {
+                Button { showGradeEntry = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 58, height: 58)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#8B5CF6")!, Color(hex: "#F472B6")!, Color(hex: "#F8A87E")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: Circle()
+                        )
+                        .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1))
+                        .shadow(color: Color(hex: "#C4459E")!.opacity(0.55), radius: 15, y: 7)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 26)
+                .accessibilityLabel("Aggiungi voto")
             }
         }
         .sheet(isPresented: $showGradeEntry) {
@@ -93,6 +101,16 @@ struct GradesView: View {
         }
         .sheet(item: $gradeToEdit) { grade in
             GradeEntrySheet(store: store, grade: grade, schedule: scheduleStore.schedule)
+        }
+        .navigationDestination(isPresented: $showAllSubjects) {
+            SubjectsListView(
+                store: store,
+                period1End: period1End,
+                periodSystem: periodSystem,
+                periodLabel1: periodLabel1,
+                periodLabel2: periodLabel2,
+                schedule: scheduleStore.schedule
+            )
         }
         .navigationDestination(item: $openSubject) { subject in
             SubjectDetailView(
@@ -114,10 +132,10 @@ struct GradesView: View {
         VStack(spacing: 18) {
             Spacer()
             ZStack {
-                Circle().fill(Color.purple.opacity(0.12)).frame(width: 110, height: 110)
+                Circle().fill(AuroraSection.voti.gradient).opacity(0.22).frame(width: 110, height: 110)
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 46))
-                    .foregroundStyle(.purple)
+                    .foregroundStyle(AuroraSection.voti.accent)
             }
             VStack(spacing: 8) {
                 Text("Ancora nessun voto")
@@ -133,40 +151,113 @@ struct GradesView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var gradesList: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                GradesSummaryCard(
-                    overall: store.overallAverage(),
-                    period1Avg: store.overallAverage(period: 1, periodBoundary: period1End),
-                    period2Avg: store.overallAverage(period: 2, periodBoundary: period1End),
-                    period1Label: periodLabel1,
-                    period2Label: periodLabel2
-                )
+    /// Titolo, media e ultimi voti (in cima su iPhone, colonna sinistra su iPad).
+    @ViewBuilder
+    private var gradesHeader: some View {
+        AuroraTitle(title: L("Voti"), subtitle: votiSubtitle)
+            .padding(.horizontal, 16)
+            .padding(.top, 2)
+        GradesSummaryCard(
+            overall: store.overallAverage(),
+            period1Avg: store.overallAverage(period: 1, periodBoundary: period1End),
+            period2Avg: store.overallAverage(period: 2, periodBoundary: period1End),
+            period1Label: periodLabel1,
+            period2Label: periodLabel2
+        )
+        .padding(.horizontal, 16)
+
+        if sortedGrades.count >= 2 {
+            RecentGradesRow(grades: Array(sortedGrades.prefix(20)), onSeeAll: { showAllSubjects = true })
                 .padding(.horizontal, 16)
-
-                if sortedGrades.count >= 2 {
-                    RecentGradesRow(grades: Array(sortedGrades.prefix(20)))
-                        .padding(.horizontal, 16)
-                }
-
-                ForEach(sortedGrades) { grade in
-                    GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
-                        .contentShape(Rectangle())
-                        .onTapGesture { gradeToEdit = grade }
-                        .contextMenu {
-                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
-                            Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }
-                            Button(role: .destructive) {
-                                store.delete(ids: [grade.id])
-                            } label: { Label("Elimina", systemImage: "trash") }
-                        }
-                        .padding(.horizontal, 16)
-                }
-            }
-            .padding(.vertical, 12)
         }
     }
+
+    /// Un voto dell'elenco: tocco per modificare, menu (uguale ovunque).
+    private func gradeRow(_ grade: Grade) -> some View {
+        GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
+            .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
+            .contentShape(Rectangle())
+            .onTapGesture { gradeToEdit = grade }
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contextMenu {
+                Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
+                Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }
+                Button(role: .destructive) {
+                    store.delete(ids: [grade.id])
+                } label: { Label("Elimina", systemImage: "trash") }
+            }
+    }
+
+    private var gradesList: some View {
+        // L'id lega le righe alla scala voti: cambiandola in
+        // Impostazioni i colori suff./insuff. si aggiornano subito.
+        let _ = (sufficientGrade, maxGrade)
+        return Group {
+            switch layout {
+            case .wide:
+                // iPad in orizzontale: riepilogo a sinistra, elenco a destra.
+                HStack(alignment: .top, spacing: 2) {
+                    ScrollView {
+                        VStack(spacing: 12) { gradesHeader }
+                            .padding(.vertical, 12)
+                    }
+                    .scrollIndicators(.hidden)
+                    .frame(width: 380)
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(sortedGrades) { grade in
+                                gradeRow(grade)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 90)
+                    }
+                }
+            case .regular:
+                // iPad in verticale: elenco su due colonne.
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        gradesHeader
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                                  spacing: 12) {
+                            ForEach(sortedGrades) { grade in
+                                gradeRow(grade)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.bottom, 78)
+                }
+            case .compact:
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        gradesHeader
+                        ForEach(sortedGrades) { grade in
+                            gradeRow(grade)
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.vertical, 12)
+                }
+            }
+        }
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
+    }
+}
+
+/// «1 voto» / «N voti» nella lingua dell'app.
+func gradesCountLabel(_ n: Int) -> String {
+    n == 1 ? L("1 voto") : L("\(n) voti")
+}
+
+/// «+1,5» / «−0,5» (in inglese «+1.5»), senza decimali inutili.
+func gradeDeltaText(_ delta: Double) -> String {
+    let sign = delta >= 0 ? "+" : "−"
+    let v = abs(delta)
+    let text = v.formatted(.number.precision(.fractionLength(0...1)).locale(LanguageSettings.currentLocale))
+    return sign + text
 }
 
 // MARK: - Grade home row
@@ -179,32 +270,28 @@ private struct GradeHomeRow: View {
     var body: some View {
         HStack(spacing: 12) {
             // Per-subject colour bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(color)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LinearGradient(colors: [color.blended(with: .white, by: 0.25), color],
+                                     startPoint: .top, endPoint: .bottom))
                 .frame(width: 4)
                 .frame(maxHeight: .infinity)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(grade.subject)
-                    .font(.callout.bold())
+                    .font(.system(size: 16, weight: .bold))
+                    .kerning(-0.2)
                     .foregroundStyle(.primary)
                 HStack(spacing: 6) {
-                    // Coloured type badge
-                    Label(grade.type.label, systemImage: grade.type.icon)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(grade.type.color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(grade.type.color.opacity(0.14), in: Capsule())
-                    Text(grade.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                    AuroraChip(text: grade.type.label, color: grade.type.color)
+                    Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                     if grade.countsForAverage && grade.weight != 1.0 {
                         Text("×\(Int((grade.weight * 100).rounded()))%")
-                            .font(.caption2.weight(.medium))
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Color(.tertiarySystemFill), in: Capsule())
+                            .background(.white.opacity(0.07), in: Capsule())
                     }
                 }
                 if !grade.teacher.isEmpty {
@@ -214,28 +301,29 @@ private struct GradeHomeRow: View {
                 }
             }
             Spacer()
-            HStack(alignment: .center, spacing: 10) {
-                Text(grade.value.italianGrade)
-                    .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
+            HStack(alignment: .center, spacing: 8) {
+                Text(grade.displayValue)
+                    .font(.system(size: 26, weight: .heavy))
+                    .kerning(-0.5)
+                    .foregroundStyle(grade.displayColor)
                     .monospacedDigit()
                     .frame(minWidth: 46, alignment: .trailing)
-                // Fixed-width trend column so the arrows line up across rows,
-                // regardless of how wide the grade number is.
+                // Cerchietto trend (design 2c)
                 Group {
                     if let trend {
-                        Image(systemName: trend.systemImage)
-                            .font(.title3.weight(.semibold))
+                        Image(systemName: trend == .improved ? "arrow.up" : trend == .declined ? "arrow.down" : "equal")
+                            .font(.system(size: 10, weight: .heavy))
                             .foregroundStyle(trend.color)
+                            .frame(width: 20, height: 20)
+                            .background(trend.color.opacity(0.14), in: Circle())
+                            .overlay(Circle().strokeBorder(trend.color.opacity(0.3), lineWidth: 1))
                     }
                 }
                 .frame(width: 24)
             }
         }
         .padding(14)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .auroraCard(radius: 14)
     }
 }
 
@@ -247,38 +335,44 @@ private struct GradesSummaryCard: View {
     let period2Avg: Double?
     let period1Label: String
     let period2Label: String
-    @ScaledMetric private var ring: CGFloat = 84
+    @ScaledMetric private var ring: CGFloat = 96
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color(.systemFill), lineWidth: 9)
+                    .stroke(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08),
+                            lineWidth: 10)
                 if let avg = overall {
+                    // Anello a gradiente conico proporzionato alla scala voti
+                    // (design 2c).
+                    let fraction = min(avg / maxGrade, 1.0)
                     Circle()
-                        .trim(from: 0, to: min(avg / 10.0, 1.0))
+                        .trim(from: 0, to: fraction)
                         .stroke(
                             AngularGradient(
-                                colors: [avg.gradeColor.opacity(0.6), avg.gradeColor],
+                                colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
                                 center: .center,
                                 startAngle: .degrees(-90),
-                                endAngle: .degrees(-90 + 360 * (avg / 10.0))
+                                endAngle: .degrees(-90 + 360 * fraction)
                             ),
-                            style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                            style: StrokeStyle(lineWidth: 10, lineCap: .round)
                         )
                         .rotationEffect(.degrees(-90))
                         .animation(.easeOut(duration: 0.6), value: avg)
                 }
                 VStack(spacing: 1) {
                     Text(overall?.italianGrade ?? "—")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .font(.system(size: 24, weight: .heavy))
+                        .kerning(-0.5)
                         .foregroundStyle(overall?.gradeColor ?? .secondary)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: overall)
                     Text("MEDIA")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 8.5, weight: .heavy))
                         .foregroundStyle(.secondary)
-                        .tracking(1.5)
+                        .tracking(1.6)
                 }
             }
             .frame(width: ring, height: ring)
@@ -289,42 +383,45 @@ private struct GradesSummaryCard: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .padding(16)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+        .padding(14)
+        .auroraCard(radius: 22)
     }
 }
 
 private struct PeriodBarRow: View {
     let label: String
     let avg: Double?
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(label)
-                    .font(.caption)
+                    .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(avg?.italianGrade ?? "N/D")
-                    .font(.caption.weight(.bold))
+                Text(avg?.italianGrade ?? L("N/D"))
+                    .font(.system(size: 13, weight: .heavy))
                     .foregroundStyle(avg?.gradeColor ?? Color(.tertiaryLabel))
                     .contentTransition(.numericText())
                     .animation(.snappy, value: avg)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(.systemFill)).frame(height: 5)
+                    Capsule()
+                        .fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
+                        .frame(height: 7)
                     if let avg {
                         Capsule()
-                            .fill(avg.gradeColor.opacity(0.75))
-                            .frame(width: max(geo.size.width * (avg / 10.0), 0), height: 5)
+                            .fill(LinearGradient(
+                                colors: [avg.gradeColor, avg.gradeColor.blended(with: Color(hex: "#A3E635")!, by: 0.75)],
+                                startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(geo.size.width * min(avg / maxGrade, 1.0), 0), height: 7)
                             .animation(.easeOut(duration: 0.5), value: avg)
                     }
                 }
             }
-            .frame(height: 5)
+            .frame(height: 7)
         }
     }
 }
@@ -333,18 +430,30 @@ private struct PeriodBarRow: View {
 
 private struct RecentGradesRow: View {
     let grades: [Grade]
-    @ScaledMetric private var bubble: CGFloat = 50
+    var onSeeAll: (() -> Void)? = nil
+    @ScaledMetric private var bubble: CGFloat = 46
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ultimi voti")
-                .font(.subheadline.weight(.semibold))
-                .padding(.leading, 2)
+            HStack {
+                Text("Ultimi voti")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+                if let onSeeAll {
+                    Button(action: onSeeAll) {
+                        Text("Vedi tutti ›")
+                            .font(.system(size: 11.5, weight: .bold))
+                            .foregroundStyle(Color(hex: "#A5B4FC")!)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.leading, 2)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(grades) { grade in
-                        let c = grade.countsForAverage ? grade.value.gradeColor : .blue
+                        let c = grade.displayColor
                         VStack(spacing: 5) {
                             ZStack {
                                 Circle()
@@ -353,7 +462,7 @@ private struct RecentGradesRow: View {
                                 Circle()
                                     .stroke(c.opacity(0.30), lineWidth: 1.5)
                                     .frame(width: bubble, height: bubble)
-                                Text(grade.value.italianGrade)
+                                Text(grade.displayValue)
                                     .font(.system(.footnote, design: .rounded, weight: .bold))
                                     .foregroundStyle(c)
                             }
@@ -370,9 +479,7 @@ private struct RecentGradesRow: View {
             }
         }
         .padding(14)
-        .background(Color.sectionCard, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .auroraCard(radius: 14)
     }
 }
 
@@ -390,17 +497,13 @@ private struct GradientPageBackground: ViewModifier {
             .scrollContentBackground(.hidden)
             .background {
                 ZStack {
-                    Color.sectionPage
+                    AuroraBackground(section: .voti)
                     LinearGradient(
-                        colors: [top.opacity(0.14), .clear],
+                        colors: [top.opacity(0.12), .clear],
                         startPoint: .top, endPoint: .center
                     )
-                    LinearGradient(
-                        colors: [.clear, bottom.opacity(0.10)],
-                        startPoint: .center, endPoint: .bottom
-                    )
+                    .ignoresSafeArea()
                 }
-                .ignoresSafeArea()
             }
     }
 }
@@ -443,6 +546,7 @@ struct SubjectsListView: View {
                 .listRowBackground(Color.sectionCard)
             }
         }
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
         .navigationTitle("Materie")
         .navigationBarTitleDisplayMode(.large)
         .gradientPageBackground(top: .indigo, bottom: .blue)
@@ -464,7 +568,7 @@ private struct SubjectListRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subject)
                     .font(.callout.bold())
-                Text("\(count) vot\(count == 1 ? "o" : "i")")
+                Text(gradesCountLabel(count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -497,20 +601,21 @@ struct SubjectDetailView: View {
     @State private var didInitTarget = false
     @State private var motivation: String = ""
     @State private var showColorPicker = false
+    @Environment(\.colorScheme) private var scheme
     // Local mirrors of the grading scale so the view refreshes when it changes.
     @AppStorage("sufficientGrade") private var sufficientGrade: Double = 6
     @AppStorage("maxGrade") private var maxGrade: Double = 10
 
-    private static let motivations = [
-        "Un voto alla volta: la media si costruisce con costanza. 💪",
-        "Non è la singola interrogazione, è la rotta che tieni. 🚀",
-        "Ogni studio di oggi è un voto migliore domani. 📚",
-        "La distanza tra il 6 e l'8 è solo un po' di costanza in più. ⭐️",
-        "Sbagliare fa parte del percorso: conta rialzare la media. 🌱",
-        "Piccoli passi, grandi risultati. Continua così! 🎯",
-        "Il prossimo voto è un'occasione, non una minaccia. 😉",
-        "Credici: la media più alta è più vicina di quanto pensi. ✨"
-    ]
+    private static var motivations: [String] { [
+        L("Un voto alla volta: la media si costruisce con costanza. 💪"),
+        L("Non è la singola interrogazione, è la rotta che tieni. 🚀"),
+        L("Ogni studio di oggi è un voto migliore domani. 📚"),
+        L("La distanza tra il 6 e l'8 è solo un po' di costanza in più. ⭐️"),
+        L("Sbagliare fa parte del percorso: conta rialzare la media. 🌱"),
+        L("Piccoli passi, grandi risultati. Continua così! 🎯"),
+        L("Il prossimo voto è un'occasione, non una minaccia. 😉"),
+        L("Credici: la media più alta è più vicina di quanto pensi. ✨")
+    ] }
 
     private var targetOptions: [Double] {
         stride(from: sufficientGrade, through: maxGrade, by: 0.5).map { $0 }
@@ -541,88 +646,51 @@ struct SubjectDetailView: View {
         return .needsMany(max(k, 1))
     }
 
+    private var subjectTeacher: String? {
+        grades.last { !$0.teacher.isEmpty }?.teacher
+    }
+
     var body: some View {
-        List {
-            if grades.count >= 2 {
-                Section("Andamento") {
-                    GradeChartView(grades: grades, tint: store.color(for: subject))
-                        .frame(height: 220)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                        .listRowBackground(Color.clear)
-                }
-            }
-
-            Section("Statistiche") {
-                if let avg = store.average(for: subject) {
-                    averageRow("Media", avg)
-                }
-                if let avg = store.average(for: subject, period: 1, periodBoundary: period1End) {
-                    averageRow(periodLabel1, avg)
-                }
-                if let avg = store.average(for: subject, period: 2, periodBoundary: period1End) {
-                    averageRow(periodLabel2, avg)
-                }
-            }
-            .listRowBackground(Color.sectionCard)
-
-            Section("Obiettivo") {
-                Menu {
-                    ForEach(targetOptions, id: \.self) { t in
-                        Button {
-                            targetAverage = t
-                        } label: {
-                            if t == targetAverage {
-                                Label(t.italianGrade, systemImage: "checkmark")
-                            } else {
-                                Text(t.italianGrade)
-                            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                // Titolo grande + chip conteggio e docente (design 2d).
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(subject)
+                        .font(.system(size: 32, weight: .heavy))
+                        .kerning(-0.6)
+                    HStack(spacing: 6) {
+                        AuroraChip(text: gradesCountLabel(grades.count),
+                                   color: store.color(for: subject))
+                        if let t = subjectTeacher {
+                            AuroraChip(text: t, color: Color(hex: "#60A5FA")!, icon: "person.fill")
                         }
                     }
-                } label: {
-                    HStack {
-                        Label("Media obiettivo", systemImage: "target")
-                        Spacer()
-                        Text(targetAverage.italianGrade)
-                            .font(.system(.body, design: .rounded, weight: .bold))
-                            .foregroundStyle(.tint)
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
                 }
-                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 2)
 
-                goalResultRow
+                if grades.count >= 2 {
+                    GradeChartView(grades: grades, tint: store.color(for: subject))
+                }
+
+                statsCard
+                goalCard
 
                 if !motivation.isEmpty {
                     Text(motivation)
-                        .font(.caption)
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
+                        .padding(.horizontal, 22)
                 }
-            }
-            .listRowBackground(Color.sectionCard)
 
-            Section("Voti (\(grades.count))") {
-                ForEach(grades.reversed()) { grade in
-                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade))
-                        .contentShape(Rectangle())
-                        .onTapGesture { gradeToEdit = grade }
-                        .contextMenu {
-                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
-                            Button(role: .destructive) {
-                                store.delete(ids: [grade.id])
-                            } label: { Label("Elimina", systemImage: "trash") }
-                        }
-                }
-                .onDelete { offsets in
-                    let ids = Set(offsets.map { grades.reversed()[$0].id })
-                    store.delete(ids: ids)
-                }
+                gradesListCard
             }
-            .listRowBackground(Color.sectionCard)
+            .padding(.vertical, 12)
         }
-        .navigationTitle(subject)
-        .navigationBarTitleDisplayMode(.large)
+        .id("scale-\(sufficientGrade)-\(maxGrade)")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .gradientPageBackground(top: store.color(for: subject), bottom: store.color(for: subject))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -652,42 +720,192 @@ struct SubjectDetailView: View {
         .sensoryFeedback(.success, trigger: reachedGoal)
     }
 
+    // MARK: Card statistiche (design 2d: righe con hairline)
+
+    private var statItems: [(label: String, value: Double)] {
+        var items: [(String, Double)] = []
+        if let a = store.average(for: subject) { items.append((L("Media"), a)) }
+        if let a = store.average(for: subject, period: 1, periodBoundary: period1End) { items.append((periodLabel1, a)) }
+        if let a = store.average(for: subject, period: 2, periodBoundary: period1End) { items.append((periodLabel2, a)) }
+        return items
+    }
+
+    @ViewBuilder
+    private var statsCard: some View {
+        if !statItems.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(Array(statItems.enumerated()), id: \.offset) { i, item in
+                    if i > 0 { hairline }
+                    HStack {
+                        Text(item.label)
+                            .font(.system(size: 14.5, weight: .semibold))
+                        Spacer()
+                        Text(item.value.italianGrade)
+                            .font(.system(size: 17, weight: .heavy))
+                            .foregroundStyle(item.value.gradeColor)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: item.value)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 13)
+                }
+            }
+            .auroraCard(radius: 22)
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: Card obiettivo (design 2d: stepper nella card + esito)
+
+    private var goalCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "target")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(hex: "#A5B4FC")!)
+                    .frame(width: 26)
+                Text("Media obiettivo")
+                    .font(.system(size: 14.5, weight: .semibold))
+                Spacer()
+                HStack(spacing: 10) {
+                    stepButton("minus") {
+                        targetAverage = max(sufficientGrade, targetAverage - 0.5)
+                    }
+                    Text(targetAverage.italianGrade)
+                        .font(.system(size: 16, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#7CB3FF")!)
+                        .frame(minWidth: 26)
+                        .contentTransition(.numericText())
+                        .animation(.snappy, value: targetAverage)
+                    stepButton("plus") {
+                        targetAverage = min(maxGrade, targetAverage + 0.5)
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.05), in: Capsule())
+                .overlay(Capsule().strokeBorder(scheme == .dark ? Color.white.opacity(0.11) : Color.black.opacity(0.08), lineWidth: 1))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            hairline
+
+            goalResultRow
+                .padding(.horizontal, 14)
+                .padding(.vertical, 13)
+        }
+        .auroraCard(radius: 22)
+        .padding(.horizontal, 16)
+    }
+
+    private func stepButton(_ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundStyle(scheme == .dark ? Color(hex: "#C7D2FF")! : .primary)
+                .frame(width: 24, height: 24)
+                .background(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var hairline: some View {
+        Rectangle()
+            .fill(scheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 14)
+    }
+
+
     @ViewBuilder
     private var goalResultRow: some View {
         switch goal(for: targetAverage) {
         case .reached:
-            Label("Obiettivo raggiunto 🎉", systemImage: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+            HStack(spacing: 10) {
+                goalIcon("checkmark", tint: Color(hex: "#34D399")!)
+                Text("Obiettivo raggiunto")
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
+                Spacer()
+                if let avg = store.average(for: subject) {
+                    Text("\(gradeDeltaText(avg - targetAverage)) sopra")
+                        .font(.system(size: 11.5, weight: .bold))
+                        .foregroundStyle(scheme == .dark ? Color(hex: "#6EE7B7")! : Color(hex: "#047857")!)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 3)
+                        .background(Color(hex: "#34D399")!.opacity(0.12), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color(hex: "#34D399")!.opacity(0.28), lineWidth: 1))
+                }
+            }
         case .impossibleTen:
-            Label("Per il massimo servono solo voti pieni", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+            HStack(spacing: 10) {
+                goalIcon("exclamationmark.triangle.fill", tint: .orange)
+                Text("Per il massimo servono solo voti pieni")
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundStyle(.orange)
+                Spacer()
+            }
         case .needsOne(let v):
-            HStack(spacing: 5) {
+            HStack(spacing: 10) {
+                goalIcon("arrow.up.right", tint: Color(hex: "#7CB3FF")!)
                 Text("Ti basta un voto da")
+                    .font(.system(size: 14.5, weight: .semibold))
                 Text(v.italianGrade)
-                    .font(.system(.body, design: .rounded, weight: .bold))
+                    .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(v.gradeColor)
+                Spacer()
             }
         case .needsMany(let k):
-            HStack(spacing: 5) {
+            HStack(spacing: 10) {
+                goalIcon("arrow.up.right", tint: Color(hex: "#7CB3FF")!)
                 Text("Ti servono circa")
+                    .font(.system(size: 14.5, weight: .semibold))
                 Text("\(k)")
-                    .font(.system(.body, design: .rounded, weight: .bold))
-                    .foregroundStyle(.tint)
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundStyle(Color(hex: "#7CB3FF")!)
                 Text("voti da \(maxGrade.italianGrade)")
+                    .font(.system(size: 14.5, weight: .semibold))
+                Spacer()
             }
         }
     }
 
-    @ViewBuilder
-    private func averageRow(_ label: String, _ avg: Double) -> some View {
-        LabeledContent(label) {
-            Text(avg.italianGrade)
-                .font(.system(.callout, design: .rounded, weight: .bold))
-                .foregroundStyle(avg.gradeColor)
-                .contentTransition(.numericText())
-                .animation(.snappy, value: avg)
+    private func goalIcon(_ symbol: String, tint: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundStyle(tint)
+            .frame(width: 26, height: 26)
+            .background(tint.opacity(0.15), in: Circle())
+            .overlay(Circle().strokeBorder(tint.opacity(0.35), lineWidth: 1))
+    }
+
+    // MARK: Card elenco voti
+
+    private var gradesListCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SettingsView.header(L("Voti · \(grades.count)"))
+                .padding(.leading, 6)
+            VStack(spacing: 0) {
+                let ordered = Array(grades.reversed())
+                ForEach(Array(ordered.enumerated()), id: \.element.id) { i, grade in
+                    if i > 0 { hairline }
+                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                        .onTapGesture { gradeToEdit = grade }
+                        .contextMenu {
+                            Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
+                            Button(role: .destructive) {
+                                store.delete(ids: [grade.id])
+                            } label: { Label("Elimina", systemImage: "trash") }
+                        }
+                }
+            }
+            .auroraCard(radius: 22)
         }
+        .padding(.horizontal, 16)
     }
 }
 
@@ -756,77 +974,148 @@ struct SubjectColorPickerSheet: View {
     }
 }
 
-// MARK: - Grade chart
+// MARK: - Grade chart (design 2d: card ANDAMENTO)
 
 private struct GradeChartView: View {
     let grades: [Grade]
 
-    var tint: Color = Color(red: 0.42, green: 0.45, blue: 0.62)
+    var tint: Color = Color(hex: "#60A5FA")!
 
-    private var sorted: [Grade] { grades.sorted { $0.date < $1.date } }
-    private var lineColor: Color { tint }
+    // Le giustifiche non hanno valore numerico: fuori dal grafico.
+    private var sorted: [Grade] { grades.filter { !$0.isGiustifica }.sorted { $0.date < $1.date } }
     @State private var selectedIndex: Int?
+    @Environment(\.colorScheme) private var scheme
+
+    private let rose = Color(hex: "#FB7185")!
+    private let roseText = Color(hex: "#FDA4AF")!
+    private let violet = Color(hex: "#A78BFA")!
+    private let violetText = Color(hex: "#C4B5FD")!
+
+    /// Riempimento interno dei punti: il colore della pagina, così l'anello
+    /// colorato risalta come nel canvas.
+    private var pointFill: Color {
+        scheme == .dark ? Color(hex: "#0B101F")! : .white
+    }
+
+    private func pointColor(_ grade: Grade, index: Int) -> Color {
+        if selectedIndex == index { return violet }
+        if !grade.countsForAverage { return .blue }
+        return grade.value < sufficientGrade ? rose : tint
+    }
+
+    private var yGridValues: [Double] {
+        stride(from: 2.0, through: maxGrade, by: 2.0).map { $0 }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Detail of the tapped point, OUTSIDE the plot so it's never clipped.
+            // Header della card: ANDAMENTO + dettaglio del punto toccato
             HStack(spacing: 7) {
+                Text("ANDAMENTO")
+                    .font(.system(size: 10.5, weight: .heavy))
+                    .kerning(1)
+                    .foregroundStyle(Color(hex: "#A5B4FC")!)
+                Spacer()
                 if let s = selectedIndex, s >= 0, s < sorted.count {
-                    Circle().fill(sorted[s].countsForAverage ? sorted[s].value.gradeColor : .blue).frame(width: 8, height: 8)
+                    Circle()
+                        .fill(pointColor(sorted[s], index: -1))
+                        .frame(width: 7, height: 7)
                     Text(sorted[s].value.italianGrade)
-                        .font(.subheadline.weight(.bold))
-                    Text("·").foregroundStyle(.tertiary)
+                        .font(.system(size: 13, weight: .bold))
                     Text(sorted[s].date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
-                        .font(.caption)
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 } else {
-                    Image(systemName: "hand.tap").font(.caption2)
-                    Text("Tocca un punto per i dettagli").font(.caption)
+                    Text("tocca un punto per i dettagli")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary.opacity(0.8))
                 }
             }
-            .foregroundStyle(selectedIndex == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-            .frame(height: 20)
+            .frame(height: 18)
             .animation(.easeInOut(duration: 0.15), value: selectedIndex)
 
             Chart {
-                RuleMark(y: .value("Sufficienza", sufficientGrade))
-                    .foregroundStyle(.secondary.opacity(0.25))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                // Linea della sufficienza: rosa, tratteggiata (canvas 2d)
+                RuleMark(y: .value(L("Sufficienza"), sufficientGrade))
+                    .foregroundStyle(rose.opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
 
                 ForEach(Array(sorted.enumerated()), id: \.offset) { i, grade in
-                    LineMark(x: .value("n", i), y: .value("Voto", grade.value))
+                    LineMark(x: .value("n" as String, i), y: .value(L("Voto"), grade.value))
                         .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(lineColor)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(tint)
 
-                    PointMark(x: .value("n", i), y: .value("Voto", grade.value))
-                        .foregroundStyle(grade.countsForAverage ? (selectedIndex == i ? lineColor : lineColor.opacity(0.8)) : Color.blue)
-                        .symbolSize(selectedIndex == i ? 120 : 42)
-                }
-
-                if let s = selectedIndex, s >= 0, s < sorted.count {
-                    RuleMark(x: .value("n", s))
-                        .foregroundStyle(lineColor.opacity(0.30))
-                        .lineStyle(StrokeStyle(lineWidth: 1))
+                    // Punto: anello colorato con interno scuro; alone violetto
+                    // quando selezionato; insufficienze in rosa con valore sotto.
+                    PointMark(x: .value("n" as String, i), y: .value(L("Voto"), grade.value))
+                        .symbolSize(0)
+                        .annotation(position: .overlay) {
+                            ZStack {
+                                if selectedIndex == i {
+                                    Circle().fill(violet.opacity(0.18)).frame(width: 24, height: 24)
+                                }
+                                Circle()
+                                    .fill(selectedIndex == i ? violet : pointFill)
+                                    .frame(width: selectedIndex == i ? 11 : 9, height: selectedIndex == i ? 11 : 9)
+                                    .overlay(
+                                        Circle().strokeBorder(
+                                            selectedIndex == i ? violetText : pointColor(grade, index: i),
+                                            lineWidth: selectedIndex == i ? 1.5 : 2)
+                                    )
+                            }
+                        }
+                        .annotation(position: grade.value < sufficientGrade ? .bottom : .top, spacing: 5) {
+                            if selectedIndex == i {
+                                Text(grade.value.italianGrade)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(violetText)
+                            } else if grade.value < sufficientGrade {
+                                Text(grade.value.italianGrade)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(roseText)
+                            }
+                        }
                 }
             }
+            .frame(height: 170)
             .chartYScale(domain: 1...(maxGrade + 0.4))
             .chartXScale(domain: -0.4 ... (Double(max(sorted.count - 1, 1)) + 0.4))
             .chartXSelection(value: $selectedIndex)
             .chartXAxis(.hidden)
             .chartYAxis {
-                AxisMarks(position: .leading) { _ in
-                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.3))
+                AxisMarks(position: .leading, values: yGridValues) { value in
+                    let v = value.as(Double.self) ?? 0
+                    let isSufficiency = abs(v - sufficientGrade) < 0.01
+                    if !isSufficiency {
+                        // La riga della sufficienza è già il RuleMark rosa.
+                        AxisGridLine().foregroundStyle(.white.opacity(scheme == .dark ? 0.06 : 0.0))
+                        if scheme == .light {
+                            AxisGridLine().foregroundStyle(.black.opacity(0.06))
+                        }
+                    }
                     AxisValueLabel()
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color(.label))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(isSufficiency ? rose.opacity(0.7)
+                                         : (scheme == .dark ? Color(hex: "#E2E8FF")!.opacity(0.35) : Color.secondary))
                 }
             }
             .animation(.easeOut(duration: 0.2), value: selectedIndex)
             .sensoryFeedback(.selection, trigger: selectedIndex)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(
+                    colors: scheme == .dark
+                        ? [.white.opacity(0.08), .white.opacity(0.035)]
+                        : [.white.opacity(0.92), .white.opacity(0.65)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(.white.opacity(scheme == .dark ? 0.12 : 0.65), lineWidth: 1))
+        .shadow(color: .black.opacity(scheme == .dark ? 0.30 : 0.07), radius: 14, y: 6)
+        .padding(.horizontal, 16)
     }
 }
 
@@ -841,7 +1130,7 @@ struct GradeRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Label(grade.type.label, systemImage: grade.type.icon)
                     .font(.callout.weight(.medium))
-                Text(grade.date.formatted(date: .abbreviated, time: .omitted))
+                Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 if !grade.note.isEmpty {
@@ -857,13 +1146,13 @@ struct GradeRowView: View {
                     Image(systemName: trend.systemImage)
                         .font(.footnote.weight(.bold))
                         .foregroundStyle(trend.color)
-                        .accessibilityLabel(trend == .improved ? "Ha alzato la media della materia"
-                                             : trend == .declined ? "Ha abbassato la media della materia"
-                                             : "Media della materia invariata")
+                        .accessibilityLabel(trend == .improved ? L("Ha alzato la media della materia")
+                                             : trend == .declined ? L("Ha abbassato la media della materia")
+                                             : L("Media della materia invariata"))
                 }
-                Text(grade.value.italianGrade)
+                Text(grade.displayValue)
                     .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundStyle(grade.countsForAverage ? grade.value.gradeColor : .blue)
+                    .foregroundStyle(grade.displayColor)
                 Image(systemName: "chevron.right")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -883,15 +1172,7 @@ struct GradeEntrySheet: View {
     /// Subjects common to most Italian schools, offered as suggestions even
     /// before the user has ever entered them. Anything missing the user can add,
     /// and it becomes a suggestion from then on (via `store.subjects`).
-    private static let commonSubjects = [
-        "Italiano", "Matematica", "Storia", "Geografia", "Geostoria",
-        "Inglese", "Francese", "Spagnolo", "Tedesco", "Latino", "Greco",
-        "Scienze", "Scienze naturali", "Biologia", "Chimica", "Fisica",
-        "Filosofia", "Storia dell'arte", "Disegno e storia dell'arte",
-        "Diritto", "Economia", "Informatica", "Tecnologia",
-        "Scienze motorie", "Educazione fisica", "Educazione civica",
-        "Religione", "Musica", "Arte e immagine"
-    ]
+    private static var commonSubjects: [String] { SubjectSuggestions.all }
 
     @Environment(\.dismiss) private var dismiss
     @State private var subject = ""
@@ -917,9 +1198,9 @@ struct GradeEntrySheet: View {
     private var gradePeriodLabel: String {
         let period = store.gradePeriod(for: date, boundary: period1End)
         if period == 1 {
-            return periodSystem == .quadrimestri ? "1° Quadrimestre" : "Trimestre"
+            return periodSystem == .quadrimestri ? L("1° Quadrimestre") : L("Trimestre")
         } else {
-            return periodSystem == .quadrimestri ? "2° Quadrimestre" : "Pentamestre"
+            return periodSystem == .quadrimestri ? L("2° Quadrimestre") : L("Pentamestre")
         }
     }
 
@@ -958,12 +1239,13 @@ struct GradeEntrySheet: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             Form {
                 Section("Materia") {
                     TextField(
                         "",
                         text: $subject,
-                        prompt: Text(subjectError ? "Campo obbligatorio" : "Es. Matematica")
+                        prompt: Text(subjectError ? L("Campo obbligatorio") : L("Es. Matematica"))
                             .foregroundStyle(subjectError ? Color.red : Color.secondary)
                     )
                     .autocorrectionDisabled()
@@ -984,6 +1266,7 @@ struct GradeEntrySheet: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .id("materia")
 
                 Section("Professore") {
                     TextField("Es. ROSSI", text: $teacher)
@@ -1006,8 +1289,11 @@ struct GradeEntrySheet: View {
                     }
                 }
 
-                Section("Voto") {
-                    GradeValuePickerView(value: $value)
+                // La giustifica non è un voto: niente valore da scegliere.
+                if type != .giustifica {
+                    Section("Voto") {
+                        GradeValuePickerView(value: $value)
+                    }
                 }
 
                 Section {
@@ -1018,27 +1304,31 @@ struct GradeEntrySheet: View {
                     }
                     DatePicker("Data", selection: $date, displayedComponents: .date)
                 } footer: {
-                    Text("Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo.")
+                    Text(type == .giustifica
+                         ? L("La giustifica viene registrata come «G»: non ha voto, non ha peso e non fa media.")
+                         : L("Periodo: \(gradePeriodLabel). Cambia la data per modificare il periodo."))
                 }
 
-                Section {
-                    Toggle(isOn: $countsForAverage) {
-                        Label("Fa media", systemImage: "function")
-                    }
-                    if countsForAverage {
-                        HStack {
-                            Label("Peso", systemImage: "scalemass")
-                            Spacer()
-                            Text("\(Int((weight * 100).rounded()))%")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
+                if type != .giustifica {
+                    Section {
+                        Toggle(isOn: $countsForAverage) {
+                            Label("Fa media", systemImage: "function")
                         }
-                        Slider(value: $weight, in: 0...1, step: 0.05)
+                        if countsForAverage {
+                            HStack {
+                                Label("Peso", systemImage: "scalemass")
+                                Spacer()
+                                Text("\(Int((weight * 100).rounded()))%")
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: $weight, in: 0...1, step: 0.05)
+                        }
+                    } footer: {
+                        Text(countsForAverage
+                             ? L("Il peso determina quanto incide nella media ponderata.")
+                             : L("Il voto verrà mostrato in blu e non conterà nella media."))
                     }
-                } footer: {
-                    Text(countsForAverage
-                         ? "Il peso determina quanto incide nella media ponderata."
-                         : "Il voto verrà mostrato in blu e non conterà nella media.")
                 }
 
                 Section("Annotazione") {
@@ -1063,7 +1353,7 @@ struct GradeEntrySheet: View {
                     }
                 }
             }
-            .navigationTitle(isNew ? "Nuovo voto" : "Modifica voto")
+            .navigationTitle(isNew ? L("Nuovo voto") : L("Modifica voto"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -1072,13 +1362,20 @@ struct GradeEntrySheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Salva") {
                         guard !subject.trimmingCharacters(in: .whitespaces).isEmpty else {
-                            withAnimation { subjectError = true }
+                            // Il campo materia torna in vista anche da fine
+                            // pagina, così è chiaro cosa manca.
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+                                subjectError = true
+                                proxy.scrollTo("materia", anchor: .top)
+                            }
+                            UINotificationFeedbackGenerator().notificationOccurred(.error)
                             return
                         }
                         save()
                     }
                     .fontWeight(.semibold)
                 }
+            }
             }
         }
         .onAppear { setupInitialState() }
@@ -1107,6 +1404,11 @@ struct GradeEntrySheet: View {
         g.note = note.trimmingCharacters(in: .whitespaces)
         g.weight = weight
         g.countsForAverage = countsForAverage
+        if type == .giustifica {
+            // Nessun voto e nessun peso: la "G" non entra mai nella media.
+            g.countsForAverage = false
+            g.weight = 1.0
+        }
         if isNew { store.add(g) } else { store.update(g) }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
@@ -1128,13 +1430,31 @@ struct GradeValuePickerView: View {
         )
     }
 
+    private var isMax: Bool { value >= maxGrade - 0.001 }
+
     var body: some View {
         HStack(spacing: 0) {
-            Text(value.italianGrade)
-                .font(.system(size: 38, weight: .bold, design: .rounded))
-                .foregroundStyle(value.gradeColor)
-                .frame(width: 72, alignment: .center)
-                .animation(.easeInOut(duration: 0.1), value: value)
+            VStack(spacing: 3) {
+                // Stelline quando è il voto massimo della scala.
+                if isMax {
+                    HStack(spacing: 2) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Image(systemName: "sparkle")
+                                .font(.system(size: i == 1 ? 12 : 8, weight: .bold))
+                                .foregroundStyle(Color(hex: "#FBBF24")!)
+                                .shadow(color: Color(hex: "#FBBF24")!.opacity(0.8), radius: 3)
+                        }
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                Text(value.italianGrade)
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .foregroundStyle(value.gradeColor)
+            }
+            .frame(width: 72, alignment: .center)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isMax)
+            .animation(.easeInOut(duration: 0.1), value: value)
+            .sensoryFeedback(.success, trigger: isMax)
 
             Picker("", selection: selectedIndex) {
                 ForEach(0...steps, id: \.self) { i in

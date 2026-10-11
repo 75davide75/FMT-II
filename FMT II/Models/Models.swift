@@ -18,6 +18,33 @@ let dayLabels: [DayId: String] = [
 
 enum DayId: String, Codable, CaseIterable, Hashable {
     case monday, tuesday, wednesday, thursday, friday, saturday, sunday
+
+    /// Nome nella lingua dell'app. I `dayLabel` salvati negli orari restano in
+    /// italiano (dati): a schermo si usa sempre questo.
+    var displayName: String {
+        switch self {
+        case .monday:    return L("Lunedì")
+        case .tuesday:   return L("Martedì")
+        case .wednesday: return L("Mercoledì")
+        case .thursday:  return L("Giovedì")
+        case .friday:    return L("Venerdì")
+        case .saturday:  return L("Sabato")
+        case .sunday:    return L("Domenica")
+        }
+    }
+
+    /// Abbreviazione (intestazioni della Settimana e del Diario).
+    var shortName: String {
+        switch self {
+        case .monday:    return L("Lun")
+        case .tuesday:   return L("Mar")
+        case .wednesday: return L("Mer")
+        case .thursday:  return L("Gio")
+        case .friday:    return L("Ven")
+        case .saturday:  return L("Sab")
+        case .sunday:    return L("Dom")
+        }
+    }
 }
 
 struct DayInfo: Codable, Identifiable, Equatable {
@@ -83,6 +110,12 @@ struct ScheduleData: Codable, Equatable {
     var edited: Bool = false
     /// Learned subject -> teacher pairs, used to auto-fill teachers while building.
     var subjectTeachers: [String: String] = [:]
+    /// v2.2: ogni classe può avere la sua ora d'inizio (durata e numero di ore restano globali).
+    var perClassStartTimes: Bool = false
+    /// Classe → "HH:mm" d'inizio della 1ª ora (usato solo con `perClassStartTimes`).
+    var classStartTimes: [String: String] = [:]
+    /// Ultima modifica locale (per la sync iCloud: vince la più recente).
+    var modifiedAt: Date = .distantPast
 
     /// Safe placeholder used during the brief render pass when the schedule is
     /// being removed, so views that assume a non-nil schedule don't crash.
@@ -109,18 +142,33 @@ extension ScheduleData {
         warnings = try c.decodeIfPresent([String].self, forKey: .warnings) ?? []
         edited = try c.decodeIfPresent(Bool.self, forKey: .edited) ?? false
         subjectTeachers = try c.decodeIfPresent([String: String].self, forKey: .subjectTeachers) ?? [:]
+        perClassStartTimes = try c.decodeIfPresent(Bool.self, forKey: .perClassStartTimes) ?? false
+        classStartTimes = try c.decodeIfPresent([String: String].self, forKey: .classStartTimes) ?? [:]
+        // Orari 2.1.1 senza data di modifica: vale la data di import, così tra
+        // due dispositivi vince l'orario importato più di recente.
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt)
+            ?? ISO8601DateFormatter().date(from: importedAt)
+            ?? .distantPast
     }
 }
 
 /// Re-aligns lesson times to their period (respecting manually-set period times,
 /// unlike `normalizeScheduleTimes` which forces the fixed 08:10 formula),
 /// regenerates lesson ids, and marks the schedule as manually edited.
+/// Each lesson follows its own class's periods (per-class start time, v2.2).
 func applyManualEdits(_ s: ScheduleData) -> ScheduleData {
-    var periodByNumber: [Int: Period] = [:]
-    for p in s.periods { periodByNumber[p.number] = p }
+    var periodsByClass: [String: [Int: Period]] = [:]
+    func period(_ number: Int, of className: String) -> Period? {
+        if periodsByClass[className] == nil {
+            var map: [Int: Period] = [:]
+            for p in s.periods(forClass: className) { map[p.number] = p }
+            periodsByClass[className] = map
+        }
+        return periodsByClass[className]?[number]
+    }
 
     let lessons = s.lessons.map { lesson -> Lesson in
-        let p = periodByNumber[lesson.period]
+        let p = period(lesson.period, of: lesson.className)
         let start = p?.startTime ?? lesson.startTime
         let end = p?.endTime ?? lesson.endTime
         return Lesson(
@@ -185,7 +233,9 @@ func normalizeScheduleTimes(_ schedule: ScheduleData) -> ScheduleData {
         let startTime = period?.startTime ?? periodToStartTime(lesson.period)
         let endTime = period?.endTime ?? addMinutes(startTime, 60)
         return Lesson(
-            id: lessonId(lesson.className, lesson.day, startTime, lesson.teacher),
+            // Subject-only lessons (teacher unknown) key the id on the subject,
+            // like applyManualEdits, so ids stay unique.
+            id: lessonId(lesson.className, lesson.day, startTime, lesson.teacher.isEmpty ? lesson.subject : lesson.teacher),
             className: lesson.className,
             teacher: lesson.teacher,
             day: lesson.day,
@@ -193,20 +243,15 @@ func normalizeScheduleTimes(_ schedule: ScheduleData) -> ScheduleData {
             period: lesson.period,
             startTime: startTime,
             endTime: endTime,
-            sourcePage: lesson.sourcePage
+            sourcePage: lesson.sourcePage,
+            subject: lesson.subject
         )
     }
 
-    return ScheduleData(
-        id: schedule.id,
-        sourceName: schedule.sourceName,
-        importedAt: schedule.importedAt,
-        startsFrom: schedule.startsFrom,
-        days: schedule.days,
-        periods: periods,
-        classes: schedule.classes,
-        teachers: schedule.teachers,
-        lessons: lessons,
-        warnings: schedule.warnings
-    )
+    // Copy so the fields that don't change (days, classes, subjectTeachers, …)
+    // survive: rebuilding from scratch silently dropped `subject` data.
+    var result = schedule
+    result.periods = periods
+    result.lessons = lessons
+    return result
 }

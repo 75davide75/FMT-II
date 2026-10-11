@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "FTM icon.png",
+      "filename" : "5b-righe-chiara.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "FTM icon 1.png",
+      "filename" : "5b-righe-scura.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "FTM icon 2.png",
+      "filename" : "5b-righe-tinted.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

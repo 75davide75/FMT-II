@@ -13,6 +13,9 @@ struct MainScheduleView: View {
     var gradesStore: GradesStore? = nil
 
     @AppStorage("useLiveTime") private var useLiveTime = true
+    @Environment(\.deviceLayout) private var layout
+    // Cambia quando l'utente personalizza i colori: forza il refresh delle tinte.
+    @AppStorage("entityColorsVersion") private var entityColorsVersion = 0
     @AppStorage("manualDayRaw") private var manualDayRaw = "monday"
     @AppStorage("manualTime") private var manualTime = "08:10"
 
@@ -20,6 +23,8 @@ struct MainScheduleView: View {
 
     @State private var showTeacherMenu = false
     @State private var showSettings = false
+    @State private var headerHeight: CGFloat = 64
+    @Environment(\.colorScheme) private var scheme
     @State private var showQuickTimePicker = false
     @State private var showChangePDFConfirm = false
     @State private var noteContext: NoteCreationContext? = nil
@@ -43,27 +48,42 @@ struct MainScheduleView: View {
         useLiveTime ? timeFromDate(clock) : manualTime
     }
 
+    /// Materie distinte nell'orario (vista adattiva quando mancano i docenti).
+    var scheduleSubjects: [String] {
+        Array(Set(schedule.lessons.map { $0.subject }.filter { !$0.isEmpty }))
+            .sorted { $0.compare($1, locale: Locale(identifier: "it")) == .orderedAscending }
+    }
+
+    /// Vista adattiva: docenti riconosciuti -> filtro classe/docente;
+    /// solo materie riconosciute -> filtro materia/classe.
+    var usesSubjectEntities: Bool { schedule.teachers.isEmpty && !scheduleSubjects.isEmpty }
+
+    var entityList: [String] { usesSubjectEntities ? scheduleSubjects : schedule.teachers }
+
     var selectedTeacher: String? {
-        resolveTeacher(schedule.teachers, query: teacherQuery)
+        resolveTeacher(entityList, query: teacherQuery)
     }
 
     var filteredTeachers: [String] {
         let q = teacherQuery.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return schedule.teachers }
-        return schedule.teachers.filter { $0.lowercased().contains(q) }
+        guard !q.isEmpty else { return entityList }
+        return entityList.filter { $0.lowercased().contains(q) }
     }
 
     var targetLessons: [Lesson] {
         schedule.lessons.filter { lesson in
             targetMode == .class_
                 ? lesson.className == selectedClass
-                : selectedTeacher.map { lesson.teacher == $0 } ?? false
+                : selectedTeacher.map { usesSubjectEntities ? lesson.subject == $0 : lesson.teacher == $0 } ?? false
         }
     }
 
+    /// Classe di cui mostrare le fasce: quella selezionata in vista classe,
+    /// nil in vista docente (unione degli orari di tutte le classi).
+    var periodClass: String? { targetMode == .class_ ? selectedClass : nil }
+
     var schoolTimes: [String] {
-        guard let last = schedule.periods.last else { return [] }
-        return schedule.periods.map { $0.startTime } + [last.endTime]
+        schedule.timeSlots(forClass: periodClass)
     }
 
     var currentLesson: Lesson? {
@@ -77,7 +97,7 @@ struct MainScheduleView: View {
     var dayForDayView: DayId { useLiveTime ? (activeDay ?? .monday) : manualDay }
 
     var dayPlan: [(period: Period, lessons: [Lesson])] {
-        schedule.periods.map { period in
+        schedule.displayPeriods(forClass: periodClass).map { period in
             let day = dayForDayView
             let ls = targetLessons
                 .filter { $0.day == day && $0.startTime == period.startTime }
@@ -88,62 +108,131 @@ struct MainScheduleView: View {
 
     var exportURL: URL? { store.exportScheduleURL() }
 
+    /// "5GSA · Giovedì · 13:00" — sottotitolo del titolo grande (design 3a).
+    var orarioSubtitle: String {
+        let target = targetMode == .class_ ? selectedClass : (selectedTeacher ?? "—")
+        let day = schedule.days.first { $0.id == activeDay }?.id.displayName ?? L("Weekend")
+        return "\(target) · \(day) · \(activeTime)"
+    }
+
+    /// Adesso / Giorno / Settimana (uguale in tutti i layout).
+    @ViewBuilder
+    private var scheduleContent: some View {
+        let _ = entityColorsVersion
+        switch viewMode {
+        case .now:
+            NowView(
+                currentLesson: currentLesson,
+                nextLesson: nextLesson,
+                targetMode: targetMode,
+                activeDay: activeDay,
+                activeTime: activeTime,
+                schoolTimes: schoolTimes,
+                onOpenWeek: { withAnimation { viewMode = .week } },
+                onJumpToLesson: jumpToLessonTime,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        case .day:
+            DayView(
+                dayPlan: dayPlan,
+                dayLabel: schedule.days.first { $0.id == dayForDayView }?.id.displayName ?? "",
+                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
+                targetMode: targetMode,
+                dayId: dayForDayView,
+                onOpenCounterpart: openCounterpartDay,
+                onJumpToLesson: jumpToLessonTime,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        case .week:
+            WeekView(
+                schedule: schedule,
+                periods: schedule.displayPeriods(forClass: periodClass),
+                targetLessons: targetLessons,
+                targetMode: targetMode,
+                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
+                onOpenCounterpart: openCounterpartWeek,
+                onAddNote: { day, time, teacher, cls, subject in addNoteContext(day: day, time: time, teacher: teacher, cls: cls, subject: subject) }
+            )
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-                // Subtle gradient header
-                LinearGradient(
-                    colors: [Color.accentColor.opacity(0.10), .clear],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .frame(height: 220)
-                .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 14) {
-                        statusStrip
-                        controlPanel
-                        if viewMode != .week { timeIndicator }
-
-                        switch viewMode {
-                        case .now:
-                            NowView(
-                                currentLesson: currentLesson,
-                                nextLesson: nextLesson,
-                                targetMode: targetMode,
-                                activeDay: activeDay,
-                                activeTime: activeTime,
-                                schoolTimes: schoolTimes,
-                                onOpenWeek: { withAnimation { viewMode = .week } },
-                                onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
-                            )
-                        case .day:
-                            DayView(
-                                dayPlan: dayPlan,
-                                dayLabel: schedule.days.first { $0.id == dayForDayView }?.label ?? "",
-                                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
-                                targetMode: targetMode,
-                                dayId: dayForDayView,
-                                onOpenCounterpart: openCounterpartDay,
-                                onJumpToLesson: jumpToLessonTime,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
-                            )
-                        case .week:
-                            WeekView(
-                                schedule: schedule,
-                                targetLessons: targetLessons,
-                                targetMode: targetMode,
-                                targetName: targetMode == .class_ ? selectedClass : (selectedTeacher ?? ""),
-                                onOpenCounterpart: openCounterpartWeek,
-                                onAddNote: { day, time, teacher, cls in addNoteContext(day: day, time: time, teacher: teacher, cls: cls) }
-                            )
+                Group {
+                    if layout == .wide {
+                        // iPad in orizzontale: controlli a sinistra, contenuto a destra.
+                        // Margini dentro le ScrollView: le ombre delle card non
+                        // vengono tagliate ai bordi delle colonne.
+                        HStack(alignment: .top, spacing: 0) {
+                            ScrollView {
+                                VStack(spacing: 14) {
+                                    statusStrip
+                                    controlPanel
+                                    if viewMode != .week { timeIndicator }
+                                }
+                                .padding(.leading, 16)
+                                .padding(.trailing, 12)
+                                .padding(.top, headerHeight + 6)
+                                .padding(.bottom, 32)
+                            }
+                            .scrollIndicators(.hidden)
+                            .frame(width: 368)
+                            ScrollView {
+                                scheduleContent
+                                    .padding(.leading, 12)
+                                    .padding(.trailing, 16)
+                                    .padding(.top, headerHeight + 6)
+                                    .padding(.bottom, 32)
+                            }
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 14) {
+                                statusStrip
+                                controlPanel
+                                if viewMode != .week { timeIndicator }
+                                // iPad in verticale: Adesso/Giorno non si stirano.
+                                scheduleContent
+                                    .frame(maxWidth: layout == .regular && viewMode != .week ? 760 : .infinity)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, headerHeight + 6)
+                            .padding(.bottom, 32)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 32)
                 }
+                // Il contenuto svanisce avvicinandosi al titolo (mask sulla
+                // ScrollView): nessun velo dipinto sopra l'aurora, quindi
+                // niente banda scura né sovrapposizioni.
+                .mask {
+                    VStack(spacing: 0) {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .clear, location: 0.5),
+                                .init(color: .black, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                        .frame(height: headerHeight + 14)
+                        Rectangle()
+                    }
+                }
+
+                // «Orario» + sottotitolo restano fissi, senza sfondo.
+                AuroraTitle(title: L("Orario"), subtitle: orarioSubtitle)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 2)
+                    .padding(.bottom, 10)
+                    .background {
+                        GeometryReader { g in
+                            Color.clear
+                                .onAppear { headerHeight = g.size.height }
+                                .onChange(of: g.size.height) { _, h in headerHeight = h }
+                        }
+                    }
             }
-            .background(Color(.secondarySystemGroupedBackground).ignoresSafeArea())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { if isActive { toolbarContent } }
@@ -186,184 +275,186 @@ struct MainScheduleView: View {
 
     // MARK: - Toolbar
 
+    // Stesso bottone ⋯ in tutte e tre le sezioni: dentro, le azioni della
+    // sezione più le Impostazioni condivise.
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            if let url = exportURL {
-                ShareLink(
-                    item: url,
-                    preview: SharePreview(
-                        "Orario \(schedule.sourceName)",
-                        image: Image(systemName: "calendar.badge.clock")
-                    )
-                ) {
-                    Image(systemName: "square.and.arrow.up")
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                if let url = exportURL {
+                    ShareLink(
+                        item: url,
+                        preview: SharePreview(
+                            L("Orario \(schedule.sourceName)"),
+                            image: Image(systemName: "calendar.badge.clock")
+                        )
+                    ) {
+                        Label("Condividi orario", systemImage: "square.and.arrow.up")
+                    }
                 }
+                Button { dbEditTarget = nil; showDBDisclaimer = true } label: {
+                    Label("Dati orario", systemImage: "slider.horizontal.3")
+                }
+                Button { showSettings = true } label: {
+                    Label("Impostazioni", systemImage: "gearshape")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
-            Button { showSettings = true } label: {
-                Image(systemName: "gearshape")
-            }
+            .accessibilityLabel("Altre azioni")
         }
     }
 
     // MARK: - Status strip
 
     var statusStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                Button(action: onLessonCountTap) {
-                    StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: "lezioni", color: .purple)
+        Group {
+            if layout == .wide {
+                // Colonna laterale iPad: le pillole vanno a capo invece di scorrere.
+                ChipFlowLayout(spacing: 8) { statusPills }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) { statusPills }
+                        .padding(.vertical, 2)
                 }
-                .buttonStyle(.plain)
-                Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
-                    StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: "classi", color: .blue)
-                }
-                .buttonStyle(.plain)
-                Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
-                    StatPill(icon: "person.fill", value: "\(schedule.teachers.count)", label: "docenti", color: .orange)
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    showChangePDFConfirm = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text(schedule.sourceName)
-                            .lineLimit(1)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(.regularMaterial, in: Capsule())
-                }
-                .buttonStyle(.plain)
             }
-            .padding(.vertical, 2)
         }
+    }
+
+    @ViewBuilder
+    private var statusPills: some View {
+        Button(action: onLessonCountTap) {
+            StatPill(icon: "book.closed", value: "\(schedule.lessons.count)", label: schedule.lessons.count == 1 ? L("lezione") : L("lezioni"), color: .purple)
+        }
+        .buttonStyle(.plain)
+        Button { dbEditTarget = "classi"; showDBDisclaimer = true } label: {
+            StatPill(icon: "graduationcap.fill", value: "\(schedule.classes.count)", label: schedule.classes.count == 1 ? L("classe") : L("classi"), color: .blue)
+        }
+        .buttonStyle(.plain)
+        Button { dbEditTarget = "docenti"; showDBDisclaimer = true } label: {
+            StatPill(icon: usesSubjectEntities ? "book.closed.fill" : "person.fill",
+                     value: usesSubjectEntities ? "\(scheduleSubjects.count)" : "\(schedule.teachers.count)",
+                     label: usesSubjectEntities
+                                ? (scheduleSubjects.count == 1 ? L("materia") : L("materie"))
+                                : (schedule.teachers.count == 1 ? L("docente") : L("docenti")),
+                     color: .orange)
+        }
+        .buttonStyle(.plain)
+
+        Button {
+            showChangePDFConfirm = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text(schedule.sourceName)
+                    .lineLimit(1)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .auroraCard(radius: 999)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Control panel
 
-    var panelAccent: Color { targetMode == .class_ ? .blue : .orange }
+    var panelAccent: Color { targetMode == .class_ ? AuroraSection.orario.tintB : AuroraSection.orario.tintA }
 
     var controlPanel: some View {
         VStack(spacing: 10) {
-            Picker("Tipo", selection: $targetMode.animation()) {
-                Label("Classe", systemImage: "graduationcap").tag(TargetMode.class_)
-                Label("Docente", systemImage: "person").tag(TargetMode.teacher)
-            }
-            .pickerStyle(.segmented)
+            AuroraSegmented(
+                options: [(TargetMode.class_, L("Classe")),
+                          (TargetMode.teacher, usesSubjectEntities ? L("Materia") : L("Docente"))],
+                selection: $targetMode.animation()
+            )
 
-            if targetMode == .class_ {
-                HStack {
-                    Image(systemName: "graduationcap.fill")
-                        .foregroundStyle(panelAccent)
-                        .frame(width: 24)
-                    Picker("Classe", selection: $selectedClass) {
-                        ForEach(schedule.classes, id: \.self) { Text($0).tag($0) }
+            // Altezza identica nei due stati e dissolvenza incrociata:
+            // niente "scalino" quando si passa da classe a docente.
+            ZStack {
+                if targetMode == .class_ {
+                    HStack {
+                        Image(systemName: "graduationcap.fill")
+                            .foregroundStyle(panelAccent)
+                            .frame(width: 24)
+                        Picker("Classe", selection: $selectedClass) {
+                            ForEach(schedule.classes, id: \.self) { Text($0).tag($0) }
+                        }
+                        .tint(.primary)
                     }
-                    .tint(.primary)
+                    .frame(height: 26)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(panelAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(panelAccent.opacity(0.25), lineWidth: 1))
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                } else {
+                    TeacherPickerField(
+                        query: $teacherQuery,
+                        focused: _teacherFieldFocused,
+                        showMenu: $showTeacherMenu,
+                        filteredTeachers: filteredTeachers,
+                        selectedTeacher: selectedTeacher,
+                        onSelect: { teacher in teacherQuery = teacher; showTeacherMenu = false },
+                        accentColor: panelAccent,
+                        placeholder: usesSubjectEntities ? L("Es. MATEMATICA") : L("Es. GRECO")
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(panelAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(panelAccent.opacity(0.25), lineWidth: 1))
-            } else {
-                TeacherPickerField(
-                    query: $teacherQuery,
-                    focused: _teacherFieldFocused,
-                    showMenu: $showTeacherMenu,
-                    filteredTeachers: filteredTeachers,
-                    selectedTeacher: selectedTeacher,
-                    onSelect: { teacher in teacherQuery = teacher; showTeacherMenu = false },
-                    accentColor: panelAccent
-                )
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.9), value: targetMode)
 
-            Picker("Vista", selection: $viewMode) {
-                Label("Adesso", systemImage: "clock").tag(ViewMode.now)
-                Label("Giorno", systemImage: "calendar.day.timeline.left").tag(ViewMode.day)
-                Label("Settimana", systemImage: "calendar").tag(ViewMode.week)
-            }
-            .pickerStyle(.segmented)
+            AuroraSegmented(
+                options: [(ViewMode.now, L("Adesso")), (ViewMode.day, L("Giorno")), (ViewMode.week, L("Settimana"))],
+                selection: $viewMode
+            )
         }
         .padding(14)
-        .background {
-            RoundedRectangle(cornerRadius: 18)
-                .fill(.regularMaterial)
-                .overlay {
-                    LinearGradient(
-                        colors: [panelAccent.opacity(0.10), panelAccent.opacity(0.03)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(panelAccent.opacity(0.20), lineWidth: 1)
-                }
-        }
+        .auroraCard(radius: 18, strokeTint: panelAccent)
         .animation(.easeInOut(duration: 0.25), value: targetMode)
     }
 
     // MARK: - Time indicator (compact)
 
     var timeIndicator: some View {
-        HStack(spacing: 10) {
-            Image(systemName: useLiveTime ? "clock.arrow.circlepath" : "clock.badge.xmark")
-                .foregroundStyle(useLiveTime ? .green : .orange)
-                .font(.subheadline)
-
-            if viewMode == .day {
-                let dayLabel = schedule.days.first { $0.id == dayForDayView }?.label ?? ""
-                Text(dayLabel)
-                    .font(.subheadline.weight(.medium))
-            } else {
-                let currentDayLabel = schedule.days.first { $0.id == activeDay }?.label ?? (useLiveTime ? "Weekend" : "—")
-                if useLiveTime {
-                    Text(currentDayLabel)
-                        .font(.subheadline.weight(.medium))
-                    Text("·")
-                    Text(activeTime)
-                        .font(.subheadline.monospacedDigit())
-                } else {
-                    Text(currentDayLabel)
-                        .font(.subheadline.weight(.medium))
-                    Text("·")
-                    Text(activeTime)
-                        .font(.subheadline.monospacedDigit())
-                }
-            }
+        let dayLabel = viewMode == .day
+            ? (schedule.days.first { $0.id == dayForDayView }?.id.displayName ?? "")
+            : (schedule.days.first { $0.id == activeDay }?.id.displayName ?? (useLiveTime ? L("Weekend") : "—"))
+        return HStack(spacing: 8) {
+            Text("\(dayLabel) · \(activeTime)")
+                .font(.system(size: 13, weight: .semibold))
 
             Spacer()
 
             Button {
                 showQuickTimePicker = true
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: useLiveTime ? "clock.arrow.circlepath" : "pencil")
-                        .font(.caption2)
-                    Text(useLiveTime ? "Live" : "Manuale")
-                        .font(.caption.weight(.medium))
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(useLiveTime ? Color(hex: "#34D399")! : .orange)
+                        .frame(width: 5, height: 5)
+                        .shadow(color: (useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.9), radius: 3.5)
+                    Text(useLiveTime ? L("Live") : L("Manuale"))
+                        .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(useLiveTime ? .green : .orange)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background((useLiveTime ? Color.green : Color.orange).opacity(0.12), in: Capsule())
+                .foregroundStyle(useLiveTime ? Color(hex: "#6EE7B7")! : .orange)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 3)
+                .background((useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.12), in: Capsule())
+                .overlay(Capsule().strokeBorder((useLiveTime ? Color(hex: "#34D399")! : .orange).opacity(0.28), lineWidth: 1))
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 1))
     }
 
     // MARK: - Actions
 
-    func addNoteContext(day: DayId? = nil, time: String? = nil, teacher: String? = nil, cls: String? = nil) {
-        noteContext = NoteCreationContext(day: day, time: time, teacherTag: teacher, classTag: cls)
+    func addNoteContext(day: DayId? = nil, time: String? = nil, teacher: String? = nil, cls: String? = nil, subject: String? = nil) {
+        noteContext = NoteCreationContext(day: day, time: time, teacherTag: teacher, classTag: cls, subjectTag: subject)
     }
 
     func jumpToLessonTime(day: DayId, time: String) {
@@ -375,15 +466,19 @@ struct MainScheduleView: View {
 
     func openCounterpartDay(_ lesson: Lesson) {
         manualDayRaw = lesson.day.rawValue
-        withAnimation { viewMode = .day }
-        if targetMode == .class_ { targetMode = .teacher; teacherQuery = lesson.teacher }
-        else { targetMode = .class_; selectedClass = lesson.className }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+            viewMode = .day
+            if targetMode == .class_ { targetMode = .teacher; teacherQuery = usesSubjectEntities ? lesson.subject : lesson.teacher }
+            else { targetMode = .class_; selectedClass = lesson.className }
+        }
     }
 
     func openCounterpartWeek(_ lesson: Lesson) {
-        withAnimation { viewMode = .week }
-        if targetMode == .class_ { targetMode = .teacher; teacherQuery = lesson.teacher }
-        else { targetMode = .class_; selectedClass = lesson.className }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+            viewMode = .week
+            if targetMode == .class_ { targetMode = .teacher; teacherQuery = usesSubjectEntities ? lesson.subject : lesson.teacher }
+            else { targetMode = .class_; selectedClass = lesson.className }
+        }
     }
 }
 
@@ -408,7 +503,7 @@ struct StatPill: View {
         .font(.caption)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(.regularMaterial, in: Capsule())
+        .auroraCard(radius: 999)
     }
 }
 
@@ -422,6 +517,7 @@ struct TeacherPickerField: View {
     let selectedTeacher: String?
     let onSelect: (String) -> Void
     var accentColor: Color = .orange
+    var placeholder: String = L("Es. GRECO")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -429,7 +525,7 @@ struct TeacherPickerField: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(accentColor)
                     .frame(width: 24)
-                TextField("Es. GRECO", text: $query)
+                TextField(placeholder, text: $query)
                     .focused($focused)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.characters)
@@ -508,8 +604,7 @@ struct QuickTimePickerSheet: View {
     }
 
     var schoolTimes: [String] {
-        guard let last = schedule.periods.last else { return [] }
-        return schedule.periods.map { $0.startTime } + [last.endTime]
+        schedule.timeSlots(forClass: nil)
     }
 
     var body: some View {
@@ -520,14 +615,14 @@ struct QuickTimePickerSheet: View {
                         Label("Usa ora corrente", systemImage: "clock.arrow.circlepath")
                     }
                 } footer: {
-                    Text(useLiveTime ? "L'orario si aggiorna automaticamente ogni 30 secondi." : "Imposta un giorno e un'ora manualmente.")
+                    Text(useLiveTime ? L("L'orario si aggiorna automaticamente ogni 30 secondi.") : L("Imposta un giorno e un'ora manualmente."))
                 }
 
                 if !useLiveTime {
                     Section("Giorno") {
                         Picker("Giorno", selection: manualDay) {
                             ForEach(schedule.days) { day in
-                                Text(day.label).tag(day.id)
+                                Text(day.id.displayName).tag(day.id)
                             }
                         }
                         .pickerStyle(.segmented)
