@@ -57,6 +57,9 @@ struct WhatsNewBanner: View {
                         title: L("Pensata per iPad"),
                         text: L("Settimana a tutto schermo e schermate su due colonne in orizzontale."))
             }
+            feature(icon: "globe", hex: "#34D399",
+                    title: L("Italiano e inglese"),
+                    text: L("Scegli la lingua in Impostazioni → Aspetto."))
             Button(action: onDismiss) {
                 Text("Ho capito")
                     .font(.system(size: 15, weight: .bold))

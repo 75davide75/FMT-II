@@ -21,6 +21,7 @@ struct SettingsView: View {
     @Binding var showFilePicker: Bool
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var sync = CloudSyncManager.shared
+    @ObservedObject private var languages = LanguageSettings.shared
 
     /// Text-size override mirrored from the app root, re-applied here because a
     /// sheet doesn't always inherit it. Capped at "Enorme".
@@ -204,6 +205,14 @@ struct SettingsView: View {
                 Text("Scuro").tag("dark")
             } label: {
                 Self.row(L("Tema"), icon: "circle.lefthalf.filled", "#8B5CF6")
+            }
+            // Lingua dell'app: i nomi restano nella propria lingua (come in iOS).
+            Picker(selection: Binding(get: { languages.language }, set: { languages.choose($0) })) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(verbatim: language.nativeName).tag(language)
+                }
+            } label: {
+                Self.row(L("Lingua"), icon: "globe", "#38BDF8")
             }
             Picker(selection: $dynamicTypeLevel) {
                 Text("Automatica").tag(0)

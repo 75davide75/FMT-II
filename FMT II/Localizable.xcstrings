@@ -2281,6 +2281,16 @@
         }
       }
     },
+    "In Impostazioni → Aspetto → Lingua scegli Italiano o English: l'app cambia lingua subito. Alla prima apertura la lingua dipende dal paese del tuo App Store: italiano in Italia, San Marino e Vaticano, inglese altrove.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Settings → Appearance → Language choose Italiano or English: the app switches language right away. On first launch the language depends on your App Store country: Italian in Italy, San Marino and Vatican City, English everywhere else."
+          }
+        }
+      }
+    },
     "In alto c'è il selettore Orario · Diario · Voti: la pillola colorata scivola con te. Tocca un nome oppure scorri orizzontalmente la pagina: lo sfondo sfuma verso la tinta della sezione.": {
       "localizations": {
         "en": {
@@ -2447,6 +2457,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Italian"
+          }
+        }
+      }
+    },
+    "Italiano e inglese": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Italian and English"
           }
         }
       }
@@ -2647,6 +2667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free"
+          }
+        }
+      }
+    },
+    "Lingua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
           }
         }
       }
@@ -4147,6 +4177,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose existing"
+          }
+        }
+      }
+    },
+    "Scegli la lingua in Impostazioni → Aspetto.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the language in Settings → Appearance."
           }
         }
       }

@@ -37,4 +37,9 @@ final class LanguageTests: XCTestCase {
         XCTAssertEqual(AppLanguage.italian.nativeName, "Italiano")
         XCTAssertEqual(AppLanguage.english.nativeName, "English")
     }
+
+    func testLanguageIsNotSyncedThroughICloud() {
+        XCTAssertFalse(SettingsSync.syncedKeys.contains(LanguageSettings.storageKey))
+        XCTAssertFalse(SettingsSync.syncedKeys.contains("AppleLanguages"))
+    }
 }
