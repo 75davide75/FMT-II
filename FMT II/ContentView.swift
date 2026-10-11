@@ -22,6 +22,11 @@ struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appSectionRaw") private var appSectionRaw = AppSection.notes.rawValue
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
+    @AppStorage(WhatsNew.storageKey) private var lastSeenWhatsNew = ""
+
+    /// Valutato una volta all'avvio: il tutorial era già stato fatto prima di
+    /// questo lancio (= aggiornamento)? Chi installa da zero non lo vede mai.
+    @State private var showWhatsNew = ContentView.initialShowWhatsNew
 
     @State private var showFilePicker = false
     @State private var showTutorial = false
@@ -50,7 +55,10 @@ struct ContentView: View {
     var body: some View {
         Group {
             if !hasSeenTutorial {
-                TutorialView(onDismiss: { withAnimation(.easeInOut(duration: 0.55)) { hasSeenTutorial = true } })
+                TutorialView(onDismiss: {
+                    lastSeenWhatsNew = WhatsNew.version   // nuova installazione: niente banner novità
+                    withAnimation(.easeInOut(duration: 0.55)) { hasSeenTutorial = true }
+                })
                     .transition(.opacity)
             } else if showEasterEgg {
                 EasterEggView { showEasterEgg = false; lessonTapCount = 0 }
@@ -237,7 +245,29 @@ struct ContentView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: appSectionRaw)
+            .overlay(alignment: .top) {
+                if showWhatsNew {
+                    WhatsNewBanner {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { showWhatsNew = false }
+                        lastSeenWhatsNew = WhatsNew.version
+                    }
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
         }
+    }
+
+    private static var initialShowWhatsNew: Bool {
+        let defaults = UserDefaults.standard
+        #if DEBUG
+        // Screenshot App Store: niente banner, a meno di chiederlo esplicitamente.
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-FMTShowWhatsNew") { return true }
+        if DemoSeed.isRequested { return false }
+        #endif
+        return WhatsNew.shouldShow(tutorialDoneAtLaunch: defaults.bool(forKey: "hasSeenTutorial"),
+                                   lastSeen: defaults.string(forKey: WhatsNew.storageKey) ?? "")
     }
 
     @ViewBuilder
