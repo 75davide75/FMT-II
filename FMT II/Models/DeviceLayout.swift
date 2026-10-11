@@ -27,11 +27,3 @@ extension EnvironmentValues {
         set { self[DeviceLayoutKey.self] = newValue }
     }
 }
-
-/// Settimana su iPad: colonne dei giorni che riempiono la larghezza.
-enum WeekGridMetrics {
-    static func dayColumnWidth(available: CGFloat, days: Int, timeColumn: CGFloat, minimum: CGFloat) -> CGFloat {
-        guard days > 0 else { return minimum }
-        return max(minimum, ((available - timeColumn) / CGFloat(days)).rounded(.down))
-    }
-}

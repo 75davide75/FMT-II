@@ -45,4 +45,30 @@ final class RotationPagerUITests: XCTestCase {
     func testDiarioStaysAlignedAcrossRotations() throws { try rotate(section: "notes", title: "Diario") }
     func testOrarioStaysAlignedAcrossRotations() throws { try rotate(section: "schedule", title: "Orario") }
     func testVotiStaysAlignedAcrossRotations() throws { try rotate(section: "grades", title: "Voti") }
+
+    /// Settimana: ruotando la pagina non deve diventare più larga dello schermo.
+    func testWeekViewFitsAfterRotation() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("solo iPad") }
+        let app = XCUIApplication()
+        app.launchArguments = ["-FMTSeedDemo", "-hasSeenTutorial", "YES", "-hasCompletedOnboarding", "YES",
+                               "-appLanguage", "it", "-appSectionRaw", "schedule", "-FMTViewMode", "week"]
+        for (start, end, label) in [(UIDeviceOrientation.landscapeLeft, UIDeviceOrientation.portrait, "orizzontale → verticale"),
+                                    (.portrait, .landscapeLeft, "verticale → orizzontale")] {
+            XCUIDevice.shared.orientation = start
+            app.launch()
+            sleep(2)
+            XCUIDevice.shared.orientation = end
+            sleep(3)
+            let window = app.windows.firstMatch.frame
+            for text in ["Classe", "Docente", "Adesso", "Settimana"] {
+                let els = app.staticTexts.matching(identifier: text).allElementsBoundByIndex.filter { $0.frame.height < 60 }
+                guard let el = els.first else { XCTFail("\(text) non trovato (\(label))"); continue }
+                XCTAssertGreaterThanOrEqual(el.frame.minX, window.minX, "\(text) esce a sinistra (\(label)): \(el.frame)")
+                XCTAssertLessThanOrEqual(el.frame.maxX, window.maxX, "\(text) esce a destra (\(label)): \(el.frame)")
+            }
+            let png = XCUIScreen.main.screenshot().pngRepresentation
+            try? png.write(to: URL(fileURLWithPath: "/private/tmp/rot-week-\(end == .portrait ? "verticale" : "orizzontale").png"))
+            app.terminate()
+        }
+    }
 }

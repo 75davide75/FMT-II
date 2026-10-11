@@ -14,7 +14,6 @@ struct WeekView: View {
     private let dayColWidth: CGFloat = 88
     private let rowHeight: CGFloat = 56
     @Environment(\.deviceLayout) private var layout
-    @State private var gridWidth: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -49,15 +48,13 @@ struct WeekView: View {
 
             Group {
                 if layout.isIPadLayout {
-                    // iPad: i giorni riempiono la larghezza, niente scroll laterale
-                    // (torna solo se la finestra è troppo stretta).
-                    let dayW = WeekGridMetrics.dayColumnWidth(available: gridWidth, days: schedule.days.count,
-                                                              timeColumn: 60, minimum: dayColWidth)
-                    if dayW * CGFloat(schedule.days.count) + 60 <= gridWidth {
-                        grid(timeW: 60, dayW: dayW, rowH: 76, large: true)
-                    } else {
+                    // iPad: i giorni si dividono lo spazio (minimo 88 pt); se non
+                    // ci stanno, scorrono di lato. Nessuna misura della larghezza:
+                    // dopo una rotazione una misura vecchia allargava la pagina.
+                    ViewThatFits(in: .horizontal) {
+                        grid(timeW: 60, dayW: nil, rowH: 76, large: true)
                         ScrollView(.horizontal, showsIndicators: false) {
-                            grid(timeW: 60, dayW: dayW, rowH: 76, large: true)
+                            grid(timeW: 60, dayW: dayColWidth, rowH: 76, large: true)
                         }
                     }
                 } else {
@@ -67,20 +64,14 @@ struct WeekView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                GeometryReader { g in
-                    Color.clear
-                        .onAppear { gridWidth = g.size.width }
-                        .onChange(of: g.size.width) { _, w in gridWidth = w }
-                }
-            }
             .padding(.bottom, 4)
         }
         .auroraCard(radius: 18)
     }
 
     /// Griglia ore × giorni (stessa per iPhone e iPad, cambiano le misure).
-    private func grid(timeW: CGFloat, dayW: CGFloat, rowH: CGFloat, large: Bool) -> some View {
+    /// `dayW` nil = colonne dei giorni flessibili (riempiono la larghezza, minimo 88 pt).
+    private func grid(timeW: CGFloat, dayW: CGFloat?, rowH: CGFloat, large: Bool) -> some View {
         VStack(spacing: 0) {
             // Column headers
             HStack(spacing: 0) {
@@ -93,7 +84,8 @@ struct WeekView: View {
                         .font(.system(size: large ? 11.5 : 10, weight: .bold))
                         .kerning(0.4)
                         .foregroundStyle(.secondary)
-                        .frame(width: dayW, height: 36)
+                        .frame(minWidth: dayW ?? dayColWidth, idealWidth: dayW ?? dayColWidth,
+                               maxWidth: dayW ?? .infinity, minHeight: 36, maxHeight: 36)
                 }
             }
 
@@ -140,7 +132,7 @@ struct WeekView: View {
 struct WeekCell: View {
     let lessons: [Lesson]
     let targetMode: TargetMode
-    let width: CGFloat
+    let width: CGFloat?
     let height: CGFloat
     let onTap: (Lesson) -> Void
     let onAddNote: (DayId?, String?, String?, String?, String?) -> Void
@@ -210,7 +202,8 @@ struct WeekCell: View {
                 }
             }
         }
-        .frame(width: width, height: height)
+        .frame(minWidth: width ?? 88, idealWidth: width ?? 88, maxWidth: width ?? .infinity,
+               minHeight: height, maxHeight: height)
         .overlay(alignment: .trailing) {
             Rectangle().fill(Color(.separator)).frame(width: 0.5)
         }

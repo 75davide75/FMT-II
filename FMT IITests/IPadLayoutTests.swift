@@ -33,16 +33,4 @@ final class IPadLayoutTests: XCTestCase {
         XCTAssertEqual(DeviceLayout.resolve(horizontalSizeClass: .regular, verticalSizeClass: .regular, width: 1032), .regular)
     }
 
-    func testFiveDaysFillWidth() {
-        XCTAssertEqual(WeekGridMetrics.dayColumnWidth(available: 860, days: 5, timeColumn: 60, minimum: 88), 160)
-    }
-
-    func testSixDaysFillWidth() {
-        XCTAssertEqual(WeekGridMetrics.dayColumnWidth(available: 780, days: 6, timeColumn: 60, minimum: 88), 120)
-    }
-
-    func testFallsBackToMinimumWidth() {
-        XCTAssertEqual(WeekGridMetrics.dayColumnWidth(available: 400, days: 5, timeColumn: 60, minimum: 88), 88)
-        XCTAssertEqual(WeekGridMetrics.dayColumnWidth(available: 800, days: 0, timeColumn: 60, minimum: 88), 88)
-    }
 }

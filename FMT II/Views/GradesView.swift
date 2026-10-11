@@ -1041,14 +1041,14 @@ private struct GradeChartView: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
 
                 ForEach(Array(sorted.enumerated()), id: \.offset) { i, grade in
-                    LineMark(x: .value("n", i), y: .value(L("Voto"), grade.value))
+                    LineMark(x: .value("n" as String, i), y: .value(L("Voto"), grade.value))
                         .interpolationMethod(.catmullRom)
                         .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                         .foregroundStyle(tint)
 
                     // Punto: anello colorato con interno scuro; alone violetto
                     // quando selezionato; insufficienze in rosa con valore sotto.
-                    PointMark(x: .value("n", i), y: .value(L("Voto"), grade.value))
+                    PointMark(x: .value("n" as String, i), y: .value(L("Voto"), grade.value))
                         .symbolSize(0)
                         .annotation(position: .overlay) {
                             ZStack {
