@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         if !seedingForScreenshots {
             center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         }
+        // Push silenziose di CloudKit: avvisano quando un altro dispositivo cambia i dati.
+        application.registerForRemoteNotifications()
         return true
     }
 
