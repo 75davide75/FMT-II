@@ -42,7 +42,12 @@ final class StoreSyncTests: XCTestCase {
     func testOlderRemoteScheduleDoesNotOverwriteNewerLocal() {
         let store = ScheduleStore()
         let original = store.schedule
-        defer { if let original { store.update(original) } else { store.clearSchedule() } }
+        defer {
+            if let original { store.update(original) } else { store.clearSchedule() }
+            // Nessun segnale «orario rimosso» deve restare nel simulatore: con la
+            // sync attiva cancellerebbe l'orario sugli altri dispositivi.
+            UserDefaults.standard.removeObject(forKey: "findmyteacher.scheduleClearedAt")
+        }
 
         var local = ScheduleData.empty; local.id = "local"; local.edited = true
         store.update(local)

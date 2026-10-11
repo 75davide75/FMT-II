@@ -17,7 +17,7 @@ final class CloudSyncManager: ObservableObject {
     static let zoneID = CKRecordZone.ID(zoneName: "FMTZone", ownerName: CKCurrentUserDefaultName)
 
     enum Status: Equatable {
-        case off, checking, syncing, upToDate(Date?), noAccount, quotaExceeded, failed(String)
+        case off, checking, syncing, upToDate(Date?), noAccount, quotaExceeded, paused, failed(String)
 
         var label: String {
             switch self {
@@ -29,13 +29,14 @@ final class CloudSyncManager: ObservableObject {
                 return "Aggiornata alle " + d.formatted(date: .omitted, time: .shortened)
             case .noAccount:      return "Accedi a iCloud"
             case .quotaExceeded:  return "Spazio iCloud esaurito"
+            case .paused:         return "In pausa"
             case .failed:         return "Errore"
             }
         }
 
         var isProblem: Bool {
             switch self {
-            case .noAccount, .quotaExceeded, .failed: return true
+            case .noAccount, .quotaExceeded, .paused, .failed: return true
             default: return false
             }
         }
@@ -44,14 +45,45 @@ final class CloudSyncManager: ObservableObject {
     @Published private(set) var status: Status = .off
 
     private var engine: CKSyncEngine?
-    private weak var grades: GradesStore?
-    private weak var notes: NotesStore?
-    private weak var scheduleStore: ScheduleStore?
+    // Riferimenti forti: gli store sono quelli unici dell'app (`AppStores`).
+    private var grades: GradesStore?
+    private var notes: NotesStore?
+    private var scheduleStore: ScheduleStore?
     private let log = Logger(subsystem: "com.davide.fmtII", category: "sync")
     /// Campi di sistema (change tag) dell'ultimo record noto, per nome record:
     /// così un salvataggio aggiorna il record invece di generare un conflitto.
     private var systemFields: [String: Data] = [:]
     private let lastSyncKey = "fmt_lastCloudSync"
+    private let pausedKey = "fmt_syncPausedAfterICloudDelete"
+
+    /// In pausa dopo che l'utente ha eliminato i dati di FMT da iCloud: niente
+    /// invii finché non tocca «Sincronizza ora».
+    private var isPaused: Bool {
+        get { UserDefaults.standard.bool(forKey: pausedKey) }
+        set { UserDefaults.standard.set(newValue, forKey: pausedKey) }
+    }
+
+    // MARK: - Regole (pure, testate)
+
+    /// Un cambio di account non carica mai da solo i dati locali: potrebbero
+    /// appartenere a un'altra persona (voti e diario sono dati sensibili).
+    /// Tutto il locale sale solo al primo avvio della sync su questo dispositivo.
+    nonisolated static func uploadsAllLocalData(after change: CKSyncEngine.Event.AccountChange.ChangeType) -> Bool {
+        switch change {
+        case .signIn, .signOut, .switchAccounts: return false
+        @unknown default: return false
+        }
+    }
+
+    /// Zona eliminata: si ricarica solo dopo un reset della crittografia di
+    /// iCloud; se l'ha eliminata l'utente (Impostazioni iOS) la sync va in pausa.
+    nonisolated static func reuploadsAfterZoneDeletion(reason: CKDatabase.DatabaseChange.Deletion.Reason) -> Bool {
+        switch reason {
+        case .encryptedDataReset: return true
+        case .deleted, .purged:   return false
+        @unknown default:         return false
+        }
+    }
 
     var lastSync: Date? { UserDefaults.standard.object(forKey: lastSyncKey) as? Date }
 
@@ -83,18 +115,24 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func enqueueSave(_ items: [SyncItem]) {
-        guard let engine, !items.isEmpty else { return }
+        guard let engine, !items.isEmpty, !isPaused else { return }
         engine.state.add(pendingRecordZoneChanges: items.map { .saveRecord(recordID(for: $0)) })
     }
 
     func enqueueDelete(_ items: [SyncItem]) {
-        guard let engine, !items.isEmpty else { return }
+        guard let engine, !items.isEmpty, !isPaused else { return }
         engine.state.add(pendingRecordZoneChanges: items.map { .deleteRecord(recordID(for: $0)) })
     }
 
     /// «Sincronizza ora»: invia e scarica subito.
     func syncNow() async {
         guard let engine else { return }
+        if isPaused {
+            // Ripresa voluta dall'utente: ricrea la zona e ricarica questo dispositivo.
+            isPaused = false
+            engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
+            enqueueAllLocal()
+        }
         status = .syncing
         do {
             try await engine.sendChanges()
@@ -107,17 +145,17 @@ final class CloudSyncManager: ObservableObject {
 
     // MARK: - Engine
 
-    private func startEngine(state: CKSyncEngine.State.Serialization?) {
+    private func startEngine(state: CKSyncEngine.State.Serialization?, uploadLocal: Bool = true) {
         let container = CKContainer(identifier: Self.containerIdentifier)
         var config = CKSyncEngine.Configuration(database: container.privateCloudDatabase,
                                                 stateSerialization: state, delegate: self)
         config.automaticallySync = true
         let engine = CKSyncEngine(config)
         self.engine = engine
-        if state == nil {
-            // Primo avvio (o nuovo account): crea la zona e carica tutto il locale.
+        if state == nil, !isPaused {
+            // Primo avvio della sync: crea la zona e carica tutto il locale.
             engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
-            enqueueAllLocal()
+            if uploadLocal { enqueueAllLocal() }
         }
     }
 
@@ -125,6 +163,8 @@ final class CloudSyncManager: ObservableObject {
         let account = try? await CKContainer(identifier: Self.containerIdentifier).accountStatus()
         if account != .available {
             status = .noAccount
+        } else if isPaused {
+            status = .paused
         } else if status == .noAccount || status == .checking {
             status = .upToDate(lastSync)
         }
@@ -146,7 +186,7 @@ final class CloudSyncManager: ObservableObject {
         let now = Date()
         UserDefaults.standard.set(now, forKey: lastSyncKey)
         switch status {
-        case .noAccount, .quotaExceeded: break
+        case .noAccount, .quotaExceeded, .paused: break
         default: status = .upToDate(now)
         }
     }
@@ -287,15 +327,16 @@ final class CloudSyncManager: ObservableObject {
     private func handleAccountChange(_ e: CKSyncEngine.Event.AccountChange) {
         switch e.changeType {
         case .signIn:
-            enqueueAllLocal()
-            status = .syncing
+            if Self.uploadsAllLocalData(after: e.changeType) { enqueueAllLocal() }
+            Task { await refreshAccountStatus() }
         case .signOut, .switchAccounts:
-            // I dati locali restano sul dispositivo; si riparte da zero col nuovo account.
+            // I dati locali restano sul dispositivo ma non salgono da soli nel
+            // nuovo account; si riparte da zero (si scaricano i suoi dati).
             systemFields = [:]
             saveSystemFields()
             try? FileManager.default.removeItem(at: stateURL)
             engine = nil
-            startEngine(state: nil)
+            startEngine(state: nil, uploadLocal: Self.uploadsAllLocalData(after: e.changeType))
             Task { await refreshAccountStatus() }
         @unknown default:
             break
@@ -348,12 +389,18 @@ extension CloudSyncManager: CKSyncEngineDelegate {
         case .accountChange(let e):
             handleAccountChange(e)
         case .fetchedDatabaseChanges(let e):
-            // Zona cancellata (es. dati iCloud rimossi): la ricreiamo coi dati locali.
-            if e.deletions.contains(where: { $0.zoneID == Self.zoneID }) {
-                systemFields = [:]
-                saveSystemFields()
+            guard let deletion = e.deletions.first(where: { $0.zoneID == Self.zoneID }) else { break }
+            systemFields = [:]
+            saveSystemFields()
+            if Self.reuploadsAfterZoneDeletion(reason: deletion.reason) {
                 syncEngine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: Self.zoneID))])
                 enqueueAllLocal()
+            } else {
+                // L'utente ha eliminato i dati di FMT da iCloud: non li ricarichiamo.
+                isPaused = true
+                syncEngine.state.remove(pendingRecordZoneChanges: syncEngine.state.pendingRecordZoneChanges)
+                syncEngine.state.remove(pendingDatabaseChanges: syncEngine.state.pendingDatabaseChanges)
+                status = .paused
             }
         case .fetchedRecordZoneChanges(let e):
             apply(modified: e.modifications.map(\.record), deleted: e.deletions.map(\.recordID))
@@ -380,6 +427,8 @@ extension CloudSyncManager: CKSyncEngineDelegate {
     }
 
     private func recordForSending(_ id: CKRecord.ID, engine: CKSyncEngine) -> CKRecord? {
+        // Store non ancora collegati: il salvataggio resta in coda.
+        guard grades != nil, notes != nil, scheduleStore != nil else { return nil }
         if let record = record(for: id) { return record }
         // L'elemento non esiste più in locale: togliamo il salvataggio in coda.
         engine.state.remove(pendingRecordZoneChanges: [.saveRecord(id)])

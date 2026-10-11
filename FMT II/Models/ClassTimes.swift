@@ -56,4 +56,25 @@ extension ScheduleData {
         guard let t = classStartTimes.removeValue(forKey: old) else { return }
         classStartTimes[new] = t
     }
+
+    /// Rinomina una classe ovunque: elenco, lezioni e ora d'inizio.
+    mutating func renameClass(from old: String, to new: String) {
+        guard !new.isEmpty, new != old else { return }
+        if let idx = classes.firstIndex(of: old) { classes[idx] = new }
+        else if !classes.contains(new) { classes.append(new) }
+        for i in lessons.indices where lessons[i].className == old {
+            lessons[i].className = new
+        }
+        renameClassStartTime(from: old, to: new)
+    }
+
+    /// Imposta l'inizio di una classe; uguale all'inizio predefinito = nessuna
+    /// personalizzazione (la classe seguirà il predefinito se cambia).
+    mutating func setClassStart(_ time: String, forClass className: String) {
+        if time == sortedPeriods.first?.startTime {
+            classStartTimes.removeValue(forKey: className)
+        } else {
+            classStartTimes[className] = time
+        }
+    }
 }

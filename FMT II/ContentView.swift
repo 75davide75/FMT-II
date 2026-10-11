@@ -13,9 +13,10 @@ enum AppSection: String, CaseIterable {
 // MARK: - Root
 
 struct ContentView: View {
-    @StateObject private var store = ScheduleStore()
-    @StateObject private var notesStore = NotesStore()
-    @StateObject private var gradesStore = GradesStore()
+    // Store condivisi da tutte le finestre (e dalla sync iCloud).
+    @ObservedObject private var store = AppStores.shared.schedule
+    @ObservedObject private var notesStore = AppStores.shared.notes
+    @ObservedObject private var gradesStore = AppStores.shared.grades
     @AppStorage("appearanceMode") private var appearanceMode = "dark"   // scuro di default al primo avvio
     @AppStorage("useLiveTime") private var useLiveTime = true
     @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false

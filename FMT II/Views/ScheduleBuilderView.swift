@@ -110,11 +110,7 @@ struct ScheduleBuilderView: View {
         let name = renameDraft.trimmingCharacters(in: .whitespaces)
         let old = selectedClass
         guard !name.isEmpty, name != old else { return }
-        if let idx = draft.classes.firstIndex(of: old) { draft.classes[idx] = name }
-        else if !draft.classes.contains(name) { draft.classes.append(name) }
-        for i in draft.lessons.indices where draft.lessons[i].className == old {
-            draft.lessons[i].className = name
-        }
+        draft.renameClass(from: old, to: name)
         selectedClass = name
         renameDraft = ""
         UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -513,11 +509,7 @@ struct ScheduleBuilderView: View {
         guard !name.isEmpty else { return }
         let old = selectedClass
         selectedClass = name
-        if let idx = draft.classes.firstIndex(of: old) { draft.classes[idx] = name }
-        else if !draft.classes.contains(name) { draft.classes.append(name) }
-        for i in draft.lessons.indices where draft.lessons[i].className == old {
-            draft.lessons[i].className = name
-        }
+        draft.renameClass(from: old, to: name)
     }
 
     // MARK: Grid (foglio zoomabile, design 3d)

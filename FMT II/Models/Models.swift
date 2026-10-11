@@ -117,7 +117,11 @@ extension ScheduleData {
         subjectTeachers = try c.decodeIfPresent([String: String].self, forKey: .subjectTeachers) ?? [:]
         perClassStartTimes = try c.decodeIfPresent(Bool.self, forKey: .perClassStartTimes) ?? false
         classStartTimes = try c.decodeIfPresent([String: String].self, forKey: .classStartTimes) ?? [:]
-        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? .distantPast
+        // Orari 2.1.1 senza data di modifica: vale la data di import, così tra
+        // due dispositivi vince l'orario importato più di recente.
+        modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt)
+            ?? ISO8601DateFormatter().date(from: importedAt)
+            ?? .distantPast
     }
 }
 

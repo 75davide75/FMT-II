@@ -172,15 +172,8 @@ struct DatabaseEditorView: View {
     private var perClassBinding: Binding<Bool> {
         Binding(
             get: { draft.perClassStartTimes },
-            set: { on in
-                draft.perClassStartTimes = on
-                // Le classi senza orario partono dall'inizio globale.
-                if on, let first = sortedPeriods.first {
-                    for cls in draft.classes where draft.classStartTimes[cls] == nil {
-                        draft.classStartTimes[cls] = first.startTime
-                    }
-                }
-            }
+            // Le classi senza orario proprio seguono l'inizio predefinito.
+            set: { draft.perClassStartTimes = $0 }
         )
     }
 
@@ -189,7 +182,7 @@ struct DatabaseEditorView: View {
             get: { dateFrom(draft.classStartTimes[cls] ?? sortedPeriods.first?.startTime ?? "08:00") },
             set: { d in
                 let cal = Calendar.current
-                draft.classStartTimes[cls] = hhmm(cal.component(.hour, from: d) * 60 + cal.component(.minute, from: d))
+                draft.setClassStart(hhmm(cal.component(.hour, from: d) * 60 + cal.component(.minute, from: d)), forClass: cls)
             }
         )
     }

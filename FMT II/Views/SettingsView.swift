@@ -338,9 +338,14 @@ struct SettingsView: View {
         } header: {
             Self.header("Sincronizzazione iCloud")
         } footer: {
-            Text(sync.status == .noAccount
-                 ? "Accedi a iCloud nelle Impostazioni di iOS per avere voti, diario e orario su tutti i tuoi dispositivi."
-                 : "Voti, diario, orario e impostazioni di scuola si aggiornano su tutti i dispositivi con lo stesso Apple ID.")
+            switch sync.status {
+            case .noAccount:
+                Text("Accedi a iCloud nelle Impostazioni di iOS per avere voti, diario e orario su tutti i tuoi dispositivi.")
+            case .paused:
+                Text("I dati di FMT sono stati eliminati da iCloud: la sincronizzazione è in pausa. Tocca «Sincronizza ora» per ricaricare i dati di questo dispositivo.")
+            default:
+                Text("Voti, diario, orario e impostazioni di scuola si aggiornano su tutti i dispositivi con lo stesso Apple ID.")
+            }
         }
         .listRowBackground(Color.sectionCard)
     }

@@ -100,10 +100,18 @@ final class ScheduleStore: ObservableObject {
         CloudSyncManager.shared.enqueueSave([.schedule])
     }
 
+    /// Copia dell'ultimo orario locale sostituito o rimosso da iCloud
+    /// (importabile come file .json dal menu di import).
+    static var replacedScheduleBackupURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("orario_sostituito_da_icloud.json")
+    }
+
     /// Orario arrivato da iCloud (o rimosso su un altro dispositivo).
     func applyRemote(schedule remote: ScheduleData?, remoteModifiedAt: Date, deleted: Bool) {
         let localModified = schedule?.modifiedAt ?? clearedAt
         guard SyncMerge.remoteWins(local: localModified, remote: remoteModifiedAt) else { return }
+        backUpBeforeRemoteChange(replacingWith: deleted ? nil : remote)
         if deleted {
             schedule = nil
             UserDefaults.standard.removeObject(forKey: storageKey)
@@ -114,6 +122,17 @@ final class ScheduleStore: ObservableObject {
             persist(s)
             UserDefaults.standard.removeObject(forKey: clearedAtKey)
         }
+    }
+
+    /// Un orario locale diverso da quello in arrivo non va perso: ne resta una copia.
+    private func backUpBeforeRemoteChange(replacingWith remote: ScheduleData?) {
+        guard let current = schedule else { return }
+        if let remote {
+            var comparable = current
+            comparable.modifiedAt = remote.modifiedAt
+            guard comparable != remote else { return }
+        }
+        try? encoder.encode(current).write(to: Self.replacedScheduleBackupURL, options: .atomic)
     }
 
     func exportScheduleURL() -> URL? {
