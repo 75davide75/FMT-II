@@ -162,6 +162,7 @@ struct ContentView: View {
             }
             #endif
             CloudSyncManager.shared.start(grades: gradesStore, notes: notesStore, schedule: store)
+            SettingsSync.shared.start()
             // A freddo la classe selezionata è vuota: riparti dalla
             // predefinita, altrimenti l'Orario mostra solo ore libere.
             if selectedClass.isEmpty, let s = store.schedule {

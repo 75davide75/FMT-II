@@ -267,6 +267,14 @@ class GradesStore: ObservableObject {
 
     init() {
         load()
+        reloadColors()
+        // Colori delle materie cambiati su un altro dispositivo (iCloud).
+        NotificationCenter.default.addObserver(forName: .fmtSyncedSettingsChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reloadColors() }
+        }
+    }
+
+    func reloadColors() {
         if let data = UserDefaults.standard.data(forKey: colorsKey),
            let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
             subjectColors = decoded
