@@ -722,6 +722,9 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertTrue(c.pendingConflicts.isEmpty)
         XCTAssertNil(store.grades.first { $0.id == m2.id }?.origin)
         XCTAssertNotNil(defaults.data(forKey: "registroDecisions"))
+        await c.applyDecisions()
+        XCTAssertEqual(provider.calls, [], "applyDecisions rispetta il login rifiutato")
+        XCTAssertEqual(c.status, .needsLogin)
 
         // Nuovo login: la decisione salvata viene applicata.
         _ = try await c.connect(.classeviva, credentials: creds)
@@ -746,7 +749,8 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertNil(store.grades.first { $0.id == m1.id }?.origin)
 
         clock.advance(60)
-        await c.syncNow(.manual)
+        await c.applyDecisions()
+        XCTAssertEqual(provider.calls, ["fetch"])
         XCTAssertEqual(store.grades.first { $0.id == m1.id }?.origin?.remoteKey, key("1"))
     }
 
@@ -784,6 +788,16 @@ final class RegistroCoordinatorTests: XCTestCase {
             await c.syncNow(.manual)
             XCTAssertEqual(c.status, .error(expected), detail)
         }
+    }
+
+    func testProviderAvailabilityAndLoginFields() {
+        let c = makeCoordinator()
+        XCTAssertTrue(c.isAvailable(.classeviva))
+        XCTAssertEqual(c.loginFields(for: .classeviva), [.username, .password])
+        XCTAssertFalse(c.isAvailable(.argo), "provider non registrato")
+        XCTAssertEqual(c.loginFields(for: .argo), [])
+        provider.isAvailable = false
+        XCTAssertFalse(makeCoordinator().isAvailable(.classeviva))
     }
 
     // MARK: Scollega

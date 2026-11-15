@@ -47,6 +47,10 @@ final class RegistroSyncCoordinator: ObservableObject {
         static let needsLogin = "registroNeedsLogin"
 
         static let all = [provider, accountKey, lastSync, lastAttempt, pendingConflicts, decisions, needsLogin]
+
+        /// Preferenza "Notifiche voti nuovi" (spenta di default). Non è in `all`:
+        /// è una scelta dell'utente, resta anche scollegando.
+        static let notifyNewGrades = "registroNotifyNewGrades"
     }
 
     enum KeychainKeys {
@@ -70,6 +74,16 @@ final class RegistroSyncCoordinator: ObservableObject {
 
     /// Mapping materie attuale (solo lettura: si cambia con `confirmMapping`).
     var mapping: SubjectMappingTable { settings.mapping }
+
+    /// Registro selezionabile (gli stub non lo sono).
+    func isAvailable(_ id: RegistroProviderID) -> Bool {
+        providers[id]?.isAvailable ?? false
+    }
+
+    /// Campi del modulo di accesso richiesti dal registro (es. codice scuola per Argo).
+    func loginFields(for id: RegistroProviderID) -> [LoginField] {
+        providers[id]?.loginFields ?? []
+    }
 
     var connectedProvider: RegistroProviderID? {
         defaults.string(forKey: Keys.provider).flatMap(RegistroProviderID.init(rawValue:))
@@ -214,6 +228,13 @@ final class RegistroSyncCoordinator: ObservableObject {
             setConflicts(pendingConflicts.filter { $0.id != conflictID })
         }
         guard sync, !credentialsRejected() else { return }
+        _ = await syncNow(.manual)
+    }
+
+    /// Una sola sync dopo più risposte salvate con `resolve(_:_:sync: false)`.
+    /// Con le credenziali rifiutate non fa nulla (le decisioni restano salvate).
+    func applyDecisions() async {
+        guard !credentialsRejected() else { return }
         _ = await syncNow(.manual)
     }
 
@@ -430,7 +451,7 @@ final class RegistroSyncCoordinator: ObservableObject {
     }
 
     /// Codice tecnico, senza dettagli che potrebbero contenere dati del registro.
-    static func code(for error: Error) -> String {
+    nonisolated static func code(for error: Error) -> String {
         switch error {
         case let e as RegistroError:
             switch e {
