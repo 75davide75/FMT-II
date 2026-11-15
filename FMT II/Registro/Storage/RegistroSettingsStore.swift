@@ -48,6 +48,15 @@ final class RegistroSettingsStore {
         ignored = current
     }
 
+    /// Più chiavi con una sola scrittura.
+    func ignore<S: Sequence>(contentsOf keys: S) where S.Element == String {
+        var current = ignored
+        let before = current.count
+        current.formUnion(keys)
+        guard current.count != before else { return }
+        ignored = current
+    }
+
     /// Azzera l'elenco scrivendo un insieme vuoto (non rimuove la chiave, altrimenti
     /// il valore vecchio tornerebbe da iCloud).
     func clearIgnored() {

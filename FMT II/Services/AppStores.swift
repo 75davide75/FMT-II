@@ -12,5 +12,13 @@ final class AppStores {
     let notes = NotesStore()
     let grades = GradesStore()
 
+    /// Coordinatore del registro elettronico. Creato al primo uso: se nessun
+    /// registro è collegato non fa nulla (nessuna rete, nessuna scrittura).
+    private(set) lazy var registro = RegistroSyncCoordinator(
+        grades: grades, backups: .standard, settings: RegistroSettingsStore(), keychain: KeychainStore(),
+        // ClasseViva e Argo arrivano con i loro provider; per ora solo gli stub.
+        providers: [AxiosProvider(), NuvolaProvider(), MastercomProvider(), PronoteProvider()],
+        defaults: .standard)
+
     private init() {}
 }

@@ -287,13 +287,19 @@ class GradesStore: ObservableObject {
     /// Backup dei voti manuali e istantanee (nil nei test che non ne hanno bisogno).
     private let backups: GradeBackups?
 
-    convenience init(storageURL: URL = GradesStore.defaultURL, backups: GradeBackups? = .standard) {
-        self.init(fileStore: GradeFileStore(url: storageURL), backups: backups)
+    /// Elenco dei voti del registro eliminati dall'utente (non si reimportano).
+    private let registroSettings: RegistroSettingsStore
+
+    convenience init(storageURL: URL = GradesStore.defaultURL, backups: GradeBackups? = .standard,
+                     registroSettings: RegistroSettingsStore = RegistroSettingsStore()) {
+        self.init(fileStore: GradeFileStore(url: storageURL), backups: backups, registroSettings: registroSettings)
     }
 
-    init(fileStore: GradeFileStore, backups: GradeBackups? = .standard) {
+    init(fileStore: GradeFileStore, backups: GradeBackups? = .standard,
+         registroSettings: RegistroSettingsStore = RegistroSettingsStore()) {
         self.fileStore = fileStore
         self.backups = backups
+        self.registroSettings = registroSettings
         load()
         reloadColors()
         // Colori delle materie cambiati su un altro dispositivo (iCloud).
@@ -350,18 +356,21 @@ class GradesStore: ObservableObject {
     }
 
     func delete(ids: Set<UUID>) {
+        ignoreRegistroGrades(grades.filter { ids.contains($0.id) })
         grades.removeAll { ids.contains($0.id) }; save()
         sync.enqueueDelete(ids.map { .grade($0) })
     }
 
     func deleteAll() {
         let ids = grades.map(\.id)
+        ignoreRegistroGrades(grades)
         grades.removeAll(); save()
         sync.enqueueDelete(ids.map { .grade($0) })
     }
 
     func replaceAll(_ newGrades: [Grade]) {
         let removed = Set(grades.map(\.id)).subtracting(newGrades.map(\.id))
+        ignoreRegistroGrades(grades.filter { removed.contains($0.id) })
         let now = Date()
         grades = newGrades.map { var g = $0; g.modifiedAt = now; return g }
         save()
@@ -369,10 +378,119 @@ class GradesStore: ObservableObject {
         sync.enqueueSave(grades.map { .grade($0.id) })
     }
 
-    /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop).
+    /// Voti del registro eliminati dall'utente (anche "Elimina tutti" o un ripristino
+    /// che non li contiene): la loro chiave va negli ignorati, così nessuna sync li
+    /// reimporta. Le cancellazioni da iCloud, i doppioni e lo scollegamento non passano di qui.
+    private func ignoreRegistroGrades(_ removed: [Grade]) {
+        let keys = removed.compactMap { $0.origin?.remoteKey }
+        guard !keys.isEmpty else { return }
+        registroSettings.ignore(contentsOf: keys)
+    }
+
+    /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop), salvo
+    /// la rimozione dei doppioni del registro, che va propagata.
     func applyRemote(upserts: [Grade], deletions: Set<UUID>) {
-        grades = SyncMerge.apply(upserts: upserts, deletions: deletions, to: grades, modifiedAt: \.modifiedAt)
+        var merged = SyncMerge.apply(upserts: upserts, deletions: deletions, to: grades, modifiedAt: \.modifiedAt)
+        var dedupedSaves: [UUID] = []
+        var dedupedDeletes: [UUID] = []
+        let deduped = RegistroDedupe.resolve(merged)
+        // Doppioni rimossi solo se il file è scrivibile e (con i backup attivi)
+        // dopo averli salvati in un'istantanea; altrimenti restano tutti.
+        if !deduped.dropped.isEmpty, !writeBlocked,
+           backups.map({ $0.snapshot(merged, kind: .preSync) != nil }) ?? true {
+            let before = Dictionary(merged.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let now = Date()
+            merged = deduped.grades.map { g in
+                guard let old = before[g.id], old != g else { return g }
+                // Nota unita: il voto tenuto cambia e va propagato agli altri dispositivi.
+                var changed = g
+                changed.modifiedAt = now
+                dedupedSaves.append(g.id)
+                return changed
+            }
+            dedupedDeletes = deduped.dropped.map(\.id)
+        }
+        grades = merged
         save()
+        if !dedupedDeletes.isEmpty { sync.enqueueDelete(dedupedDeletes.map { .grade($0) }) }
+        if !dedupedSaves.isEmpty { sync.enqueueSave(dedupedSaves.map { .grade($0) }) }
+    }
+
+    // MARK: Registro elettronico
+
+    /// true se il file voti è leggibile e si può scrivere (prova a rileggerlo se bloccato).
+    func isWritable() -> Bool {
+        reloadIfBlocked()
+        return !writeBlocked
+    }
+
+    /// Applica un piano di sync validato in un'unica scrittura. `modifiedAt = now`
+    /// solo sui voti inseriti/aggiornati/collegati che cambiano davvero, e solo
+    /// quelli vanno a iCloud. Restituisce false (senza cambiare nulla) se il file
+    /// non è scrivibile, il piano non è coerente con i voti attuali o la scrittura fallisce.
+    @discardableResult
+    func applyRegistroPlan(_ p: SyncPlan, now: Date = Date()) -> Bool {
+        guard isWritable() else { return false }
+        var result = grades
+        var index = Dictionary(result.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var changed: [UUID] = []
+        for g in p.updates + p.links {
+            guard let i = index[g.id] else { return false }
+            guard !Self.sameContent(result[i], g) else { continue }
+            var n = g
+            n.modifiedAt = now
+            result[i] = n
+            changed.append(g.id)
+        }
+        for g in p.inserts {
+            guard index[g.id] == nil else { return false }
+            var n = g
+            n.modifiedAt = now
+            index[g.id] = result.count
+            result.append(n)
+            changed.append(g.id)
+        }
+        guard !changed.isEmpty else { return true }
+        return commit(result, saves: changed, deletes: [])
+    }
+
+    /// Scollega il registro sui voti (vedi `RegistroUnlink`). I voti rimossi non
+    /// finiscono negli ignorati. Restituisce false senza cambiare nulla se non si può scrivere.
+    @discardableResult
+    func applyRegistroUnlink(keepImported: Bool, now: Date = Date()) -> Bool {
+        guard isWritable() else { return false }
+        let unlinked = RegistroUnlink.apply(grades, keepImported: keepImported)
+        let before = Dictionary(grades.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var changed: [UUID] = []
+        let result = unlinked.grades.map { g -> Grade in
+            guard let old = before[g.id], !Self.sameContent(old, g) else { return g }
+            var n = g
+            n.modifiedAt = now
+            changed.append(g.id)
+            return n
+        }
+        guard !changed.isEmpty || !unlinked.removedIDs.isEmpty else { return true }
+        return commit(result, saves: changed, deletes: Array(unlinked.removedIDs))
+    }
+
+    /// Sostituisce i voti e salva; se la scrittura fallisce torna allo stato precedente.
+    private func commit(_ newGrades: [Grade], saves: [UUID], deletes: [UUID]) -> Bool {
+        let previous = grades
+        grades = newGrades
+        guard save() else {
+            grades = previous
+            return false
+        }
+        if !deletes.isEmpty { sync.enqueueDelete(deletes.map { .grade($0) }) }
+        if !saves.isEmpty { sync.enqueueSave(saves.map { .grade($0) }) }
+        return true
+    }
+
+    /// Stesso contenuto, ignorando `modifiedAt`.
+    private static func sameContent(_ a: Grade, _ b: Grade) -> Bool {
+        var a = a
+        a.modifiedAt = b.modifiedAt
+        return a == b
     }
 
     var subjects: [String] {
@@ -462,12 +580,15 @@ class GradesStore: ObservableObject {
         save()
     }
 
-    private func save() {
+    /// true solo se il file voti è stato davvero scritto.
+    @discardableResult
+    private func save() -> Bool {
         if writeBlocked { reloadIfBlocked() }
-        guard !writeBlocked else { return }
+        guard !writeBlocked else { return false }
         // Il backup manuale si aggiorna solo se il file voti è stato davvero scritto.
-        guard (try? fileStore.save(grades)) != nil else { return }
+        guard (try? fileStore.save(grades)) != nil else { return false }
         backups?.writeManualBackup(grades)
+        return true
     }
 
     /// Ripristina un'istantanea: prima salva lo stato attuale (.preRestore).
