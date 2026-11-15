@@ -348,4 +348,20 @@ final class RegistroSettingsUITests: XCTestCase {
         XCTAssertEqual(result, .completed, "Tieni toglie lo stato rimosso")
         votiShot("dopo-tieni")
     }
+
+    /// Voti dal registro senza passare dal login (`-FMTFakeRegistroAutoConnect`): su iPad
+    /// digitare nel login non è affidabile. Screenshot in /private/tmp/registro-voti-ipad.png
+    /// (su iPhone registro-voti-auto.png).
+    func testGradesTabWithAutoConnectedFakeRegistro() {
+        app.terminate()
+        app.launchArguments += ["-FMTFakeRegistroAutoConnect", "-FMTFakeRegistroRemoval"]
+        app.launch()
+        let keep = element("grade.removed.keep")
+        XCTAssertTrue(keep.waitForExistence(timeout: 20), "voto rimosso dopo il collegamento automatico")
+        XCTAssertTrue(app.images["Dal registro"].firstMatch.exists, "badge")
+        sleep(1)
+        let name = isPad ? "registro-voti-ipad.png" : "registro-voti-auto.png"
+        let png = XCUIScreen.main.screenshot().pngRepresentation
+        try? png.write(to: URL(fileURLWithPath: "/private/tmp/\(name)"))
+    }
 }

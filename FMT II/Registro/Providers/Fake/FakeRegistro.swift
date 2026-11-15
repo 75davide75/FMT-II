@@ -58,6 +58,30 @@ enum FakeRegistro {
         }
     }
 
+    /// Con `-FMTFakeRegistroAutoConnect` il registro finto parte già collegato e con i
+    /// voti importati (mapping accettato come proposto), senza passare dal login: serve
+    /// agli screenshot dove digitare nel login non è affidabile (iPad). Insieme a
+    /// `-FMTFakeRegistroRemoval` fa anche la seconda lettura, così un voto risulta rimosso.
+    static func autoConnectIfRequested(_ coordinator: RegistroSyncCoordinator) {
+        let args = ProcessInfo.processInfo.arguments
+        guard isRequested, args.contains("-FMTFakeRegistroAutoConnect") else { return }
+        Task { @MainActor in
+            do {
+                let proposals = try await coordinator.connect(
+                    .classeviva, credentials: RegistroCredentials(username: "studente.prova", password: "prova", schoolCode: nil))
+                var table = coordinator.mapping
+                for (ref, proposal) in proposals {
+                    switch proposal {
+                    case .existing(let name, _), .new(let name): table.entries[ref.key] = name
+                    }
+                    table.confirmed.insert(ref.key)
+                }
+                await coordinator.confirmMapping(table)
+                if args.contains("-FMTFakeRegistroRemoval") { _ = await coordinator.syncNow(.manual) }
+            } catch {}
+        }
+    }
+
     private static let fetchLock = NSLock()
     nonisolated(unsafe) private static var fetches = 0
 
