@@ -272,12 +272,16 @@ class GradesStore: ObservableObject {
     /// true finché il file su disco non è stato letto/protetto: nessuna scrittura.
     private var writeBlocked = false
 
-    convenience init(storageURL: URL = GradesStore.defaultURL) {
-        self.init(fileStore: GradeFileStore(url: storageURL))
+    /// Backup dei voti manuali e istantanee (nil nei test che non ne hanno bisogno).
+    private let backups: GradeBackups?
+
+    convenience init(storageURL: URL = GradesStore.defaultURL, backups: GradeBackups? = .standard) {
+        self.init(fileStore: GradeFileStore(url: storageURL), backups: backups)
     }
 
-    init(fileStore: GradeFileStore) {
+    init(fileStore: GradeFileStore, backups: GradeBackups? = .standard) {
         self.fileStore = fileStore
+        self.backups = backups
         load()
         reloadColors()
         // Colori delle materie cambiati su un altro dispositivo (iCloud).
@@ -449,6 +453,18 @@ class GradesStore: ObservableObject {
     private func save() {
         if writeBlocked { reloadIfBlocked() }
         guard !writeBlocked else { return }
-        try? fileStore.save(grades)
+        // Il backup manuale si aggiorna solo se il file voti è stato davvero scritto.
+        guard (try? fileStore.save(grades)) != nil else { return }
+        backups?.writeManualBackup(grades)
+    }
+
+    /// Ripristina un'istantanea: prima salva lo stato attuale (.preRestore).
+    /// Se l'istantanea non è leggibile non cambia nulla.
+    @discardableResult
+    func restore(_ snapshot: GradeSnapshot) -> Bool {
+        guard let backups, let restored = backups.load(snapshot) else { return false }
+        backups.snapshot(grades, kind: .preRestore)
+        replaceAll(restored)
+        return true
     }
 }
