@@ -56,6 +56,8 @@ final class RegistroSyncCoordinator: ObservableObject {
 
     /// Sync all'apertura al più ogni 15 minuti (dall'ultimo tentativo, riuscito o no).
     static let appOpenInterval: TimeInterval = 15 * 60
+    /// Età massima del download del collegamento riusabile da `confirmMapping`.
+    static let prefetchMaxAge: TimeInterval = 10 * 60
 
     @Published private(set) var status: RegistroStatus
     @Published private(set) var lastSync: Date?
@@ -80,8 +82,11 @@ final class RegistroSyncCoordinator: ObservableObject {
 
     /// Piano in attesa di conferma, con il download da cui è nato (si ricalcola alla conferma).
     private var pending: (fetch: RemoteFetch, provider: RegistroProviderID, accountKey: String, generation: Int)?
-    /// Download del collegamento, riusato dalla prima sync dopo la conferma del mapping.
-    private var prefetched: (fetch: RemoteFetch, generation: Int)?
+    /// Download del collegamento, riusato solo dalla conferma del mapping che lo
+    /// segue subito: scartato se è partita un'altra sync o se è più vecchio di
+    /// `prefetchMaxAge` (un download vecchio farebbe tornare indietro i valori e
+    /// segnerebbe "rimossi" i voti arrivati dopo).
+    private var prefetched: (fetch: RemoteFetch, generation: Int, date: Date)?
     /// Cambia a ogni scollegamento: i risultati di operazioni iniziate prima vengono scartati.
     private var generation = 0
 
@@ -135,7 +140,7 @@ final class RegistroSyncCoordinator: ObservableObject {
         defaults.set(session.accountKey, forKey: Keys.accountKey)
         defaults.set(now(), forKey: Keys.lastAttempt)
         defaults.removeObject(forKey: Keys.needsLogin)
-        prefetched = (fetch, gen)
+        prefetched = (fetch, gen, now())
         status = .idle
 
         let mapping = settings.mapping
@@ -243,6 +248,8 @@ final class RegistroSyncCoordinator: ObservableObject {
     private func takePrefetched() -> RemoteFetch? {
         defer { prefetched = nil }
         guard let p = prefetched, p.generation == generation else { return nil }
+        let age = now().timeIntervalSince(p.date)
+        guard age >= 0, age < Self.prefetchMaxAge else { return nil }
         return p.fetch
     }
 
@@ -254,6 +261,8 @@ final class RegistroSyncCoordinator: ObservableObject {
         guard let provider = providers[id] else { status = .error("providerUnavailable"); return nil }
         guard status != .syncing else { return nil }
         guard let credentials = loadCredentials() else { status = .needsLogin; return nil }
+        // Parte un'altra sync: il download del collegamento non è più il più recente.
+        if useFetch == nil { prefetched = nil }
 
         let gen = generation
         defaults.set(now(), forKey: Keys.lastAttempt)

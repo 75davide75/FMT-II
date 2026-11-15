@@ -217,6 +217,50 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertEqual(store.grades.count, 4)
     }
 
+    // MARK: Download del collegamento (prefetched)
+
+    func testSyncAfterConnectMakesConfirmMappingFetchAgain() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        _ = try await c.connect(.classeviva, credentials: creds)
+        provider.resetCalls()
+        provider.remoteGrades = [remote("1", value: 8, raw: "8")]
+
+        // Una sync qualsiasi rende vecchio il download del collegamento.
+        await c.syncNow(.manual)
+        XCTAssertEqual(provider.calls, ["fetch"])
+
+        clock.advance(60)
+        await c.confirmMapping(mapping)
+        XCTAssertEqual(provider.calls, ["fetch", "fetch"], "confirmMapping deve scaricare di nuovo")
+        XCTAssertEqual(store.grades.first { $0.id == gid("1") }?.value, 8)
+    }
+
+    func testPrefetchedOlderThanTenMinutesIsDiscarded() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        _ = try await c.connect(.classeviva, credentials: creds)
+        provider.resetCalls()
+        provider.remoteGrades = [remote("1", value: 8, raw: "8")]
+
+        clock.advance(11 * 60)
+        await c.confirmMapping(mapping)
+        XCTAssertEqual(provider.calls, ["fetch"], "download del collegamento troppo vecchio")
+        XCTAssertEqual(store.grades.first { $0.id == gid("1") }?.value, 8)
+    }
+
+    func testPrefetchedWithinTenMinutesIsReused() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        _ = try await c.connect(.classeviva, credentials: creds)
+        provider.resetCalls()
+
+        clock.advance(9 * 60)
+        await c.confirmMapping(mapping)
+        XCTAssertTrue(provider.calls.isEmpty, "nessuna seconda richiesta al registro")
+        XCTAssertEqual(store.grades.map(\.id), [gid("1")])
+    }
+
     func testDisconnectedSyncDoesNothing() async {
         let c = makeCoordinator()
         let plan = await c.syncNow(.manual)
