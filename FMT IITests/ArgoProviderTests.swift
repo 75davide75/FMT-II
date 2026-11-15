@@ -203,6 +203,19 @@ final class ArgoProviderTests: XCTestCase {
         XCTAssertEqual(m.requests.count, 2) // nessun nuovo tentativo, nessun passo successivo
     }
 
+    func testWrongPasswordWith4xxHTMLWithoutLocationMapsToInvalidCredentials() async throws {
+        // Passo 2 senza `Location` = credenziali errate, qualunque sia lo status 4xx (§ 2.2);
+        // 403/429 restano `.rateLimited` (vedi testLoginStatusMappingAtEveryStep).
+        for status in [400, 401, 404, 422] {
+            let m = MockTransport()
+            try stubLogin(m)
+            m.stub("POST", ssoURL, status: status,
+                   body: Data(#"<div class="alert">Username e/o password non validi</div>"#.utf8))
+            await assertError(.invalidCredentials) { try await self.makeProvider(m).login(self.creds) }
+            XCTAssertEqual(m.requests.count, 2, "status \(status): nessun nuovo tentativo")
+        }
+    }
+
     func testMissingLoginChallengeIsUnexpectedFormat() async throws {
         for headers in [[:], ["Location": "https://www.portaleargo.it/auth/sso/login/"]] as [[String: String]] {
             let m = MockTransport()

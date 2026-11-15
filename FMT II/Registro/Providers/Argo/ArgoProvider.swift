@@ -144,11 +144,9 @@ struct ArgoProvider: RegistroProvider {
 
         let (data, http) = try await hop(request, jar: jar)
         try Self.checkLoginStatus(http.statusCode)
-        guard var next = Self.nextURL(data, http) else {
-            // Nessun redirect (pagina HTML del form): credenziali errate (§ 2.2).
-            if (200...299).contains(http.statusCode) { throw RegistroError.invalidCredentials }
-            throw Self.mapOtherStatus(http.statusCode)
-        }
+        // Nessun redirect (pagina HTML del form), qualunque sia lo status dopo i controlli
+        // 403/429/5xx qui sopra: credenziali errate, nessun nuovo tentativo automatico (§ 2.2).
+        guard var next = Self.nextURL(data, http) else { throw RegistroError.invalidCredentials }
         for _ in 0..<Self.maxRedirects {
             if let code = try Self.callbackCode(next) { return code }
             guard Self.isArgoURL(next) else { throw RegistroError.unexpectedFormat("redirect") }
