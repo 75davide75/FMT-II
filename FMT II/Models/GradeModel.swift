@@ -463,7 +463,11 @@ class GradesStore: ObservableObject {
     @discardableResult
     func restore(_ snapshot: GradeSnapshot) -> Bool {
         guard let backups, let restored = backups.load(snapshot) else { return false }
-        backups.snapshot(grades, kind: .preRestore)
+        // File voti non leggibile: lo stato in memoria non è affidabile, non si ripristina.
+        reloadIfBlocked()
+        guard !writeBlocked else { return false }
+        // Senza una copia dello stato attuale non si sostituisce nulla.
+        guard backups.snapshot(grades, kind: .preRestore) != nil else { return false }
         replaceAll(restored)
         return true
     }

@@ -110,4 +110,28 @@ final class GradeBackupsTests: XCTestCase {
         store.add(g("Nuovo"))
         XCTAssertEqual(backups.manualBackup().map(\.subject), ["Buono"])
     }
+
+    func testRestoreFailsWhenPreRestoreSnapshotCannotBeWritten() throws {
+        // La cartella dei backup è un file normale: l'istantanea .preRestore non si può scrivere.
+        let badDir = dir.appendingPathComponent("NonUnaCartella")
+        try Data("x".utf8).write(to: badDir)
+        let store = GradesStore(fileStore: GradeFileStore(url: fileURL), backups: GradeBackups(directory: badDir))
+        store.add(g("Corrente"))
+        let s = try XCTUnwrap(backups.snapshot([g("Altro")], kind: .preSync))
+        let before = store.grades
+        XCTAssertFalse(store.restore(s))
+        XCTAssertEqual(store.grades, before)
+    }
+
+    func testRestoreWhileWriteBlockedChangesNothing() throws {
+        try Data("{non json".utf8).write(to: fileURL)
+        var fs = GradeFileStore(url: fileURL)
+        fs.quarantineWriter = { _, _ in throw CocoaError(.fileWriteUnknown) }
+        let store = GradesStore(fileStore: fs, backups: backups)
+        let s = try XCTUnwrap(backups.snapshot([g("Snap")], kind: .preSync))
+        let before = store.grades
+        XCTAssertFalse(store.restore(s))
+        XCTAssertEqual(store.grades, before)
+        XCTAssertFalse(backups.list().contains { $0.kind == .preRestore })
+    }
 }
