@@ -6552,6 +6552,106 @@
           }
         }
       }
+    },
+    "Rimosso dal registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed from the register"
+          }
+        }
+      }
+    },
+    "Tieni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep"
+          }
+        }
+      }
+    },
+    "Altro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "Periodo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Commento del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register comment"
+          }
+        }
+      }
+    },
+    "Valore originale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original value"
+          }
+        }
+      }
+    },
+    "Docente del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register teacher"
+          }
+        }
+      }
+    },
+    "Tipo del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register type"
+          }
+        }
+      }
+    },
+    "Il voto non è più sul registro. Resta nell'app finché non lo elimini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This grade is no longer on the register. It stays in the app until you delete it."
+          }
+        }
+      }
+    },
+    "Dati arrivati dal registro, in sola lettura. Il tuo appunto resta modificabile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data from the register, read-only. Your own note stays editable."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

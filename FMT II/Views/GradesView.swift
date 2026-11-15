@@ -174,7 +174,8 @@ struct GradesView: View {
 
     /// Un voto dell'elenco: tocco per modificare, menu (uguale ovunque).
     private func gradeRow(_ grade: Grade) -> some View {
-        GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject))
+        GradeHomeRow(grade: grade, trend: store.overallTrend(for: grade), color: store.color(for: grade.subject),
+                     onKeep: keepAction(grade), onDelete: deleteAction(grade))
             .id("\(grade.id)-\(sufficientGrade)-\(maxGrade)")
             .contentShape(Rectangle())
             .onTapGesture { gradeToEdit = grade }
@@ -182,10 +183,23 @@ struct GradesView: View {
             .contextMenu {
                 Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
                 Button { openSubject = grade.subject } label: { Label("Apri materia", systemImage: "chart.bar.doc.horizontal") }
+                if RegistroGradeDisplay.isRemoved(grade) {
+                    Button { store.update(RegistroGradeDisplay.keeping(grade)) } label: { Label("Tieni", systemImage: "checkmark") }
+                }
                 Button(role: .destructive) {
                     store.delete(ids: [grade.id])
                 } label: { Label("Elimina", systemImage: "trash") }
             }
+    }
+
+    /// "Tieni" per un voto rimosso dal registro (solo i voti rimossi hanno l'azione).
+    private func keepAction(_ grade: Grade) -> (() -> Void)? {
+        RegistroGradeDisplay.isRemoved(grade) ? { store.update(RegistroGradeDisplay.keeping(grade)) } : nil
+    }
+
+    /// "Elimina" dal registro: la cancellazione normale, che ricorda di non reimportarlo.
+    private func deleteAction(_ grade: Grade) -> (() -> Void)? {
+        RegistroGradeDisplay.isRemoved(grade) ? { store.delete(ids: [grade.id]) } : nil
     }
 
     private var gradesList: some View {
@@ -266,6 +280,8 @@ private struct GradeHomeRow: View {
     let grade: Grade
     let trend: GradeTrend?
     var color: Color = .gray
+    var onKeep: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -277,10 +293,13 @@ private struct GradeHomeRow: View {
                 .frame(maxHeight: .infinity)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(grade.subject)
-                    .font(.system(size: 16, weight: .bold))
-                    .kerning(-0.2)
-                    .foregroundStyle(.primary)
+                HStack(spacing: 6) {
+                    Text(grade.subject)
+                        .font(.system(size: 16, weight: .bold))
+                        .kerning(-0.2)
+                        .foregroundStyle(.primary)
+                    if grade.origin != nil { RegistroOriginBadge() }
+                }
                 HStack(spacing: 6) {
                     AuroraChip(text: grade.type.label, color: grade.type.color)
                     Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
@@ -299,6 +318,9 @@ private struct GradeHomeRow: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+                if let label = RegistroGradeDisplay.removedLabel(for: grade) {
+                    RemovedGradeBar(label: label, onKeep: onKeep, onDelete: onDelete)
+                }
             }
             Spacer()
             HStack(alignment: .center, spacing: 8) {
@@ -307,7 +329,10 @@ private struct GradeHomeRow: View {
                     .kerning(-0.5)
                     .foregroundStyle(grade.displayColor)
                     .monospacedDigit()
+                    .strikethrough(RegistroGradeDisplay.isRemoved(grade))
+                    .gradeValueFit(maxWidth: 96)
                     .frame(minWidth: 46, alignment: .trailing)
+                    .accessibilityLabel(RegistroGradeDisplay.accessibilityLabel(for: grade))
                 // Cerchietto trend (design 2c)
                 Group {
                     if let trend {
@@ -465,7 +490,16 @@ private struct RecentGradesRow: View {
                                 Text(grade.displayValue)
                                     .font(.system(.footnote, design: .rounded, weight: .bold))
                                     .foregroundStyle(c)
+                                    .strikethrough(RegistroGradeDisplay.isRemoved(grade))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
+                                    .frame(maxWidth: bubble - 8)
                             }
+                            .overlay(alignment: .topTrailing) {
+                                if grade.origin != nil { RegistroOriginBadge().offset(x: 2, y: -2) }
+                            }
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(RegistroGradeDisplay.accessibilityLabel(for: grade))
                             Text(grade.subject.prefix(5) + (grade.subject.count > 5 ? "." : ""))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -890,13 +924,18 @@ struct SubjectDetailView: View {
                 let ordered = Array(grades.reversed())
                 ForEach(Array(ordered.enumerated()), id: \.element.id) { i, grade in
                     if i > 0 { hairline }
-                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade))
+                    GradeRowView(grade: grade, trend: store.subjectTrend(for: grade),
+                                 onKeep: RegistroGradeDisplay.isRemoved(grade) ? { store.update(RegistroGradeDisplay.keeping(grade)) } : nil,
+                                 onDelete: RegistroGradeDisplay.isRemoved(grade) ? { store.delete(ids: [grade.id]) } : nil)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .contentShape(Rectangle())
                         .onTapGesture { gradeToEdit = grade }
                         .contextMenu {
                             Button { gradeToEdit = grade } label: { Label("Modifica", systemImage: "pencil") }
+                            if RegistroGradeDisplay.isRemoved(grade) {
+                                Button { store.update(RegistroGradeDisplay.keeping(grade)) } label: { Label("Tieni", systemImage: "checkmark") }
+                            }
                             Button(role: .destructive) {
                                 store.delete(ids: [grade.id])
                             } label: { Label("Elimina", systemImage: "trash") }
@@ -981,8 +1020,8 @@ private struct GradeChartView: View {
 
     var tint: Color = Color(hex: "#60A5FA")!
 
-    // Le giustifiche non hanno valore numerico: fuori dal grafico.
-    private var sorted: [Grade] { grades.filter { !$0.isGiustifica }.sorted { $0.date < $1.date } }
+    // Giustifiche e giudizi non numerici del registro: fuori dal grafico.
+    private var sorted: [Grade] { RegistroGradeDisplay.chartPoints(grades).sorted { $0.date < $1.date } }
     @State private var selectedIndex: Int?
     @Environment(\.colorScheme) private var scheme
 
@@ -1124,20 +1163,28 @@ private struct GradeChartView: View {
 struct GradeRowView: View {
     let grade: Grade
     var trend: GradeTrend? = nil
+    var onKeep: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Label(grade.type.label, systemImage: grade.type.icon)
                     .font(.callout.weight(.medium))
-                Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 5) {
+                    Text(grade.date.appFormatted(date: .abbreviated, time: .omitted))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if grade.origin != nil { RegistroOriginBadge() }
+                }
                 if !grade.note.isEmpty {
                     Text(grade.note)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                }
+                if let label = RegistroGradeDisplay.removedLabel(for: grade) {
+                    RemovedGradeBar(label: label, onKeep: onKeep, onDelete: onDelete)
                 }
             }
             Spacer()
@@ -1153,6 +1200,9 @@ struct GradeRowView: View {
                 Text(grade.displayValue)
                     .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(grade.displayColor)
+                    .strikethrough(RegistroGradeDisplay.isRemoved(grade))
+                    .gradeValueFit(maxWidth: 110)
+                    .accessibilityLabel(RegistroGradeDisplay.accessibilityLabel(for: grade))
                 Image(systemName: "chevron.right")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -1336,6 +1386,10 @@ struct GradeEntrySheet: View {
                         .lineLimit(3, reservesSpace: false)
                 }
 
+                if let g = grade {
+                    registroSections(for: g)
+                }
+
                 if !isNew {
                     Section {
                         Button(role: .destructive) {
@@ -1379,6 +1433,51 @@ struct GradeEntrySheet: View {
             }
         }
         .onAppear { setupInitialState() }
+    }
+
+    /// Voto dal registro: stato "rimosso" con le scelte e dati originali in sola lettura.
+    /// L'annotazione dell'utente (`note`) resta separata e modificabile.
+    @ViewBuilder
+    private func registroSections(for g: Grade) -> some View {
+        if let label = RegistroGradeDisplay.removedLabel(for: g) {
+            Section {
+                Label(label, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .accessibilityIdentifier("grade.removed.label")
+                Button { store.update(RegistroGradeDisplay.keeping(g)); dismiss() } label: {
+                    Label("Tieni", systemImage: "checkmark")
+                }
+                .accessibilityIdentifier("grade.removed.keep")
+            } footer: {
+                Text("Il voto non è più sul registro. Resta nell'app finché non lo elimini.")
+            }
+        }
+        if let d = RegistroGradeDisplay.detail(for: g) {
+            Section {
+                registroRow("Valore originale", d.rawValue)
+                if let t = d.time { registroRow("Ora", t) }
+                if let p = d.period { registroRow("Periodo", p) }
+                if let t = d.typeLabel { registroRow("Tipo del registro", t) }
+                if let t = d.teacher { registroRow("Docente del registro", t) }
+                if let c = d.comment { registroRow("Commento del registro", c) }
+            } header: {
+                Label("Dal registro", systemImage: "building.columns.fill")
+            } footer: {
+                Text("Dati arrivati dal registro, in sola lettura. Il tuo appunto resta modificabile.")
+            }
+            .accessibilityIdentifier("grade.registro.section")
+        }
+    }
+
+    private func registroRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+            Spacer(minLength: 12)
+            Text(value)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func setupInitialState() {

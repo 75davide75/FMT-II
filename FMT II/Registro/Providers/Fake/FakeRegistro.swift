@@ -58,6 +58,16 @@ enum FakeRegistro {
         }
     }
 
+    private static let fetchLock = NSLock()
+    nonisolated(unsafe) private static var fetches = 0
+
+    /// Numero progressivo della sincronizzazione (1 = prima).
+    nonisolated static func nextFetchNumber() -> Int {
+        fetchLock.lock(); defer { fetchLock.unlock() }
+        fetches += 1
+        return fetches
+    }
+
     nonisolated static func date(_ y: Int, _ m: Int, _ d: Int, hour: Int = 0) -> Date {
         Calendar.current.date(from: DateComponents(year: y, month: m, day: d, hour: hour)) ?? Date()
     }
@@ -81,11 +91,15 @@ struct ScriptedRegistroProvider: RegistroProvider {
 
     func fetchGrades(_ s: RegistroSession) async throws -> RemoteFetch {
         try? await Task.sleep(nanoseconds: 300_000_000)
+        let fetchNumber = FakeRegistro.nextFetchNumber()
         let d = { (m: Int, day: Int) in FakeRegistro.date(2026, m, day) }
         let grades: [VotoRemoto] = [
             voto("MAT-1", d(5, 20), "MAT", "MATEMATICA", "7", 7, .oral),
             voto("MAT-2", d(5, 12), "MAT", "MATEMATICA", "8", 8, .written),
-            voto("ITA-1", d(5, 14), "ITA", "LINGUA E LETTERATURA ITALIANA", "6.5", 6.5, .written),
+            // Con ora, docente, periodo e commento del registro (per il dettaglio "Dal registro").
+            voto("ITA-1", Calendar.current.date(byAdding: .minute, value: 630, to: d(5, 14)) ?? d(5, 14), "ITA",
+                 "LINGUA E LETTERATURA ITALIANA", "6.5", 6.5, .written,
+                 hasTime: true, teacher: "VERDI MARIA", comment: "Tema ben strutturato"),
             voto("ING-1", d(5, 15), "ING", "LINGUA INGLESE", "buono", 8, .oral),
             voto("ING-2", d(5, 16), "ING", "LINGUA INGLESE", "N.C.", nil, .other, notCounting: true),
             voto("SCI-1", d(5, 18), "SCI", "SCIENZE NATURALI", "7.5", 7.5, .oral),
@@ -93,7 +107,13 @@ struct ScriptedRegistroProvider: RegistroProvider {
             voto("GEO-1", d(5, 21), "GEO", "STORIA E GEOGRAFIA", "6", 6, .written),
             voto("TEC-1", d(5, 22), "TEC", "TECNOLOGIE INFORMATICHE", "8.5", 8.5, .practical),
         ]
-        return RemoteFetch(grades: grades, skippedCount: 1,
+        // Con `-FMTFakeRegistroRemoval` dalla seconda lettura "TEC-1" (il più recente) non c'è più
+        // sul registro: il voto collegato diventa "rimosso dal registro".
+        let removal = ProcessInfo.processInfo.arguments.contains("-FMTFakeRegistroRemoval")
+        let visible = (removal && fetchNumber >= 2) ? grades.filter { $0.remoteId != "TEC-1" } : grades
+        // Con un voto saltato il controllo "rimossi" non parte: nella lettura con rimozione
+        // il download è completo.
+        return RemoteFetch(grades: visible, skippedCount: visible.count < grades.count ? 0 : 1,
                            coveredRange: DateInterval(start: FakeRegistro.date(2025, 9, 1), end: d(8, 31)))
     }
 
@@ -101,10 +121,11 @@ struct ScriptedRegistroProvider: RegistroProvider {
 
     private func voto(_ remoteId: String, _ date: Date, _ subjectId: String, _ subject: String,
                       _ raw: String, _ value: Double?, _ kind: RemoteGradeKind,
-                      notCounting: Bool = false) -> VotoRemoto {
-        VotoRemoto(provider: id, remoteId: remoteId, date: date, hasTime: false, subjectId: subjectId,
-                   subjectName: subject, teacher: nil, rawValue: raw, numericValue: value, kind: kind,
-                   kindRaw: kind.rawValue, weight: nil, period: "1", comment: nil, notCounting: notCounting,
+                      notCounting: Bool = false, hasTime: Bool = false, teacher: String? = nil,
+                      comment: String? = nil) -> VotoRemoto {
+        VotoRemoto(provider: id, remoteId: remoteId, date: date, hasTime: hasTime, subjectId: subjectId,
+                   subjectName: subject, teacher: teacher, rawValue: raw, numericValue: value, kind: kind,
+                   kindRaw: kind.rawValue, weight: nil, period: "1", comment: comment, notCounting: notCounting,
                    cancelled: false, remoteModifiedAt: nil)
     }
 }

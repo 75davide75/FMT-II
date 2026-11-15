@@ -236,4 +236,96 @@ final class RegistroSettingsUITests: XCTestCase {
         // Il ripristino salva prima lo stato attuale: compare una nuova copia.
         XCTAssertTrue(app.staticTexts["Prima di un ripristino"].waitForExistence(timeout: 5))
     }
+
+    // MARK: Tab Voti
+
+    private func votiShot(_ name: String) {
+        let prefix = isPad ? "registro-voti-ipad-" : "registro-voti-"
+        let png = XCUIScreen.main.screenshot().pngRepresentation
+        try? png.write(to: URL(fileURLWithPath: "/private/tmp/\(prefix)\(name).png"))
+    }
+
+    /// Voti dal registro nella tab Voti: badge, giudizio non numerico, voto "rimosso"
+    /// (con Tieni/Elimina) e sezione "Dal registro" nel foglio di modifica.
+    func testGradesTabShowsRegisterGrades() {
+        app.terminate()
+        app.launchArguments += ["-FMTFakeRegistroRemoval"]
+        app.launch()
+        connectAndImport()
+        // Seconda sincronizzazione: "TEC-1" non è più sul registro.
+        tap("registro.syncNow")
+        sleep(3)
+        // Dalla schermata Registro si torna alle Impostazioni, poi "Fine".
+        var done = app.buttons["Fine"].firstMatch
+        if !done.exists { app.buttons["BackButton"].firstMatch.tap() }
+        done = app.buttons["Fine"].firstMatch
+        if !done.waitForExistence(timeout: 5) {
+            try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug.txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertTrue(done.exists)
+        done.tap()
+
+        let keep = element("grade.removed.keep")
+        // L'elenco è pigro: si scorre un poco alla volta finché compare il voto rimosso.
+        var swipes = 0
+        while !keep.waitForExistence(timeout: 1) && swipes < 12 {
+            app.swipeUp(velocity: .slow)
+            swipes += 1
+        }
+        if !keep.exists {
+            votiShot("debug")
+            try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug.txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertTrue(keep.exists, "voto rimosso con azione Tieni")
+        XCTAssertTrue(app.staticTexts["Rimosso dal registro"].firstMatch.exists)
+        XCTAssertTrue(element("grade.removed.delete").exists)
+        XCTAssertTrue(app.images["Dal registro"].firstMatch.exists, "badge con etichetta di accessibilità")
+        votiShot("lista")
+
+        // Foglio di modifica di un voto con ora, docente e commento del registro.
+        let ita = app.staticTexts["VERDI MARIA"].firstMatch
+        XCTAssertTrue(ita.waitForExistence(timeout: 5))
+        var up = 0
+        while !ita.isHittable && up < 12 { app.swipeUp(velocity: .slow); up += 1 }
+        if !ita.isHittable { votiShot("debug-ita") }
+        ita.tap()
+        // Le righe del foglio sono elementi combinati: "titolo, valore".
+        func row(_ text: String) -> XCUIElement {
+            app.descendants(matching: .any).containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        }
+        let original = row("Valore originale")
+        // Le righe del Form si caricano solo quando visibili: si scorre.
+        if !original.waitForExistence(timeout: 3) { scrollTo(original) }
+        if !original.exists {
+            votiShot("debug-sheet")
+            try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug-sheet.txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertTrue(original.exists, "sezione Dal registro")
+        scrollTo(original)
+        votiShot("debug-sheet")
+        try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug-sheet.txt", atomically: true, encoding: .utf8)
+        let comment = row("Tema ben strutturato")
+        if !comment.exists { scrollTo(comment) }
+        XCTAssertTrue(comment.exists, "commento del registro")
+        XCTAssertTrue(row("Docente del registro").exists)
+        XCTAssertTrue(row("Periodo").exists)
+        votiShot("dettaglio")
+        app.buttons["Annulla"].firstMatch.tap()
+
+        // Tieni: toglie solo lo stato "rimosso" (si torna in cima all'elenco).
+        var down = 0
+        while !keep.isHittable && down < 15 { app.swipeDown(velocity: .fast); down += 1 }
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        sleep(1)
+        keep.tap()
+        let removedLabel = app.staticTexts["Rimosso dal registro"].firstMatch
+        let gone = NSPredicate(format: "exists == false")
+        let result = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: gone, object: removedLabel)], timeout: 5)
+        if result != .completed {
+            votiShot("debug-keep")
+            try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug-keep.txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertEqual(result, .completed, "Tieni toglie lo stato rimosso")
+        votiShot("dopo-tieni")
+    }
 }
