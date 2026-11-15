@@ -96,7 +96,15 @@ extension Grade {
     /// e non ha peso.
     var isGiustifica: Bool { type == .giustifica }
 
-    var displayValue: String { isGiustifica ? "G" : value.italianGrade }
+    /// Voto importato dal registro e non ancora collegato a un voto manuale.
+    var isImported: Bool { origin != nil && origin?.manualSnapshot == nil }
+
+    /// Finché l'utente non cambia il valore si mostra quello originale del registro ("7½").
+    var displayValue: String {
+        if isGiustifica { return "G" }
+        if let o = origin, !o.rawValue.isEmpty, value == o.applied.value { return o.rawValue }
+        return value.italianGrade
+    }
 
     var displayColor: Color {
         if isGiustifica { return .gray }
@@ -232,6 +240,9 @@ struct Grade: Identifiable, Codable, Equatable {
     var countsForAverage: Bool = true // when false, shown in blue and excluded from averages
     /// Ultima modifica (per la sync iCloud: vince la più recente).
     var modifiedAt: Date = Date()
+    /// Collegamento al registro elettronico (nil = voto manuale). Le versioni
+    /// senza questo campo lo ignorano e lo preservano via SyncMerge.
+    var origin: RegistroOrigin? = nil
 }
 
 extension Grade {
@@ -249,6 +260,7 @@ extension Grade {
         weight = try c.decodeIfPresent(Double.self, forKey: .weight) ?? 1.0
         countsForAverage = try c.decodeIfPresent(Bool.self, forKey: .countsForAverage) ?? true
         modifiedAt = try c.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? date
+        origin = try c.decodeIfPresent(RegistroOrigin.self, forKey: .origin)
     }
 }
 

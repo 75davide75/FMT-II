@@ -22,7 +22,14 @@ final class GradeBackupsTests: XCTestCase {
 
     func testManualBackupKeepsOnlyManualGrades() {
         let grades = [g("A"), g("B"), g("C")]
-        backups.writeManualBackup(grades)
+        var imported = g("Importato")
+        imported.origin = RegistroOrigin(
+            provider: .classeviva, accountKey: "S1", remoteId: "1", rawValue: "7", numericValue: 7,
+            hasTime: false, remoteSubjectId: nil, remoteSubjectName: "X", remoteTeacher: nil,
+            remoteTypeRaw: nil, remoteKind: nil, remoteWeight: nil, remotePeriod: nil, remoteComment: nil,
+            notCounting: false, cancelled: false, remoteModifiedAt: nil, fingerprint: "f",
+            applied: AppliedValues(imported), manualSnapshot: nil, status: .active)
+        backups.writeManualBackup(grades + [imported])
         XCTAssertEqual(Set(backups.manualBackup().map(\.id)), Set(grades.map(\.id)))
         XCTAssertEqual(backups.manualBackup().count, 3)
     }

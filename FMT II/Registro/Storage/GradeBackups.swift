@@ -37,8 +37,15 @@ final class GradeBackups {
 
     // MARK: Backup manuale
 
-    /// Regola unica di cosa è "manuale" (il Task 3 la restringe in base a `origin`).
-    private func manualGrades(_ grades: [Grade]) -> [Grade] { grades }
+    /// Regola unica di cosa è "manuale": voti senza `origin`, più la versione
+    /// originale (istantanea) dei voti manuali collegati al registro. I voti
+    /// solo importati sono esclusi.
+    private func manualGrades(_ grades: [Grade]) -> [Grade] {
+        grades.compactMap { g in
+            guard let origin = g.origin else { return g }
+            return origin.manualSnapshot?.restored(id: g.id)
+        }
+    }
 
     func writeManualBackup(_ grades: [Grade]) {
         guard prepareDirectory(),
