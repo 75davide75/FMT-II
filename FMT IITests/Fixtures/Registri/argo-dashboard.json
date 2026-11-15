@@ -318,6 +318,43 @@
             }
           },
           {
+            "pk": "VOTO-0009",
+            "operazione": "I",
+            "datEvento": "2026-11-06",
+            "datGiorno": "2026-11-06",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "+",
+            "valore": 0,
+            "codVotoPratico": "N",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Intervento in classe",
+            "faMenoMedia": "",
+            "descrizioneVoto": "",
+            "codTipo": "N",
+            "mese": 11,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
             "pk": "VOTO-0008",
             "operazione": "D"
           }

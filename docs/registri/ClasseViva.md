@@ -104,7 +104,7 @@ scolastico all'altro (è molto probabile, essendo l'id dell'utente).
 | Segnale | Significato | Fonti |
 |---|---|---|
 | HTTP 422 o 401 | credenziali errate → `RegistroError.invalidCredentials`, **nessun nuovo tentativo automatico** | CV-C (`422/401/400`), CV-D (`401, 422`), CV-J `classeviva.py` (`401, 403, 422`) |
-| HTTP 403 | da IP di provider cloud (non riguarda un iPhone) [CV-B]; per CV-J anche credenziali errate | CV-B `identity.go`, CV-J |
+| HTTP 403 | **fonti in disaccordo**: blocco degli IP di provider cloud [CV-B], credenziali errate [CV-J]. Decisione del coordinatore: `rateLimited` = "accesso bloccato o limitato: nessun nuovo tentativo automatico" (§ 3.1) | CV-B `identity.go`, CV-J |
 | HTTP 429 | troppe richieste → `rateLimited` | CV-D, CV-F `RestClient.kt` |
 | 200 senza `token` ma con `choices` | account con più profili (genitore con più figli), § 2.3 | CV-C `LoginResponse`, CV-D `login()` |
 
@@ -136,14 +136,38 @@ rifiutarlo con un messaggio? Nessuna fixture per ora.
 - **Rinnovo = nuovo login** con le credenziali salvate: nessun refresh token
   esiste in `v1` [CV-C `ensureToken()` rinnova se mancano < 120 s; CV-F
   `ApiSessionManager.kt`; CV-K: su 401/403 nuovo login e un solo nuovo
-  tentativo]. `refresh(session)` del provider = `login(credenziali)`.
+  tentativo]. Il provider non riceve le credenziali in `refresh`: vedi § 3.1.
 - **Sessione scaduta**: HTTP 401 su un endpoint dati [CV-C `raw()`, CV-D
-  `_api()`, CV-F]; CV-C e CV-K trattano allo stesso modo anche 403. Su 403
-  però CV-D e CV-F dicono "sezione disattivata dalla scuola" → il provider
-  rifà il login **una sola volta**; se il 403 persiste è `notSupported`
-  (sezione voti disattivata), non `sessionExpired`.
+  `_api()`, CV-F]. Il 403 ha significati diversi nelle fonti: CV-C e CV-K lo
+  trattano come sessione scaduta, CV-D e CV-F come "sezione disattivata dalla
+  scuola", CV-B come blocco degli IP cloud (§ 2.2). Mappatura in § 3.1.
 - Logout: nessun endpoint di logout documentato in `v1`. `logout(session)` =
   solo cancellazione locale dal Keychain.
+
+### 3.1 Regole per l'interfaccia `RegistroProvider`
+
+Il nuovo tentativo **non** lo fa il provider: lo fa il coordinatore
+(`RegistroSyncCoordinator.download()`): `fetchGrades` → se `.sessionExpired`
+→ `refresh(session)` → se `refresh` lancia un errore diverso da `.network` e
+`.rateLimited` → `login(credenziali)` → `fetchGrades` **una sola volta**. Il
+provider quindi:
+
+| Metodo / situazione | Comportamento |
+|---|---|
+| `login(credenziali)` | passi del § 2; `expiresAt` = `expire`, `accountKey` = `studentId` |
+| `refresh(session)` | ClasseViva `v1` non ha refresh token: lancia sempre `.sessionExpired`, così il coordinatore rifà `login` una volta |
+| `fetchGrades(session)` con `expiresAt` già passato | lancia `.sessionExpired` **senza** chiamare il server |
+| HTTP 401 su un endpoint dati | `.sessionExpired` |
+| HTTP 401 / 422 al login | `.invalidCredentials` (nessun nuovo tentativo automatico) |
+| HTTP 403 (login o endpoint dati) | `.rateLimited`: "accesso bloccato o limitato: nessun nuovo tentativo automatico" |
+| HTTP 429 | `.rateLimited` |
+
+Perché 403 → `.rateLimited` (decisione del coordinatore, round 1 della
+revisione): le fonti non concordano sul significato del 403 (credenziali
+errate, blocco IP, sezione disattivata, sessione scaduta). Trattarlo come
+blocco ferma i tentativi automatici e non rischia di insistere su un account
+che il server sta già rifiutando; il coordinatore non rifà il login dopo
+`.rateLimited`.
 
 ## 4. Endpoint voti e materie
 
@@ -323,8 +347,8 @@ esplicitamente (è dedotto dagli offset).
 | Situazione | Segnale | `RegistroError` |
 |---|---|---|
 | Credenziali errate | login 401/422 (§ 2.2) | `invalidCredentials` |
-| Sessione scaduta | 401 su endpoint dati (§ 3) | `sessionExpired` → nuovo login automatico una volta |
-| Sezione voti disattivata | 403 persistente dopo un nuovo login | `notSupported` |
+| Sessione scaduta | 401 su endpoint dati, o `expiresAt` passato (§ 3.1) | `sessionExpired` → il coordinatore rifà il login una volta |
+| Accesso bloccato o limitato (anche sezione voti disattivata) | 403 al login o su endpoint dati (§ 3.1) | `rateLimited`, nessun nuovo tentativo automatico |
 | Anno non ancora aperto | 422 "school year not started yet" su endpoint dati | nessun voto, nessun errore (TODO-CV12: confermare) |
 | Troppe richieste | 429 | `rateLimited` |
 | Studente sbagliato nel percorso | 404 `102:CvvRestApi/wrong uri` | `unexpectedFormat` |

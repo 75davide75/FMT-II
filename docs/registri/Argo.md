@@ -214,6 +214,7 @@ scolastico all'altro (`scheda.pk` invece è per anno, AR-J lo chiama
 | Passo 2 senza header `Location` (pagina HTML) | credenziali errate → `invalidCredentials`, nessun nuovo tentativo automatico | AR-A (`ok(location, "Invalid login redirect")`), AR-B (`"Wrong credentials"`), AR-C (`DidupAuthError("credenziali rifiutate")`) |
 | … con riquadro `alert` visibile, testo tipo "Username e/o password non validi" | conferma delle credenziali errate | AR-D `_errore_pagina` (**una sola fonte** per il testo) |
 | HTTP 429 sulla pagina di login | troppi tentativi → `rateLimited` | AR-D (**una sola fonte**) |
+| HTTP 403 | non documentato per Argo; per decisione del coordinatore → `rateLimited` (§ 3.4) | — |
 | HTTP ≥ 500 | `network` (temporaneo) | AR-D |
 | `login_challenge` assente al passo 1, `code` assente alla fine | `unexpectedFormat` | AR-A, AR-C, AR-E, AR-G |
 | Passo 3 con `{"error", "error_description"}` | `unexpectedFormat` (o credenziali, se `invalid_grant`: TODO-AR3) | AR-A, AR-D, AR-E |
@@ -256,7 +257,7 @@ aggiornata a ogni release?
 - **Rinnovo raccomandato = nuovo login completo** (passi 1–4) quando
   `expireDate` è passato o manca meno di 2 minuti: è ciò che fanno AR-C (un
   login nuovo per ogni lettura) e AR-D (nessun refresh), di due famiglie
-  diverse. `refresh(session)` = `login(credenziali)`.
+  diverse. Il nuovo login lo fa il coordinatore, non il provider (§ 3.4).
 - Alternativa (solo famiglia DTrombett: AR-A `refreshToken`, AR-E, AR-F
   `RefreshProtocol.kt`): `POST appfamiglia/api/rest/auth/refresh-token` con
   corpo `r-token`, `client-id`, `scopes` (`"[openid, offline, …]"`),
@@ -265,16 +266,41 @@ aggiornata a ogni release?
   `username`. Una sola famiglia di fonti → non usata nella fase 1.
 - Errori applicativi: `{"success": false, "msg": "…"}` [AR-A `APIResponse`,
   AR-D, AR-E]. **Nessuna fonte documenta lo status HTTP o il messaggio di una
-  sessione scaduta** (TODO-AR6). Regola del provider: rinnovare il token
-  prima della scadenza; se una chiamata dati fallisce con 401/403 o
-  `success: false` dopo `expireDate`, rifare il login **una sola volta**,
-  poi `sessionExpired`.
+  sessione scaduta** (TODO-AR6). Per questo il provider controlla
+  `expiresAt` **prima** di ogni chiamata (§ 3.4), così la scadenza non
+  dipende da un segnale del server non documentato.
 - Logout: AR-A chiama `rimuoviprofilo` (rimuove il dispositivo dal profilo).
   FMT non lo chiama: `logout(session)` = solo cancellazione dal Keychain
   (TODO-AR7: confermare).
 - Chiamate extra dell'app ufficiale (`logtoken`, `dashboard/what`,
   `dashboard/aggiornadata`) [AR-A, AR-E]: non necessarie, AR-C e AR-D leggono
   i voti senza.
+
+### 3.4 Regole per l'interfaccia `RegistroProvider`
+
+Il nuovo tentativo **non** lo fa il provider (che in `refresh` non riceve le
+credenziali): lo fa il coordinatore (`RegistroSyncCoordinator.download()`):
+`fetchGrades` → se `.sessionExpired` → `refresh(session)` → se `refresh`
+lancia un errore diverso da `.network` e `.rateLimited` →
+`login(credenziali)` → `fetchGrades` **una sola volta**. Il provider quindi:
+
+| Metodo / situazione | Comportamento |
+|---|---|
+| `login(credenziali)` | passi 1–5 del § 2; `token` = `access_token`; `expiresAt` = `Date` + `expires_in`; `extra` = `x-auth-token` e `codMin` del passo 4; `accountKey` § 2.1 |
+| `refresh(session)` | nella fase 1 FMT non usa `auth/refresh-token` (una sola famiglia di fonti): lancia sempre `.sessionExpired`, così il coordinatore rifà `login` una volta |
+| `fetchGrades(session)` con `expiresAt` passato o a meno di 2 minuti | lancia `.sessionExpired` **senza** chiamare il server |
+| HTTP 401 su `profilo` o `dashboard/dashboard` | `.sessionExpired` (decisione del coordinatore; nessuna fonte Argo documenta il 401, TODO-AR6) |
+| HTTP 403 (login o endpoint dati) | `.rateLimited`: "accesso bloccato o limitato: nessun nuovo tentativo automatico" |
+| HTTP 429 | `.rateLimited` |
+| `success: false` con "ultima versione" | `.notSupported` (§ 3.2) |
+| `success: false` con altro `msg` | `.unexpectedFormat` |
+
+Perché 403 → `.rateLimited` (decisione del coordinatore, round 1 della
+revisione): nessuna fonte Argo documenta il 403, e per ClasseViva le fonti
+gli danno significati diversi (credenziali errate, blocco IP, sezione
+disattivata). Trattarlo come blocco ferma i tentativi automatici e non
+insiste su un account che il server sta già rifiutando; il coordinatore non
+rifà il login dopo `.rateLimited`.
 
 ## 4. Endpoint voti e materie
 
@@ -299,8 +325,18 @@ POST https://www.portaleargo.it/appfamiglia/api/rest/dashboard/dashboard
   `data.dati[0]` [AR-A `APIDashboard`, AR-C, AR-D, AR-E, AR-J].
 - Ogni voce di `voti` può avere `operazione`: `"I"` (o assente) = inserito o
   aggiornato, `"D"` = cancellato, con solo `pk` [AR-A `APIOperation`,
-  `handleOperation.ts`; AR-F `Voto.kt` (commento)]. FMT ignora le voci `"D"`
-  (e non cancella mai voti, vincolo globale); le conta in `skippedCount`.
+  `handleOperation.ts`; AR-F `Voto.kt` (commento)]. FMT **scarta in
+  silenzio** le voci `"D"`, **senza contarle** in `skippedCount`: non sono
+  voti illeggibili. Il voto cancellato semplicemente manca dal download, e il
+  controllo protetto "rimossi dal registro" del piano può funzionare (il
+  coordinatore azzera `coveredRange` quando `skippedCount > 0`, e mostra
+  `skippedCount` all'utente come "voti non letti"). La sync non cancella mai
+  voti in automatico (vincolo globale).
+- Le voci con `codTipo` diverso da `"V"` (es. `"N"` = nota) **non sono
+  voti**: FMT le scarta in silenzio, senza contarle in `skippedCount` (§ 7).
+- `skippedCount` conta **solo** le voci di voto (`codTipo == "V"`, nessuna
+  `operazione: "D"`) che non si riescono a leggere (campi obbligatori
+  mancanti o malformati).
 - `rimuoviDatiLocali: true` chiede al client di scartare la copia locale
   [AR-A]: per un download completo non cambia nulla.
 
@@ -389,7 +425,7 @@ Fixture completa: `FMT IITests/Fixtures/Registri/argo-dashboard.json`.
 | `subjectName` | `desMateria` | così com'è | AR-A, AR-C, AR-D, AR-I, AR-J | verificato |
 | `teacher` | `docente` | trim; vuoto → `nil` | AR-A, AR-C, AR-D, AR-I, AR-J | verificato il campo; formato del nome non uniforme fra le fonti |
 | `rawValue` | `codCodice` | stringa originale (`"7"`, `"6+"`, `"8--"`, `"7½"`, lettere) | AR-A, AR-D, AR-I (`"8--"`), AR-J | verificato |
-| `numericValue` | `valore` | solo se `codTipo == "V"` e `valore` non nullo; `valore == 0` con `codCodice` diverso da `"0"` → `nil` (segnaposto, § 7); passato come `providedNumeric` | AR-A, AR-D (`valore > 0`), AR-C (giudizi senza valore), AR-I (`codTipo`) | verificato con riserva (TODO-AR9) |
+| `numericValue` | `valore` | (le voci con `codTipo` diverso da `"V"` sono già scartate, § 4) `valore` nullo → `nil`; `valore == 0` con `codCodice` diverso da `"0"` → `nil` (segnaposto, § 7); passato come `providedNumeric` | AR-A, AR-D (`valore > 0`), AR-C (giudizi senza valore), AR-I (`codTipo`) | verificato con riserva (TODO-AR9) |
 | `kind` | `codVotoPratico` | `"S"` → `.written`, `"N"` → `.oral`, `"P"` → `.practical`, altro → `.other` | AR-C `TIPO_VOTO`, AR-D `TIPI_VOTO`, AR-I (`"S"` scritta, `"N"` nel campione) | verificato; AR-J dice `"O"` = orale (**fonti in disaccordo**, `"O"` → `.other`, TODO-AR10) |
 | `kindRaw` | `codVotoPratico` | stringa originale | come sopra | verificato |
 | `weight` | `numMedia` | **`nil` finché TODO-AR11 non è risolto** | § 8 | **BLOCKED-ON-USER** |
@@ -408,7 +444,11 @@ non documentato (TODO-AR8).
 
 - `codTipo`: `"V"` = voto, `"N"` = nota/annotazione (mostrata come "Nota",
   senza valore) [AR-I `votiGiornalieri/utils.ts`, `Voto.tsx`]; `"V"` anche in
-  AR-J. Una voce con `codTipo` diverso da `"V"` non ha valore numerico.
+  AR-J. **Regola:** una voce con `codTipo` diverso da `"V"` non è un voto:
+  il provider la scarta in silenzio, **senza** contarla in `skippedCount`
+  (non è un errore di lettura) e non la importa. Senza questa regola le note
+  finirebbero fra i voti dell'utente con valore 0. `codTipo` mancante:
+  nessuna fonte lo mostra → la voce è malformata e conta in `skippedCount`.
 - **Segnaposto 0:** AR-D legge `valore` con `or 0` e conta un voto solo se
   `valore > 0` ("giudizi senza numero" esclusi); AR-C salta le voci il cui
   `valore` non è convertibile (cioè `null`). Quindi un giudizio può arrivare
@@ -453,9 +493,10 @@ indica esplicitamente il fuso (le fonti usano l'ora locale del dispositivo).
 | Situazione | Segnale | `RegistroError` |
 |---|---|---|
 | Credenziali errate | passo 2 senza redirect (§ 2.2) | `invalidCredentials` |
-| Troppi tentativi | 429 al login | `rateLimited` |
+| Troppi tentativi | 429 al login o su endpoint dati | `rateLimited` |
+| Accesso bloccato o limitato | 403 al login o su endpoint dati (§ 3.4, decisione del coordinatore) | `rateLimited`, nessun nuovo tentativo automatico |
 | Versione dell'app troppo vecchia | `success: false`, `msg` con "ultima versione" | `notSupported` (va aggiornata `argo-client-version`) |
-| Sessione scaduta | non documentato (§ 3.3) | `sessionExpired` dopo un solo nuovo login |
+| Sessione scaduta | `expiresAt` passato (controllo locale) o 401 (§ 3.4) | `sessionExpired` → il coordinatore rifà il login una volta |
 | Account disattivato | `profiloDisabilitato: true` nel login o nel profilo [AR-A] | `notSupported` (TODO-AR14: confermare) |
 | `success: false` con altro `msg` | — | `unexpectedFormat` |
 | Pagina o JSON inattesi | — | `unexpectedFormat` |
@@ -471,7 +512,7 @@ Nomi secondo i passi del login:
 | `argo-token-error.json` | 3 | errore OAuth `{error, error_description}` |
 | `argo-login.json` | 4 | risposta di `appfamiglia/api/rest/login` |
 | `argo-profilo.json` | 5 | risposta di `profilo` |
-| `argo-dashboard.json` | 6 | `dashboard/dashboard` con 8 voci di `voti`: numerici (scritto `S`, orale `N`, pratico `P`), `+`/`--`/`½`, giudizio `"buono"` con segnaposto `valore: 0`, `faMenoMedia: "S"`, una cancellazione `operazione: "D"`, due materie e due docenti, solo date; `listaPeriodi`, `listaMaterie`, `listaDocentiClasse` |
+| `argo-dashboard.json` | 6 | `dashboard/dashboard` con 9 voci di `voti` (7 voti validi): numerici (scritto `S`, orale `N`, pratico `P`), `+`/`--`/`½`, giudizio `"buono"` con segnaposto `valore: 0`, `faMenoMedia: "S"`, una nota `codTipo: "N"` (da scartare senza contarla), una cancellazione `operazione: "D"` (da scartare senza contarla), due materie e due docenti, solo date; `listaPeriodi`, `listaMaterie`, `listaDocentiClasse` |
 | `argo-api-error.json` | 4–6 | risposta applicativa con `success: false` |
 
 Il passo 2 (credenziali errate) è una pagina HTML, non JSON: nessuna fixture
