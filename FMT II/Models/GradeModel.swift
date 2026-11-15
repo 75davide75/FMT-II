@@ -220,7 +220,7 @@ func defaultPeriod1End(for system: PeriodSystem, now: Date = Date()) -> Date {
 
 // MARK: - Grade model
 
-struct Grade: Identifiable, Codable {
+struct Grade: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var subject: String = ""
     var teacher: String = ""
@@ -259,13 +259,18 @@ class GradesStore: ObservableObject {
     @Published var grades: [Grade] = []
     @Published var subjectColors: [String: String] = [:]   // subject -> hex
 
-    private let storageURL: URL = {
+    static let defaultURL: URL = {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return docs.appendingPathComponent("fmt_grades.json")
     }()
+    private let fileStore: GradeFileStore
+    /// Voti del file che non si sono potuti leggere all'avvio (la copia è in quarantena).
+    private(set) var skippedOnLoad = 0
+    private(set) var quarantinedURL: URL?
     private let colorsKey = "fmt_subject_colors"
 
-    init() {
+    init(storageURL: URL = GradesStore.defaultURL) {
+        fileStore = GradeFileStore(url: storageURL)
         load()
         reloadColors()
         // Colori delle materie cambiati su un altro dispositivo (iCloud).
@@ -409,12 +414,14 @@ class GradesStore: ObservableObject {
     }
 
     private func load() {
-        guard let data = try? Data(contentsOf: storageURL),
-              let decoded = try? JSONDecoder().decode([Grade].self, from: data) else { return }
-        grades = decoded
+        // Il file illeggibile viene copiato in quarantena dentro load(), prima di ogni save().
+        let result = fileStore.load()
+        grades = result.grades
+        skippedOnLoad = result.skippedCount
+        quarantinedURL = result.quarantinedURL
     }
 
     private func save() {
-        try? JSONEncoder().encode(grades).write(to: storageURL)
+        try? fileStore.save(grades)
     }
 }
