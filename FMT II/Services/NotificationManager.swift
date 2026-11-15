@@ -50,8 +50,8 @@ final class NotificationManager {
             comps.minute = parts[1]
 
             let content = UNMutableNotificationContent()
-            content.title = "Diario"
-            content.body = title.isEmpty ? "Hai un promemoria" : title
+            content.title = L("Diario")
+            content.body = title.isEmpty ? L("Hai un promemoria") : title
             content.sound = .default
 
             let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)

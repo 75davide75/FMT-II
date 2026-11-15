@@ -9,6 +9,7 @@ import SwiftUI
 struct DatabaseEditorView: View {
     @ObservedObject var store: ScheduleStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     @State private var draft: ScheduleData
     @State private var firstStartDate = Date()
@@ -35,12 +36,24 @@ struct DatabaseEditorView: View {
     var body: some View {
         ScrollViewReader { proxy in
         List {
+            Section {
+                AuroraTitle(
+                    title: L("Dati orario"),
+                    subtitle: "\(draft.sourceName.replacingOccurrences(of: ".pdf", with: "")) · " + [counted(draft.lessons.count, .lessons), counted(draft.teachers.count, .teachers), counted(draft.classes.count, .classes)].joined(separator: " · ")
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+            }
             timeSlotsSection
             teachersSection.id("docenti")
             classesSection.id("classi")
+            subjectsSection
             lessonsSection
         }
-        .navigationTitle("Modifica database")
+        .scrollContentBackground(.hidden)
+        .background { AuroraBackground(section: .orario) }
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -86,7 +99,8 @@ struct DatabaseEditorView: View {
             LessonEditorSheet(
                 lesson: target.lesson,
                 days: dayOrder,
-                periods: sortedPeriods,
+                // Orari della classe della lezione (inizio per classe, v2.2).
+                periods: target.lesson.map { draft.periods(forClass: $0.className) } ?? sortedPeriods,
                 classes: draft.classes,
                 teachers: draft.teachers
             ) { saved in
@@ -100,22 +114,100 @@ struct DatabaseEditorView: View {
 
     private var timeSlotsSection: some View {
         Section {
-            DatePicker("Inizio 1ª ora", selection: $firstStartDate, displayedComponents: .hourAndMinute)
-                .onChange(of: firstStartDate) { _, _ in recomputePeriods() }
-            Stepper("Durata: \(slotMinutes) min", value: $slotMinutes, in: 30...90, step: 5)
-                .onChange(of: slotMinutes) { _, _ in recomputePeriods() }
-            ForEach(sortedPeriods) { p in
+            HStack {
+                Text(draft.perClassStartTimes ? L("Inizio predefinito") : L("Inizio 1ª ora")).font(.system(size: 14.5, weight: .semibold))
+                Spacer()
+                DatePicker("", selection: $firstStartDate, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .onChange(of: firstStartDate) { _, _ in recomputePeriods() }
+            }
+            Stepper(value: $slotMinutes, in: 30...90, step: 5) {
                 HStack {
-                    Text("\(p.number)ª ora").foregroundStyle(.secondary)
+                    Text("Durata lezione").font(.system(size: 14.5, weight: .semibold))
                     Spacer()
-                    Text("\(p.startTime)–\(p.endTime)").monospacedDigit()
+                    Text("\(slotMinutes) min")
+                        .font(.system(size: 14, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#7CB3FF")!)
                 }
-                .font(.callout)
+            }
+            .onChange(of: slotMinutes) { _, _ in recomputePeriods() }
+            Toggle(isOn: perClassBinding.animation(.easeInOut(duration: 0.25))) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Inizio diverso per classe").font(.system(size: 14.5, weight: .semibold))
+                    Text("Es. 1C alle 8:10, 3C alle 9:10")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+            }
+            .tint(AuroraSection.orario.tintB)
+            if draft.perClassStartTimes {
+                ForEach(draft.classes, id: \.self) { cls in
+                    classStartRow(cls)
+                }
+            } else {
+                // Fasce calcolate, come chip (design 3e)
+                ChipFlowLayout(spacing: 6) {
+                    ForEach(sortedPeriods) { p in
+                        Text("\(p.number)ª · \(p.startTime)–\(p.endTime)")
+                            .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(.white.opacity(0.06), in: Capsule())
+                            .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+                    }
+                }
+                .padding(.vertical, 2)
             }
         } header: {
-            Text("Fasce orarie")
+            SettingsView.header(L("Fasce orarie"))
         } footer: {
-            Text("Le ore vengono calcolate a partire dall'inizio e dalla durata.")
+            Text(draft.perClassStartTimes
+                 ? L("La durata delle lezioni resta uguale per tutte le classi.")
+                 : L("Calcolate da inizio e durata — nessun inserimento manuale."))
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    // MARK: Inizio per classe
+
+    private var perClassBinding: Binding<Bool> {
+        Binding(
+            get: { draft.perClassStartTimes },
+            // Le classi senza orario proprio seguono l'inizio predefinito.
+            set: { draft.perClassStartTimes = $0 }
+        )
+    }
+
+    private func classStartBinding(_ cls: String) -> Binding<Date> {
+        Binding(
+            get: { dateFrom(draft.classStartTimes[cls] ?? sortedPeriods.first?.startTime ?? "08:00") },
+            set: { d in
+                let cal = Calendar.current
+                draft.setClassStart(hhmm(cal.component(.hour, from: d) * 60 + cal.component(.minute, from: d)), forClass: cls)
+            }
+        )
+    }
+
+    /// Riga classe: chip colorato, fascia «prima–ultima ora», orario d'inizio.
+    private func classStartRow(_ cls: String) -> some View {
+        let ps = draft.periods(forClass: cls)
+        return HStack(spacing: 10) {
+            Text(cls)
+                .font(.system(size: 11.5, weight: .bold))
+                .kerning(0.3)
+                .foregroundStyle(entityLabelColor(entityTint(cls), scheme))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background(entityTint(cls).opacity(0.13), in: Capsule())
+                .overlay(Capsule().strokeBorder(entityTint(cls).opacity(0.28), lineWidth: 1))
+            if let f = ps.first, let l = ps.last {
+                Text("\(f.startTime)–\(l.endTime)")
+                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            DatePicker("", selection: classStartBinding(cls), displayedComponents: .hourAndMinute)
+                .labelsHidden()
         }
     }
 
@@ -123,50 +215,96 @@ struct DatabaseEditorView: View {
 
     private var teachersSection: some View {
         Section {
-            ForEach(draft.teachers, id: \.self) { teacher in
+            entityChips(draft.teachers, kind: .teacher, addLabel: L("Aggiungi"))
+        } header: {
+            SettingsView.header(L("Docenti · \(draft.teachers.count)"))
+        } footer: {
+            Text("Tocca un docente per rinominarlo ovunque nell'orario.")
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    /// Chip colorati per docenti/classi + chip "Aggiungi" tratteggiato (3e).
+    private func entityChips(_ items: [String], kind: ItemKind, addLabel: String) -> some View {
+        ChipFlowLayout(spacing: 7) {
+            ForEach(items, id: \.self) { name in
                 Button {
-                    rename = RenameTarget(kind: .teacher, current: teacher)
+                    rename = RenameTarget(kind: kind, current: name)
                 } label: {
-                    HStack {
-                        Text(teacher).foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "pencil").font(.caption).foregroundStyle(.tertiary)
-                    }
+                    Text(name)
+                        .font(.system(size: 11.5, weight: .bold))
+                        .kerning(0.3)
+                        .foregroundStyle(entityLabelColor(entityTint(name), scheme))
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(entityTint(name).opacity(0.13), in: Capsule())
+                        .overlay(Capsule().strokeBorder(entityTint(name).opacity(0.28), lineWidth: 1))
                 }
+                .buttonStyle(.plain)
             }
             Button {
-                rename = RenameTarget(kind: .teacher, current: "")
+                rename = RenameTarget(kind: kind, current: "")
             } label: {
-                Label("Aggiungi docente", systemImage: "plus")
+                HStack(spacing: 4) {
+                    Image(systemName: "plus").font(.system(size: 10, weight: .bold))
+                    Text(addLabel).font(.system(size: 11.5, weight: .bold))
+                }
+                .foregroundStyle(Color(hex: "#7DD3FC")!)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .overlay(Capsule().strokeBorder(Color(hex: "#7DD3FC")!.opacity(0.4),
+                                                style: StrokeStyle(lineWidth: 1.4, dash: [4, 3])))
             }
-        } header: {
-            Text("Docenti (\(draft.teachers.count))")
+            .buttonStyle(.plain)
         }
+        .padding(.vertical, 4)
     }
 
     // MARK: Classi
 
     private var classesSection: some View {
         Section {
-            ForEach(draft.classes, id: \.self) { cls in
-                Button {
-                    rename = RenameTarget(kind: .class_, current: cls)
-                } label: {
-                    HStack {
-                        Text(cls).foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "pencil").font(.caption).foregroundStyle(.tertiary)
+            entityChips(draft.classes, kind: .class_, addLabel: L("Aggiungi"))
+        } header: {
+            SettingsView.header(L("Classi · \(draft.classes.count)"))
+        } footer: {
+            Text("Tocca una classe per rinominarla ovunque nell'orario.")
+        }
+        .listRowBackground(Color.sectionCard)
+    }
+
+    // MARK: Materie (corrispondenze docente ↔ materia)
+
+    private var subjectsSection: some View {
+        Section {
+            NavigationLink {
+                SubjectAssignmentView(draft: $draft)
+            } label: {
+                HStack(spacing: 11) {
+                    Image(systemName: "book.closed.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#F0ABFC")!, Color(hex: "#E879F9")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        )
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Materie per classe")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Corrispondenze docente ↔ materia")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
-            Button {
-                rename = RenameTarget(kind: .class_, current: "")
-            } label: {
-                Label("Aggiungi classe", systemImage: "plus")
-            }
         } header: {
-            Text("Classi (\(draft.classes.count))")
+            SettingsView.header(L("Materie"))
+        } footer: {
+            Text("Assegna o correggi la materia di ogni ora, classe per classe: la materia inserita per un docente si propaga alle sue altre ore.")
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     // MARK: Lezioni
@@ -178,7 +316,7 @@ struct DatabaseEditorView: View {
                 .filter { $0.day == day }
                 .sorted { minutesFromMidnight($0.startTime) < minutesFromMidnight($1.startTime) }
             if !lessons.isEmpty {
-                Section(dayLabels[day] ?? day.rawValue) {
+                Section {
                     ForEach(lessons) { lesson in
                         Button {
                             lessonEdit = LessonEditTarget(lesson: lesson)
@@ -190,25 +328,55 @@ struct DatabaseEditorView: View {
                         let ids = offsets.map { lessons[$0].id }
                         draft.lessons.removeAll { ids.contains($0.id) }
                     }
+                } header: {
+                    SettingsView.header(day.displayName)
                 }
+                .listRowBackground(Color.sectionCard)
             }
         }
         Section {
             Button {
                 lessonEdit = LessonEditTarget(lesson: nil)
             } label: {
-                Label("Aggiungi lezione", systemImage: "plus")
+                HStack(spacing: 11) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "#38BDF8")!, Color(hex: "#4E7CF6")!],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        )
+                        .shadow(color: Color(hex: "#3884F6")!.opacity(0.4), radius: 5, y: 2)
+                    Text("Aggiungi lezione")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
             }
         }
+        .listRowBackground(Color.sectionCard)
     }
 
     private func lessonRow(_ lesson: Lesson) -> some View {
-        HStack(spacing: 10) {
-            Text(lesson.startTime).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(lesson.className).font(.callout.weight(.medium)).foregroundStyle(.primary)
-                Text(lesson.teacher).font(.caption).foregroundStyle(.secondary)
-            }
+        let display = lesson.subject.isEmpty ? lesson.teacher : lesson.subject
+        return HStack(spacing: 10) {
+            Text(lesson.startTime)
+                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                .foregroundStyle(Color(hex: "#93C5FD")!)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#60A5FA")!.opacity(0.13), in: Capsule())
+            Text(lesson.className)
+                .font(.system(size: 11.5, weight: .bold))
+                .foregroundStyle(entityLabelColor(entityTint(lesson.className), scheme))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 3)
+                .background(entityTint(lesson.className).opacity(0.13), in: Capsule())
+            Text(display)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
             Spacer()
             Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
         }
@@ -262,6 +430,7 @@ struct DatabaseEditorView: View {
                     draft.lessons[i].className = new
                 }
                 draft.classes = dedup(draft.classes.map { $0 == target.current ? new : $0 })
+                draft.renameClassStartTime(from: target.current, to: new)
             }
         }
     }
@@ -306,6 +475,154 @@ struct DatabaseEditorView: View {
     }
 }
 
+// MARK: - Materie per classe (corrispondenze docente ↔ materia)
+
+/// Modifica delle materie di ogni ora, classe per classe, presentata come il
+/// completamento dell'import parziale: scegli le classi, poi compila i campi
+/// con suggerimenti, invio-accetta-il-primo e propagazione per docente.
+struct SubjectAssignmentView: View {
+    @Binding var draft: ScheduleData
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedClasses: Set<String> = []
+    @State private var editing = false
+    @State private var edits: [String: String] = [:]      // lesson id -> materia
+    @State private var autoFilled: Set<String> = []
+    @State private var multiSubjectTeachers: Set<String> = []
+    @State private var pendingEdit: PendingSubjectEdit? = nil
+    @FocusState private var focusedLesson: String?
+
+    var body: some View {
+        ZStack {
+            AuroraBackground(section: .orario)
+            if editing {
+                editor
+            } else {
+                classPicker
+            }
+        }
+        .navigationTitle("Materie per classe")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: Step 1 — scelta delle classi (come nell'import parziale)
+
+    private var classPicker: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Corrispondenze docente ↔ materia", systemImage: "book.closed.fill")
+                        .font(.headline)
+                        .foregroundStyle(AuroraSection.orario.accent)
+                    Text("Scegli per quali classi assegnare o correggere le materie: le altre restano invariate.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18)
+                .auroraCard()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Classi da modificare")
+                        .font(.subheadline.weight(.semibold))
+                    FlowLayoutChips(items: draft.classes, selected: $selectedClasses)
+                    HStack {
+                        Button(selectedClasses.count == draft.classes.count ? L("Nessuna") : L("Tutte")) {
+                            if selectedClasses.count == draft.classes.count {
+                                selectedClasses.removeAll()
+                            } else {
+                                selectedClasses = Set(draft.classes)
+                            }
+                        }
+                        .font(.footnote.weight(.medium))
+                        Spacer()
+                    }
+                }
+                .padding(18)
+                .auroraCard()
+
+                Button {
+                    // Parte dai valori attuali: i campi già compilati sono
+                    // modificabili come gli altri.
+                    edits = Dictionary(uniqueKeysWithValues: draft.lessons.map { ($0.id, $0.subject) })
+                    editing = true
+                } label: {
+                    Label(selectedClasses.count == 1 ? L("Modifica 1 classe") : L("Modifica \(selectedClasses.count) classi"),
+                          systemImage: "pencil")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .auroraProminent(.orario)
+                .disabled(selectedClasses.isEmpty)
+                .opacity(selectedClasses.isEmpty ? 0.45 : 1)
+            }
+            .padding(16)
+        }
+    }
+
+    // MARK: Step 2 — campi materia per classe
+
+    private var editor: some View {
+        List {
+            ForEach(draft.classes.filter { selectedClasses.contains($0) }, id: \.self) { cls in
+                SubjectCompletionSection(
+                    className: cls,
+                    lessons: lessons(for: cls),
+                    allLessons: draft.lessons,
+                    edits: $edits,
+                    autoFilled: $autoFilled,
+                    multiSubjectTeachers: $multiSubjectTeachers,
+                    pendingEdit: $pendingEdit,
+                    focusedLesson: $focusedLesson
+                )
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .modifier(MultiSubjectAlert(pendingEdit: $pendingEdit,
+                                    edits: $edits,
+                                    autoFilled: $autoFilled,
+                                    multiSubjectTeachers: $multiSubjectTeachers))
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                apply()
+            } label: {
+                Label("Applica", systemImage: "checkmark")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+            }
+            .auroraProminent(.orario)
+            .padding(16)
+        }
+    }
+
+    private func lessons(for cls: String) -> [Lesson] {
+        draft.lessons
+            .filter { $0.className == cls }
+            .sorted {
+                let d0 = weekOrder.firstIndex(of: $0.day) ?? 0
+                let d1 = weekOrder.firstIndex(of: $1.day) ?? 0
+                return d0 != d1 ? d0 < d1 : $0.period < $1.period
+            }
+    }
+
+    /// Applica le materie al draft dei Dati orario (si salvano davvero con il
+    /// tasto Salva della schermata precedente) e aggiorna le corrispondenze
+    /// docente → materia imparate.
+    private func apply() {
+        for i in draft.lessons.indices {
+            if let v = edits[draft.lessons[i].id]?.trimmingCharacters(in: .whitespaces) {
+                draft.lessons[i].subject = v
+            }
+        }
+        for l in draft.lessons where !l.teacher.isEmpty && !l.subject.isEmpty {
+            draft.subjectTeachers[l.subject] = l.teacher
+        }
+        dismiss()
+    }
+}
+
 // MARK: - Rename sheet
 
 private enum ItemKind { case teacher, class_ }
@@ -317,8 +634,8 @@ private struct RenameTarget: Identifiable {
     var title: String {
         let adding = current.isEmpty
         switch kind {
-        case .teacher: return adding ? "Nuovo docente" : "Modifica docente"
-        case .class_:  return adding ? "Nuova classe" : "Modifica classe"
+        case .teacher: return adding ? L("Nuovo docente") : L("Modifica docente")
+        case .class_:  return adding ? L("Nuova classe") : L("Modifica classe")
         }
     }
 }
@@ -379,7 +696,7 @@ private struct LessonEditorSheet: View {
             Form {
                 Picker("Giorno", selection: $day) {
                     ForEach(days, id: \.self) { d in
-                        Text(dayLabels[d] ?? d.rawValue).tag(d)
+                        Text(d.displayName).tag(d)
                     }
                 }
                 Picker("Ora", selection: $period) {
@@ -400,7 +717,7 @@ private struct LessonEditorSheet: View {
                     pickRow(teachers, onPick: { teacher = $0 })
                 }
             }
-            .navigationTitle(lesson == nil ? "Nuova lezione" : "Modifica lezione")
+            .navigationTitle(lesson == nil ? L("Nuova lezione") : L("Modifica lezione"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Annulla") { dismiss() } }

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuova nota — Foglio Dettagli (riferimento design)</title>
+<style>
+  body{margin:0;background:#1A1D28;display:flex;justify-content:center;padding:40px 0;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</head>
+<body>
+<!-- Schermo di riferimento 402×874 (iPhone). Il foglio Dettagli è un bottom sheet (detent medio/alto) sopra l'editor attenuato. -->
+<div style="width:402px;height:874px;position:relative;overflow:hidden;border-radius:44px;background:radial-gradient(420px 300px at 15% -4%, rgba(78,124,246,0.4), transparent 65%), radial-gradient(380px 300px at 95% 2%, rgba(139,92,246,0.34), transparent 62%), radial-gradient(320px 240px at 65% -8%, rgba(125,211,252,0.16), transparent 60%), linear-gradient(180deg, #070A15 0%, #05060D 45%, #04050A 100%);">
+  <div style="height:100%;box-sizing:border-box;display:flex;flex-direction:column;padding:64px 0 0;">
+
+    <!-- Contenuto retrostante attenuato (opacity 0.3–0.4) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px;opacity:0.4;">
+      <span style="padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:650;color:#DCE4FF;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);">Annulla</span>
+      <span style="font-size:16px;font-weight:750;color:#F4F6FF;">Nuova nota</span>
+      <span style="padding:9px 18px;border-radius:999px;font-size:13.5px;font-weight:750;color:#FFFFFF;background:linear-gradient(135deg,#4E7CF6,#8B5CF6);">Salva</span>
+    </div>
+    <div style="padding:20px 22px 0;opacity:0.3;">
+      <span style="font-size:19px;font-weight:600;color:#F4F6FF;">Ricevuta gita a Monaco</span>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <!-- BOTTOM SHEET Dettagli -->
+    <div style="border-radius:30px 30px 0 0;background:linear-gradient(180deg,rgba(20,23,42,0.92),rgba(12,14,26,0.96));border:1px solid rgba(255,255,255,0.13);border-bottom:none;backdrop-filter:blur(30px) saturate(160%);box-shadow:0 -20px 50px rgba(2,4,16,0.6), inset 0 1px 0 rgba(255,255,255,0.12);padding:10px 18px 26px;">
+      <div style="width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,0.22);margin:0 auto;"></div>
+      <div style="display:flex;align-items:center;margin-top:10px;">
+        <span style="width:54px;"></span>
+        <span style="flex:1;text-align:center;font-size:16px;font-weight:750;color:#F4F6FF;">Dettagli</span>
+        <span style="width:54px;text-align:right;"><span style="padding:7px 15px;border-radius:999px;font-size:12.5px;font-weight:750;color:#FFFFFF;background:linear-gradient(135deg,#4E7CF6,#8B5CF6);box-shadow:0 5px 14px rgba(105,96,246,0.45), inset 0 1px 0 rgba(255,255,255,0.3);">Fine</span></span>
+      </div>
+
+      <!-- TIPO: chip a un tocco (sostituisce il menu a tendina). "Nota" = selezionata -->
+      <div style="margin-top:16px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(167,139,250,0.14);border:1px solid rgba(167,139,250,0.3);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"></path><path d="M6 4h12l-2.5 3.5L18 11H6"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Tipo</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;">
+          <span style="padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:650;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);">Nessuno</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:650;color:#FDA4AF;background:rgba(251,113,133,0.12);border:1px solid rgba(251,113,133,0.26);"><span style="width:4px;height:4px;border-radius:50%;background:#FB7185;"></span>Verifica</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:650;color:#FCD34D;background:rgba(245,158,11,0.11);border:1px solid rgba(245,158,11,0.24);"><span style="width:4px;height:4px;border-radius:50%;background:#F59E0B;"></span>Compito</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:999px;font-size:11.5px;font-weight:800;color:#0B1024;background:linear-gradient(135deg,#7DD3FC,#38BDF8);box-shadow:0 5px 14px rgba(56,189,248,0.4), inset 0 1px 0 rgba(255,255,255,0.4);">Nota</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:650;color:#C4B5FD;background:rgba(167,139,250,0.13);border:1px solid rgba(167,139,250,0.28);"><span style="width:4px;height:4px;border-radius:50%;background:#A78BFA;"></span>Interrogazione</span>
+        </div>
+      </div>
+
+      <!-- GIORNO: striscia LUN–SAB, selezione a un tocco -->
+      <div style="margin-top:14px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(96,165,250,0.13);border:1px solid rgba(96,165,250,0.28);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="6" width="16" height="14" rx="3"></rect><path d="M4 10h16"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Giorno</span>
+        </div>
+        <div style="display:flex;gap:5px;margin-top:9px;">
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:700;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">LUN</span>
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:700;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">MAR</span>
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:700;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">MER</span>
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:700;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">GIO</span>
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:800;color:#FFFFFF;background:linear-gradient(160deg,#4E7CF6,#8B5CF6);border:1px solid rgba(255,255,255,0.28);box-shadow:0 8px 18px rgba(104,92,246,0.5);">VEN</span>
+          <span style="flex:1;text-align:center;padding:8px 0;border-radius:12px;font-size:11px;font-weight:700;color:rgba(226,232,255,0.6);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">SAB</span>
+        </div>
+      </div>
+
+      <!-- LISTA CAMPI: Ora / Docente / Classe / Materia -->
+      <div style="margin-top:14px;border-radius:18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;position:relative;">
+          <span style="width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(125,211,252,0.12);border:1px solid rgba(125,211,252,0.26);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7DD3FC" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Ora</span>
+          <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;">
+            <span style="padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:750;color:#7DD3FC;background:rgba(125,211,252,0.12);border:1px solid rgba(125,211,252,0.28);">09:10</span>
+            <span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(226,232,255,0.6)" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+          </span>
+          <span style="position:absolute;left:51px;right:0;bottom:0;height:1px;background:rgba(255,255,255,0.07);"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;position:relative;">
+          <span style="width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(96,165,250,0.13);border:1px solid rgba(96,165,250,0.28);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Docente</span>
+          <span style="margin-left:auto;font-size:13px;color:rgba(226,232,255,0.35);">Cognome</span>
+          <span style="position:absolute;left:51px;right:0;bottom:0;height:1px;background:rgba(255,255,255,0.07);"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;position:relative;">
+          <span style="width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.26);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4L2 9l10 5 10-5-10-5z"></path><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Classe</span>
+          <span style="margin-left:auto;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:750;color:#6EE7B7;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.26);">2LSA</span>
+          <span style="position:absolute;left:51px;right:0;bottom:0;height:1px;background:rgba(255,255,255,0.07);"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;">
+          <span style="width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(232,121,249,0.12);border:1px solid rgba(232,121,249,0.26);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F0ABFC" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V6a2 2 0 0 1 2-2h12v14H7a2 2 0 0 0-2 2z"></path><path d="M5 20a2 2 0 0 0 2 2h12"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Materia</span>
+          <span style="margin-left:auto;font-size:13px;color:rgba(226,232,255,0.35);">Es. Matematica</span>
+        </div>
+      </div>
+
+      <!-- PROMEMORIA: chip rimovibili + bottone ＋ a gradiente -->
+      <div style="margin-top:14px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.26);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"></path><path d="M10 20a2.2 2.2 0 0 0 4 0"></path></svg></span>
+          <span style="font-size:14px;font-weight:650;color:#E9EDFF;">Promemoria</span>
+          <span style="margin-left:auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#4E7CF6,#8B5CF6);box-shadow:0 5px 14px rgba(105,96,246,0.45);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;">
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 7px 5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;color:#6EE7B7;background:rgba(52,211,153,0.11);border:1px solid rgba(52,211,153,0.26);">Ven · 07:30<span style="width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.09);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(226,232,255,0.65)" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 7px 5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;color:#6EE7B7;background:rgba(52,211,153,0.11);border:1px solid rgba(52,211,153,0.26);">Gio · 20:00<span style="width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.09);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(226,232,255,0.65)" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></span>
+        </div>
+        <div style="font-size:10.5px;color:rgba(226,232,255,0.4);margin-top:8px;">Uno o più avvisi settimanali, ciascuno con giorno e ora</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

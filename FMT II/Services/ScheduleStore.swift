@@ -7,6 +7,10 @@ final class ScheduleStore: ObservableObject {
     @Published var isImporting = false
     @Published var errorMessage: String? = nil
     @Published var isPDFUnsupported = false
+    /// Set after a partial import: the missing element the user can complete.
+    @Published var pendingCompletion: ScheduleField? = nil
+    /// Set when a PDF is rejected: the reason shown along with the manual-creation offer.
+    @Published var rejection: ScheduleRejectReason? = nil
 
     private let storageKey = "findmyteacher.schedule"
     private let encoder = JSONEncoder()
@@ -31,43 +35,44 @@ final class ScheduleStore: ObservableObject {
     }
 
     private func _importPDF(data: Data, name: String) async {
-        do {
-            let parsed = try parseSchedulePDF(data: data, sourceName: name)
-            if parsed.lessons.isEmpty {
-                isPDFUnsupported = true
-                return
-            }
+        let outcome = await Task.detached(priority: .userInitiated) {
+            importSchedulePDF(data: data, sourceName: name)
+        }.value
+
+        switch outcome {
+        case .complete(let parsed):
             let normalized = normalizeScheduleTimes(parsed)
-            schedule = normalized
-            persist(normalized)
+            commit(normalized)
             savePDF(data: data)
-        } catch {
-            isPDFUnsupported = true
+        case .partial(let parsed, let missing):
+            let normalized = normalizeScheduleTimes(parsed)
+            commit(normalized)
+            savePDF(data: data)
+            pendingCompletion = missing
+        case .rejected(let reason):
+            rejection = reason
         }
     }
 
     private func _importJSON(data: Data) async {
         do {
             let decoded = try decoder.decode(ScheduleData.self, from: data)
-            schedule = decoded.edited ? decoded : normalizeScheduleTimes(decoded)
-            persist(schedule!)
+            commit(decoded.edited ? decoded : normalizeScheduleTimes(decoded))
         } catch {
-            errorMessage = "File non valido o danneggiato."
+            errorMessage = L("File non valido o danneggiato.")
         }
     }
 
     /// Saves a manually-edited schedule (from the database editor) without
     /// re-normalizing, so custom teacher/class names and times are preserved.
     func update(_ newSchedule: ScheduleData) {
-        schedule = newSchedule
-        persist(newSchedule)
+        commit(newSchedule)
     }
 
     /// Restores a schedule from a backup (normalizes unless it was manually edited).
     func restore(_ newSchedule: ScheduleData) {
         let s = newSchedule.edited ? newSchedule : normalizeScheduleTimes(newSchedule)
-        schedule = s
-        persist(s)
+        commit(s)
     }
 
     func clearSchedule() {
@@ -75,6 +80,63 @@ final class ScheduleStore: ObservableObject {
         isPDFUnsupported = false
         UserDefaults.standard.removeObject(forKey: storageKey)
         try? FileManager.default.removeItem(at: pdfStorageURL)
+        UserDefaults.standard.set(Date(), forKey: clearedAtKey)
+        CloudSyncManager.shared.enqueueSave([.schedule])
+    }
+
+    // MARK: - iCloud
+
+    private let clearedAtKey = "findmyteacher.scheduleClearedAt"
+    /// Quando l'orario è stato rimosso (tombstone per gli altri dispositivi).
+    var clearedAt: Date? { UserDefaults.standard.object(forKey: clearedAtKey) as? Date }
+
+    /// Salva un orario modificato localmente e lo accoda per iCloud.
+    private func commit(_ s: ScheduleData) {
+        var stamped = s
+        stamped.modifiedAt = Date()
+        schedule = stamped
+        persist(stamped)
+        UserDefaults.standard.removeObject(forKey: clearedAtKey)
+        CloudSyncManager.shared.enqueueSave([.schedule])
+    }
+
+    /// Copia dell'ultimo orario locale sostituito o rimosso da iCloud
+    /// (importabile come file .json dal menu di import).
+    static var replacedScheduleBackupURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("orario_sostituito_da_icloud.json")
+    }
+
+    /// Orario arrivato da iCloud (o rimosso su un altro dispositivo).
+    func applyRemote(schedule remote: ScheduleData?, remoteModifiedAt: Date, deleted: Bool) {
+        let localModified = schedule?.modifiedAt ?? clearedAt
+        guard SyncMerge.remoteWins(local: localModified, remote: remoteModifiedAt) else { return }
+        backUpBeforeRemoteChange(replacingWith: deleted ? nil : remote)
+        if deleted {
+            // Come `clearSchedule`, ma senza rimandare la rimozione a iCloud.
+            schedule = nil
+            isPDFUnsupported = false
+            pendingCompletion = nil
+            UserDefaults.standard.removeObject(forKey: storageKey)
+            try? FileManager.default.removeItem(at: pdfStorageURL)
+            UserDefaults.standard.set(remoteModifiedAt, forKey: clearedAtKey)
+        } else if let remote {
+            let s = remote.edited ? remote : normalizeScheduleTimes(remote)
+            schedule = s
+            persist(s)
+            UserDefaults.standard.removeObject(forKey: clearedAtKey)
+        }
+    }
+
+    /// Un orario locale diverso da quello in arrivo non va perso: ne resta una copia.
+    private func backUpBeforeRemoteChange(replacingWith remote: ScheduleData?) {
+        guard let current = schedule else { return }
+        if let remote {
+            var comparable = current
+            comparable.modifiedAt = remote.modifiedAt
+            guard comparable != remote else { return }
+        }
+        try? encoder.encode(current).write(to: Self.replacedScheduleBackupURL, options: .atomic)
     }
 
     func exportScheduleURL() -> URL? {
@@ -83,7 +145,7 @@ final class ScheduleStore: ObservableObject {
         let baseName = schedule.sourceName
             .replacingOccurrences(of: ".pdf", with: "", options: .caseInsensitive)
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Orario \(baseName).json")
+            .appendingPathComponent("\(L("Orario")) \(baseName).json")
         try? data.write(to: url)
         return url
     }
