@@ -29,6 +29,22 @@ enum RegistroGradeDisplay {
         return kept
     }
 
+    /// "Tieni" dal foglio di modifica: parte dal voto attuale (`latest`, anche se una sync
+    /// lo ha aggiornato dopo l'apertura del foglio), applica i campi modificabili del
+    /// modulo (`edited`: anche quelli non ancora salvati) e toglie solo lo stato "rimosso".
+    static func keeping(_ latest: Grade, withEditsFrom edited: Grade) -> Grade {
+        var g = latest
+        g.subject = edited.subject
+        g.teacher = edited.teacher
+        g.value = edited.value
+        g.date = edited.date
+        g.type = edited.type
+        g.note = edited.note
+        g.weight = edited.weight
+        g.countsForAverage = edited.countsForAverage
+        return keeping(g)
+    }
+
     /// Ora del voto, solo se il registro l'ha fornita (mai inventata).
     static func timeText(for g: Grade) -> String? {
         guard g.origin?.hasTime == true else { return nil }

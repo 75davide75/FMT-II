@@ -6652,6 +6652,26 @@
           }
         }
       }
+    },
+    "Eliminare questo voto?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this grade?"
+          }
+        }
+      }
+    },
+    "Il voto verrà eliminato e non sarà più importato dal registro.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The grade will be deleted and will not be imported from the register again."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

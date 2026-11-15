@@ -1444,7 +1444,7 @@ struct GradeEntrySheet: View {
                 Label(label, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                     .accessibilityIdentifier("grade.removed.label")
-                Button { store.update(RegistroGradeDisplay.keeping(g)); dismiss() } label: {
+                Button { keepRemovedGrade(g) } label: {
                     Label("Tieni", systemImage: "checkmark")
                 }
                 .accessibilityIdentifier("grade.removed.keep")
@@ -1467,6 +1467,17 @@ struct GradeEntrySheet: View {
             }
             .accessibilityIdentifier("grade.registro.section")
         }
+    }
+
+    /// "Tieni" dal foglio: toglie solo lo stato "rimosso", ma parte dal voto attuale
+    /// nello store (una sync può averlo aggiornato) e porta con sé le modifiche
+    /// non ancora salvate del modulo.
+    private func keepRemovedGrade(_ opened: Grade) {
+        let latest = store.grades.first { $0.id == opened.id } ?? opened
+        let edited = formGrade(base: latest)
+        store.update(RegistroGradeDisplay.keeping(latest, withEditsFrom: edited))
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        dismiss()
     }
 
     private func registroRow(_ title: LocalizedStringKey, _ value: String) -> some View {
@@ -1493,8 +1504,9 @@ struct GradeEntrySheet: View {
         }
     }
 
-    private func save() {
-        var g = grade ?? Grade()
+    /// Il voto con i valori attuali del modulo applicati a `base`.
+    private func formGrade(base: Grade) -> Grade {
+        var g = base
         g.subject = subject.trimmingCharacters(in: .whitespaces)
         g.teacher = teacher.trimmingCharacters(in: .whitespaces)
         g.value = value
@@ -1508,6 +1520,11 @@ struct GradeEntrySheet: View {
             g.countsForAverage = false
             g.weight = 1.0
         }
+        return g
+    }
+
+    private func save() {
+        let g = formGrade(base: grade ?? Grade())
         if isNew { store.add(g) } else { store.update(g) }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

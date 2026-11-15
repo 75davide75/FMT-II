@@ -81,4 +81,28 @@ final class RegistroGradeDisplayTests: XCTestCase {
         XCTAssertEqual(RegistroGradeDisplay.accessibilityLabel(for: grade(status: .removedFromRegistro, imported: true)).hasSuffix("Rimosso dal registro"), true)
         XCTAssertEqual(RegistroGradeDisplay.accessibilityLabel(for: grade(imported: false)), "7")
     }
+
+    /// "Tieni" dal foglio: le modifiche non salvate del modulo restano, il voto di
+    /// partenza è quello attuale dello store (non la copia di quando si è aperto il foglio).
+    func testKeepFromSheetKeepsUnsavedEditsAndLatestStoreState() {
+        let opened = grade(status: .removedFromRegistro, comment: "vecchio")
+        var latest = opened
+        latest.origin?.remoteComment = "aggiornato dalla sync"
+        latest.origin?.rawValue = "7+"
+        var edited = opened            // modulo con modifiche non ancora salvate
+        edited.note = "mia nota"
+        edited.value = 8
+        edited.weight = 0.5
+        edited.countsForAverage = false
+
+        let kept = RegistroGradeDisplay.keeping(latest, withEditsFrom: edited)
+        XCTAssertEqual(kept.origin?.status, .active)
+        XCTAssertEqual(kept.note, "mia nota")
+        XCTAssertEqual(kept.value, 8)
+        XCTAssertEqual(kept.weight, 0.5)
+        XCTAssertFalse(kept.countsForAverage)
+        XCTAssertEqual(kept.origin?.remoteComment, "aggiornato dalla sync", "i dati del registro vengono dallo store")
+        XCTAssertEqual(kept.origin?.rawValue, "7+")
+        XCTAssertEqual(kept.id, opened.id)
+    }
 }

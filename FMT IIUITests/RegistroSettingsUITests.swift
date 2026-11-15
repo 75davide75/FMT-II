@@ -317,6 +317,26 @@ final class RegistroSettingsUITests: XCTestCase {
         while !keep.isHittable && down < 15 { app.swipeDown(velocity: .fast); down += 1 }
         XCTAssertTrue(keep.waitForExistence(timeout: 5))
         sleep(1)
+        // Elimina chiede conferma; annullando il voto resta.
+        let dialogTitle = app.descendants(matching: .any).containing(NSPredicate(format: "label CONTAINS 'Eliminare questo voto'")).firstMatch
+        // Il bersaglio è piccolo e l'elenco può ancora assestarsi: si riprova il tocco.
+        var taps = 0
+        repeat {
+            element("grade.removed.delete").tap()
+            taps += 1
+        } while !dialogTitle.waitForExistence(timeout: 2) && taps < 4
+        if !dialogTitle.waitForExistence(timeout: 5) {
+            votiShot("debug-conferma")
+            try? app.debugDescription.write(toFile: "/private/tmp/registro-voti-debug-conferma.txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertTrue(dialogTitle.exists, "conferma prima di eliminare")
+        votiShot("conferma-elimina")
+        // Su iPhone il dialogo è un popover senza "Annulla": si chiude toccando fuori.
+        let cancel = app.buttons["Annulla"].firstMatch
+        if cancel.exists { cancel.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.3)).tap() }
+        sleep(1)
+        XCTAssertFalse(dialogTitle.exists, "dialogo chiuso")
+        XCTAssertTrue(keep.waitForExistence(timeout: 5), "annullando il voto resta")
         keep.tap()
         let removedLabel = app.staticTexts["Rimosso dal registro"].firstMatch
         let gone = NSPredicate(format: "exists == false")

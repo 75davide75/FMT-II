@@ -16,6 +16,7 @@ struct RemovedGradeBar: View {
     let label: String
     var onKeep: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
+    @State private var confirmDelete = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -28,13 +29,20 @@ struct RemovedGradeBar: View {
                         .accessibilityIdentifier("grade.removed.keep")
                 }
                 if let onDelete {
-                    Button(L("Elimina"), role: .destructive, action: onDelete)
+                    // Elimina è irreversibile (il voto non viene più reimportato): si conferma.
+                    Button(L("Elimina"), role: .destructive) { confirmDelete = true }
                         .accessibilityIdentifier("grade.removed.delete")
                 }
             }
             .font(.caption.weight(.semibold))
             .buttonStyle(.borderless)
             .padding(.vertical, 4)
+        }
+        .confirmationDialog(L("Eliminare questo voto?"), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(L("Elimina"), role: .destructive) { onDelete?() }
+            Button(L("Annulla"), role: .cancel) {}
+        } message: {
+            Text("Il voto verrà eliminato e non sarà più importato dal registro.")
         }
     }
 }
