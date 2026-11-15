@@ -269,13 +269,24 @@ class GradesStore: ObservableObject {
     private(set) var quarantinedURL: URL?
     private let colorsKey = "fmt_subject_colors"
 
-    init(storageURL: URL = GradesStore.defaultURL) {
-        fileStore = GradeFileStore(url: storageURL)
+    /// true finché il file su disco non è stato letto/protetto: nessuna scrittura.
+    private var writeBlocked = false
+
+    convenience init(storageURL: URL = GradesStore.defaultURL) {
+        self.init(fileStore: GradeFileStore(url: storageURL))
+    }
+
+    init(fileStore: GradeFileStore) {
+        self.fileStore = fileStore
         load()
         reloadColors()
         // Colori delle materie cambiati su un altro dispositivo (iCloud).
         NotificationCenter.default.addObserver(forName: .fmtSyncedSettingsChanged, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.reloadColors() }
+        }
+        // Dati protetti disponibili dopo lo sblocco: riprova a leggere il file voti.
+        NotificationCenter.default.addObserver(forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reloadIfBlocked() }
         }
     }
 
@@ -419,9 +430,25 @@ class GradesStore: ObservableObject {
         grades = result.grades
         skippedOnLoad = result.skippedCount
         quarantinedURL = result.quarantinedURL
+        writeBlocked = !result.writable
+    }
+
+    /// Se la scrittura è bloccata, rilegge il file: se ora è leggibile unisce i voti
+    /// tenuti in memoria (last-writer-wins, senza cancellazioni) e sblocca.
+    func reloadIfBlocked() {
+        guard writeBlocked else { return }
+        let result = fileStore.load()
+        guard result.writable else { return }
+        grades = SyncMerge.apply(upserts: grades, deletions: [], to: result.grades, modifiedAt: \.modifiedAt)
+        skippedOnLoad = result.skippedCount
+        quarantinedURL = result.quarantinedURL
+        writeBlocked = false
+        save()
     }
 
     private func save() {
+        if writeBlocked { reloadIfBlocked() }
+        guard !writeBlocked else { return }
         try? fileStore.save(grades)
     }
 }

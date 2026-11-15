@@ -7,6 +7,9 @@ struct GradeLoadResult {
     var skippedCount: Int
     /// Copia di sicurezza del file originale, se qualcosa non era leggibile.
     var quarantinedURL: URL?
+    /// false: il file originale non è stato letto del tutto o la copia di sicurezza è
+    /// fallita; nessun salvataggio deve sovrascriverlo finché non si rilegge con successo.
+    var writable: Bool = true
 }
 
 /// Lettura/scrittura sicura del file dei voti. Regola: mai perdere dati dell'utente.
@@ -15,6 +18,11 @@ struct GradeLoadResult {
 struct GradeFileStore {
     let url: URL
 
+    /// Scrive la copia di quarantena (sostituibile nei test).
+    var quarantineWriter: (Data, URL) throws -> Void = { data, target in
+        try data.write(to: target, options: .atomic)
+    }
+
     init(url: URL) { self.url = url }
 
     func load() -> GradeLoadResult {
@@ -22,15 +30,17 @@ struct GradeFileStore {
             return GradeLoadResult(grades: [], skippedCount: 0, quarantinedURL: nil)
         }
         // File presente ma non leggibile dal disco: nessuna scrittura, nessun dato "inventato".
+        // (es. protezione dati prima dello sblocco): si blocca la scrittura.
         guard let data = try? Data(contentsOf: url) else {
-            return GradeLoadResult(grades: [], skippedCount: 0, quarantinedURL: nil)
+            return GradeLoadResult(grades: [], skippedCount: 0, quarantinedURL: nil, writable: false)
         }
         if let decoded = try? JSONDecoder().decode([Grade].self, from: data) {
             return GradeLoadResult(grades: decoded, skippedCount: 0, quarantinedURL: nil)
         }
         // Decodifica elemento per elemento, così un voto rovinato non fa perdere gli altri.
         guard let array = (try? JSONSerialization.jsonObject(with: data)) as? [Any] else {
-            return GradeLoadResult(grades: [], skippedCount: 0, quarantinedURL: quarantine(data))
+            let q = quarantine(data)
+            return GradeLoadResult(grades: [], skippedCount: 0, quarantinedURL: q, writable: q != nil)
         }
         let decoder = JSONDecoder()
         var grades: [Grade] = []
@@ -44,8 +54,9 @@ struct GradeFileStore {
             }
             grades.append(one)
         }
-        return GradeLoadResult(grades: grades, skippedCount: skipped,
-                               quarantinedURL: skipped > 0 ? quarantine(data) : nil)
+        let q = skipped > 0 ? quarantine(data) : nil
+        return GradeLoadResult(grades: grades, skippedCount: skipped, quarantinedURL: q,
+                               writable: skipped == 0 || q != nil)
     }
 
     /// Scrittura atomica: il file originale resta intatto se qualcosa va storto.
@@ -77,7 +88,7 @@ struct GradeFileStore {
             n += 1
         }
         do {
-            try data.write(to: target, options: .atomic)
+            try quarantineWriter(data, target)
             return target
         } catch {
             return nil
