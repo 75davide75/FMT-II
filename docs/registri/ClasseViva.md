@@ -376,7 +376,7 @@ Solo per riferimento [CV-H `README.md`, `openapi.yaml`; CV-G
 |---|---|---|
 | `classeviva-login.json` | risposta 200 di `POST /auth/login` | § 2 |
 | `classeviva-login-failure.json` | corpo di una risposta 422 al login (da usare con status 422) | § 2.2 (una sola fonte per il corpo) |
-| `classeviva-grades.json` | 8 voti: numerici, `+`/`-`/`½`, giudizio, blu, `noAverage`, annullato, due materie e due docenti, solo date | § 5, § 6 |
+| `classeviva-grades.json` | 9 voti: numerici, `+`/`-`/`½`, giudizio, blu, `noAverage`, annullato, due materie e due docenti, solo date; l'ultimo (`evtId` 7000009) senza `teacherName` e `noAverage` (campi facoltativi, TODO-CV5) | § 5, § 6 |
 | `classeviva-periods.json` | due periodi | § 4.1 |
 | `classeviva-subjects.json` | due materie con docenti | § 4.2 |
 

@@ -247,6 +247,35 @@
       "oldskillDesc": "",
       "noAverage": false,
       "teacherName": "DOCENTE SECONDO"
+    },
+    {
+      "subjectId": 900101,
+      "subjectCode": "",
+      "subjectDesc": "MATEMATICA",
+      "evtId": 7000009,
+      "evtCode": "GRV1",
+      "evtDate": "2026-11-12",
+      "decimalValue": 7.5,
+      "displayValue": "7½",
+      "displaPos": 1,
+      "notesForFamily": "",
+      "color": "green",
+      "canceled": false,
+      "underlined": false,
+      "periodPos": 1,
+      "periodDesc": "TRIMESTRE",
+      "componentPos": 2,
+      "componentDesc": "Orale",
+      "weightFactor": 1,
+      "skillId": 0,
+      "gradeMasterId": 0,
+      "skillDesc": null,
+      "skillCode": null,
+      "skillMasterId": 0,
+      "skillValueDesc": " ",
+      "skillValueShortDesc": null,
+      "oldskillId": 0,
+      "oldskillDesc": ""
     }
   ]
 }

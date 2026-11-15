@@ -16,8 +16,8 @@ final class AppStores {
     /// registro è collegato non fa nulla (nessuna rete, nessuna scrittura).
     private(set) lazy var registro = RegistroSyncCoordinator(
         grades: grades, backups: .standard, settings: RegistroSettingsStore(), keychain: KeychainStore(),
-        // ClasseViva e Argo arrivano con i loro provider; per ora solo gli stub.
-        providers: [AxiosProvider(), NuvolaProvider(), MastercomProvider(), PronoteProvider()],
+        // ClasseViva ha il suo provider; Argo arriva dopo, gli altri sono ancora stub.
+        providers: [ClasseVivaProvider(transport: URLSessionTransport()), AxiosProvider(), NuvolaProvider(), MastercomProvider(), PronoteProvider()],
         defaults: .standard)
 
     private init() {}
