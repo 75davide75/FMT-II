@@ -1,0 +1,8 @@
+{
+  "access_token": "fixture-argo-access-token-0001",
+  "expires_in": 3599,
+  "id_token": "fixture.argo.id-token",
+  "refresh_token": "fixture-argo-refresh-token-0001",
+  "scope": "openid offline profile user.roles argo",
+  "token_type": "bearer"
+}

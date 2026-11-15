@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "msg": null,
+  "data": [
+    {
+      "codMin": "XX00000",
+      "opzioni": [
+        { "chiave": "VALUTAZIONI_GIORNALIERE", "valore": true },
+        { "chiave": "VOTI_GIUDIZI", "valore": true }
+      ],
+      "isPrimoAccesso": false,
+      "profiloDisabilitato": false,
+      "isResetPassword": false,
+      "isSpid": false,
+      "token": "fixture-argo-x-auth-token-0001",
+      "username": "studente.prova"
+    }
+  ],
+  "total": 1
+}

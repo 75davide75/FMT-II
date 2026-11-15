@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "msg": null,
+  "data": {
+    "resetPassword": false,
+    "ultimoCambioPwd": null,
+    "anno": {
+      "dataInizio": "2026-09-01",
+      "anno": "2026",
+      "dataFine": "2027-08-31"
+    },
+    "profiloDisabilitato": false,
+    "isSpid": false,
+    "alunno": {
+      "isUltimaClasse": false,
+      "nominativo": "PROVA STUDENTE",
+      "cognome": "PROVA",
+      "nome": "STUDENTE",
+      "pk": "ALU-0001",
+      "maggiorenne": false,
+      "desEmail": null
+    },
+    "scheda": {
+      "classe": { "pk": "CLA-0001", "desDenominazione": "3", "desSezione": "Z" },
+      "corso": { "descrizione": "CORSO DI PROVA", "pk": "COR-0001" },
+      "sede": { "descrizione": "SEDE DI PROVA", "pk": "SED-0001" },
+      "scuola": { "desOrdine": "SCUOLA SECONDARIA DI II GRADO", "descrizione": "SCUOLA DI PROVA", "pk": "SCU-0001" },
+      "pk": "SCHEDA-0001"
+    },
+    "primoAccesso": false,
+    "profiloStorico": false
+  }
+}
