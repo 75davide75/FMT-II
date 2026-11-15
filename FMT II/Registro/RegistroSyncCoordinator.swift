@@ -68,6 +68,9 @@ final class RegistroSyncCoordinator: ObservableObject {
     /// L'ultimo piano ha saltato il controllo "rimossi dal registro" per protezione.
     @Published private(set) var lastRemovalCheckSkipped = false
 
+    /// Mapping materie attuale (solo lettura: si cambia con `confirmMapping`).
+    var mapping: SubjectMappingTable { settings.mapping }
+
     var connectedProvider: RegistroProviderID? {
         defaults.string(forKey: Keys.provider).flatMap(RegistroProviderID.init(rawValue:))
     }
@@ -157,8 +160,11 @@ final class RegistroSyncCoordinator: ObservableObject {
     }
 
     /// Salva il mapping confermato e fa la prima sync (istantanea `.preLink` se è il primo import).
+    /// Con le credenziali rifiutate il mapping viene salvato ma non parte nessuna
+    /// sync: si applicherà dopo il nuovo login.
     func confirmMapping(_ table: SubjectMappingTable) async {
         settings.mapping = table
+        guard !credentialsRejected() else { return }
         _ = await run(useFetch: takePrefetched())
     }
 
@@ -196,14 +202,18 @@ final class RegistroSyncCoordinator: ObservableObject {
         _ = apply(plan, provider: p.provider, accountKey: p.accountKey)
     }
 
-    /// Risposta a un conflitto: viene ricordata e si risincronizza subito (senza throttle).
-    func resolve(_ conflictID: String, _ decision: ConflictDecision) async {
+    /// Risposta a un conflitto: viene ricordata e si risincronizza subito (senza
+    /// throttle). `sync: false` la salva soltanto (più risposte, una sola sync).
+    /// Con le credenziali rifiutate non parte nessuna sync: riuserebbe la password
+    /// rifiutata (rischio di blocco dell'account); la decisione vale dal nuovo login.
+    func resolve(_ conflictID: String, _ decision: ConflictDecision, sync: Bool = true) async {
         var decisions = Self.decode([String: ConflictDecision].self, defaults.data(forKey: Keys.decisions)) ?? [:]
         decisions[conflictID] = decision
         if let data = try? JSONEncoder().encode(decisions) { defaults.set(data, forKey: Keys.decisions) }
         if decision != .later {
             setConflicts(pendingConflicts.filter { $0.id != conflictID })
         }
+        guard sync, !credentialsRejected() else { return }
         _ = await syncNow(.manual)
     }
 
@@ -244,6 +254,13 @@ final class RegistroSyncCoordinator: ObservableObject {
     }
 
     // MARK: - Interni
+
+    /// Ultimo login rifiutato: nessuna sync finché l'utente non rifà l'accesso.
+    private func credentialsRejected() -> Bool {
+        guard defaults.bool(forKey: Keys.needsLogin) else { return false }
+        status = .needsLogin
+        return true
+    }
 
     private func takePrefetched() -> RemoteFetch? {
         defer { prefetched = nil }
@@ -413,14 +430,21 @@ final class RegistroSyncCoordinator: ObservableObject {
     }
 
     /// Codice tecnico, senza dettagli che potrebbero contenere dati del registro.
-    private static func code(for error: Error) -> String {
+    static func code(for error: Error) -> String {
         switch error {
         case let e as RegistroError:
             switch e {
             case .invalidCredentials: return "invalidCredentials"
             case .sessionExpired: return "sessionExpired"
             case .network: return "network"
-            case .unexpectedFormat: return "unexpectedFormat"
+            case .unexpectedFormat(let detail):
+                // Solo i casi che l'utente deve conoscere (testi costanti del provider,
+                // mai dati del registro): versione dell'app rifiutata, più profili.
+                switch detail {
+                case "client-version": return "unexpectedFormat:client-version"
+                case "profili", "choices": return "unexpectedFormat:profili"
+                default: return "unexpectedFormat"
+                }
             case .notSupported: return "notSupported"
             case .rateLimited: return "rateLimited"
             }

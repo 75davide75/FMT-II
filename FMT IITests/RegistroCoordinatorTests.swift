@@ -698,6 +698,94 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertTrue(makeCoordinator().pendingConflicts.isEmpty)
     }
 
+    /// Credenziali rifiutate: la risposta al conflitto viene salvata ma non parte
+    /// nessuna sync (riuserebbe la password rifiutata); si applica dopo il nuovo login.
+    func testResolveWhileNeedsLoginStoresDecisionWithoutSyncing() async throws {
+        let m1 = Grade(subject: "Matematica", value: 7, date: d(3, 10, hour: 9), type: .oral)
+        let m2 = Grade(subject: "Matematica", value: 7, date: d(3, 10, hour: 11), type: .oral)
+        store.add(m1); store.add(m2)
+        provider.remoteGrades = [remote("1")]
+        let c = makeCoordinator()
+        try await connectAndImport(c)
+        XCTAssertEqual(c.pendingConflicts.map(\.id), [key("1")])
+
+        keychain.remove("session")
+        provider.loginErrors = [RegistroError.invalidCredentials]
+        clock.advance(3600)
+        await c.syncNow(.manual)
+        XCTAssertEqual(c.status, .needsLogin)
+        provider.resetCalls()
+
+        await c.resolve(key("1"), .linkTo(m2.id))
+        XCTAssertEqual(provider.calls, [], "nessun login con le credenziali rifiutate")
+        XCTAssertEqual(c.status, .needsLogin)
+        XCTAssertTrue(c.pendingConflicts.isEmpty)
+        XCTAssertNil(store.grades.first { $0.id == m2.id }?.origin)
+        XCTAssertNotNil(defaults.data(forKey: "registroDecisions"))
+
+        // Nuovo login: la decisione salvata viene applicata.
+        _ = try await c.connect(.classeviva, credentials: creds)
+        await c.confirmMapping(c.mapping)
+        XCTAssertEqual(store.grades.first { $0.id == m2.id }?.origin?.remoteKey, key("1"))
+        XCTAssertNil(store.grades.first { $0.id == m1.id }?.origin)
+    }
+
+    /// `sync: false`: più risposte di fila, una sola sync alla fine.
+    func testResolveWithoutSyncOnlyStoresDecision() async throws {
+        let m1 = Grade(subject: "Matematica", value: 7, date: d(3, 10, hour: 9), type: .oral)
+        let m2 = Grade(subject: "Matematica", value: 7, date: d(3, 10, hour: 11), type: .oral)
+        store.add(m1); store.add(m2)
+        provider.remoteGrades = [remote("1")]
+        let c = makeCoordinator()
+        try await connectAndImport(c)
+        provider.resetCalls()
+
+        await c.resolve(key("1"), .linkTo(m1.id), sync: false)
+        XCTAssertEqual(provider.calls, [])
+        XCTAssertTrue(c.pendingConflicts.isEmpty)
+        XCTAssertNil(store.grades.first { $0.id == m1.id }?.origin)
+
+        clock.advance(60)
+        await c.syncNow(.manual)
+        XCTAssertEqual(store.grades.first { $0.id == m1.id }?.origin?.remoteKey, key("1"))
+    }
+
+    /// Mapping modificato mentre serve un nuovo login: salvato, nessuna sync.
+    func testConfirmMappingWhileNeedsLoginDoesNotSync() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        try await connectAndImport(c)
+        keychain.remove("session")
+        provider.loginErrors = [RegistroError.invalidCredentials]
+        clock.advance(3600)
+        await c.syncNow(.manual)
+        XCTAssertEqual(c.status, .needsLogin)
+        provider.resetCalls()
+
+        let edited = SubjectMappingTable(entries: ["S1": "Algebra"], confirmed: ["S1"])
+        await c.confirmMapping(edited)
+        XCTAssertEqual(provider.calls, [])
+        XCTAssertEqual(c.status, .needsLogin)
+        XCTAssertEqual(c.mapping, edited)
+    }
+
+    /// Errori di formato con un significato preciso per l'utente: il codice lo conserva.
+    func testUnexpectedFormatKeepsKnownDetails() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        try await connectAndImport(c)
+        let cases: [(String, String)] = [("client-version", "unexpectedFormat:client-version"),
+                                         ("profili", "unexpectedFormat:profili"),
+                                         ("choices", "unexpectedFormat:profili"),
+                                         ("voti", "unexpectedFormat")]
+        for (detail, expected) in cases {
+            provider.fetchErrors = [RegistroError.unexpectedFormat(detail)]
+            clock.advance(3600)
+            await c.syncNow(.manual)
+            XCTAssertEqual(c.status, .error(expected), detail)
+        }
+    }
+
     // MARK: Scollega
 
     func testUnlinkKeepImported() async throws {
