@@ -333,6 +333,109 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertEqual(relaunched.status, .idle)
     }
 
+    /// Con le credenziali rifiutate anche una sync manuale non le rimanda
+    /// (rischio di blocco dell'account): serve un nuovo login.
+    func testManualSyncAfterRejectedCredentialsDoesNotResendThem() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        try await connectAndImport(c)
+        keychain.remove("session")
+        provider.loginErrors = [RegistroError.invalidCredentials]
+        clock.advance(3600)
+        await c.syncNow(.manual)
+        XCTAssertEqual(c.status, .needsLogin)
+        provider.resetCalls()
+        let grades = store.grades
+
+        clock.advance(3600)
+        let plan = await c.syncNow(.manual)
+        XCTAssertNil(plan)
+        XCTAssertEqual(c.status, .needsLogin)
+        XCTAssertTrue(provider.calls.isEmpty, "nessun login con le credenziali rifiutate")
+        XCTAssertEqual(store.grades, grades)
+
+        // Anche dopo un riavvio dell'app.
+        let relaunched = makeCoordinator()
+        let relaunchedPlan = await relaunched.syncNow(.manual)
+        XCTAssertNil(relaunchedPlan)
+        XCTAssertEqual(relaunched.status, .needsLogin)
+        XCTAssertTrue(provider.calls.isEmpty)
+    }
+
+    /// Accesso limitato/bloccato (403/429), account non supportato, versione
+    /// dell'app rifiutata da Argo: riprovare fallirebbe di nuovo (e ogni tentativo
+    /// può essere un login con password). Nessun tentativo automatico finché
+    /// l'utente non sincronizza a mano; una sync manuale riuscita li riattiva.
+    func testBlockingErrorsStopAutomaticRetriesUntilManualSync() async throws {
+        let cases: [(RegistroError, String, Bool)] = [
+            (.rateLimited, "rateLimited", false),
+            (.rateLimited, "rateLimited", true),          // 403/429 sul login
+            (.notSupported, "notSupported", false),
+            (.unexpectedFormat("client-version"), "unexpectedFormat:client-version", true),
+        ]
+        for (error, code, onLogin) in cases {
+            try setUpWithError()
+            let c = makeCoordinator()
+            provider.remoteGrades = [remote("1")]
+            try await connectAndImport(c)
+            if onLogin {
+                keychain.remove("session")
+                provider.loginErrors = [error]
+            } else {
+                provider.fetchErrors = [error]
+            }
+            let grades = store.grades
+
+            clock.advance(3600)
+            await c.syncNow(.manual)
+            XCTAssertEqual(c.status, .error(code), code)
+            provider.resetCalls()
+
+            clock.advance(3600)
+            let openPlan = await c.syncNow(.appOpen)
+            let backgroundPlan = await c.syncNow(.background)
+            XCTAssertNil(openPlan)
+            XCTAssertNil(backgroundPlan)
+            XCTAssertTrue(provider.calls.isEmpty, "\(code): nessun tentativo automatico, trovato \(provider.calls)")
+            XCTAssertEqual(c.status, .error(code))
+            XCTAssertEqual(store.grades, grades)
+
+            // Anche dopo un riavvio dell'app.
+            let relaunched = makeCoordinator()
+            XCTAssertEqual(relaunched.status, .error(code))
+            clock.advance(3600)
+            await relaunched.syncNow(.appOpen)
+            XCTAssertTrue(provider.calls.isEmpty, code)
+
+            // La sync manuale funziona e, se riesce, riattiva quelle automatiche.
+            await relaunched.syncNow(.manual)
+            XCTAssertFalse(provider.calls.isEmpty, "\(code): la sync manuale parte")
+            XCTAssertEqual(relaunched.status, .idle, code)
+            provider.resetCalls()
+            clock.advance(3600)
+            await relaunched.syncNow(.appOpen)
+            XCTAssertEqual(provider.calls, ["fetch"], code)
+            try tearDownWithError()
+        }
+        try setUpWithError()
+    }
+
+    /// Un errore di rete invece non blocca i tentativi automatici.
+    func testNetworkErrorKeepsAutomaticRetries() async throws {
+        let c = makeCoordinator()
+        provider.remoteGrades = [remote("1")]
+        try await connectAndImport(c)
+        provider.fetchErrors = [RegistroError.network]
+        clock.advance(3600)
+        await c.syncNow(.manual)
+        XCTAssertEqual(c.status, .error("network"))
+        provider.resetCalls()
+        clock.advance(3600)
+        await c.syncNow(.appOpen)
+        XCTAssertEqual(provider.calls, ["fetch"])
+        XCTAssertEqual(c.status, .idle)
+    }
+
     func testMissingCredentialsNeedsLogin() async {
         defaults.set("classeviva", forKey: "registroProvider")
         defaults.set(account, forKey: "registroAccountKey")
@@ -512,6 +615,59 @@ final class RegistroCoordinatorTests: XCTestCase {
         XCTAssertTrue(backups.load(snap)?.contains { $0.id == dup.id } == true, "il doppione è nell'istantanea")
         XCTAssertEqual(GradeFileStore(url: fileURL).load().grades.map(\.id), [linked.id])
         XCTAssertFalse(settings.ignored.contains(key("9")), "la rimozione del doppione non è un'eliminazione dell'utente")
+    }
+
+    /// Due voti manuali diversi (es. due 7 veri, uno inserito su ogni dispositivo)
+    /// collegati allo stesso voto del registro: nessuno dei due si perde. Uno resta
+    /// collegato, l'altro torna un voto manuale normale con il suo id, i suoi valori
+    /// originali e le modifiche dell'utente. Scelta deterministica e idempotente.
+    func testDedupeRestoresSecondLinkedManualInsteadOfDeletingIt() throws {
+        let a = linkedManual("9", value: 7, note: "compito A", modifiedAt: d(3, 10))
+        var b = linkedManual("9", value: 7, note: "compito B", modifiedAt: d(3, 19))
+        b.weight = 0.5 // modificato dall'utente dopo il collegamento
+        let (winner, loser) = a.id.uuidString < b.id.uuidString ? (a, b) : (b, a)
+        store.replaceAll([a])
+
+        store.applyRemote(upserts: [b], deletions: [])
+
+        XCTAssertEqual(Set(store.grades.map(\.id)), [a.id, b.id], "nessun voto dell'utente eliminato")
+        let kept = try XCTUnwrap(store.grades.first { $0.id == winner.id })
+        XCTAssertEqual(kept.origin?.remoteKey, key("9"))
+        XCTAssertEqual(kept.note, winner.note, "la nota dell'altro voto resta sul suo voto")
+        let restored = try XCTUnwrap(store.grades.first { $0.id == loser.id })
+        let snap = try XCTUnwrap(loser.origin?.manualSnapshot)
+        XCTAssertNil(restored.origin, "torna un voto manuale normale")
+        XCTAssertEqual(restored.value, snap.value)
+        XCTAssertEqual(restored.date, snap.date)
+        XCTAssertEqual(restored.teacher, snap.teacher)
+        XCTAssertEqual(restored.subject, snap.subject)
+        XCTAssertEqual(restored.type, snap.type)
+        XCTAssertEqual(restored.countsForAverage, snap.countsForAverage)
+        XCTAssertEqual(restored.note, loser.note)
+        XCTAssertEqual(restored.weight, loser.weight, "le modifiche dell'utente restano")
+        XCTAssertEqual(Set(GradeFileStore(url: fileURL).load().grades.map(\.id)), [a.id, b.id])
+        XCTAssertFalse(settings.ignored.contains(key("9")))
+
+        // Idempotente: una seconda passata non cambia nulla.
+        let once = store.grades
+        store.applyRemote(upserts: [], deletions: [])
+        XCTAssertEqual(store.grades, once)
+        let again = RegistroDedupe.resolve(once)
+        XCTAssertEqual(again.grades, once)
+        XCTAssertTrue(again.dropped.isEmpty)
+
+        // Deterministico: stesso esito in qualunque ordine e con qualunque modifiedAt
+        // (i due dispositivi convergono allo stesso insieme).
+        var bOlder = b; bOlder.modifiedAt = d(3, 1)
+        let r1 = RegistroDedupe.resolve([a, b])
+        let r2 = RegistroDedupe.resolve([bOlder, a])
+        XCTAssertTrue(r1.dropped.isEmpty && r2.dropped.isEmpty)
+        func byID(_ gs: [Grade]) -> [UUID: Grade] {
+            Dictionary(uniqueKeysWithValues: gs.map { var g = $0; g.modifiedAt = .distantPast; return (g.id, g) })
+        }
+        XCTAssertEqual(byID(r1.grades), byID(r2.grades))
+        XCTAssertNotNil(byID(r1.grades)[winner.id]?.origin)
+        XCTAssertNil(byID(r1.grades)[loser.id]?.origin)
     }
 
     func testDedupePrefersEditedThenMostRecent() {

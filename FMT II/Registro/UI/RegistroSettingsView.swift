@@ -376,7 +376,7 @@ private struct RegistroUnlinkSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Restano nella tab Voti come voti normali, senza collegamento al registro.")
                         if nonNumericCount > 0 {
-                            Text("Attenzione: \(nonNumericCount) giudizi senza voto numerico (es. «N.C.») perdono l'etichetta del registro e restano come voti che non fanno media.")
+                            Text(RegistroText.nonNumericUnlinkWarning(nonNumericCount))
                                 .foregroundStyle(Color(hex: "#FB923C")!)
                         }
                     }

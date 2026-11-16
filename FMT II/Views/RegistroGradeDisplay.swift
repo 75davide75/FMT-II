@@ -21,17 +21,18 @@ enum RegistroGradeDisplay {
         }
     }
 
-    /// "Tieni": toglie lo stato "rimosso" e nient'altro. Se il voto manca ancora
-    /// dal registro, la sync successiva potrà segnarlo di nuovo come rimosso.
+    /// "Tieni": il voto diventa "tenuto" (`.keptAfterRemoval`) e nient'altro cambia.
+    /// Niente badge "rimosso", resta quello del registro; la sync non lo segna di
+    /// nuovo come rimosso e, se ricompare nel registro, torna attivo.
     static func keeping(_ g: Grade) -> Grade {
         var kept = g
-        kept.origin?.status = .active
+        kept.origin?.status = .keptAfterRemoval
         return kept
     }
 
     /// "Tieni" dal foglio di modifica: parte dal voto attuale (`latest`, anche se una sync
     /// lo ha aggiornato dopo l'apertura del foglio), applica i campi modificabili del
-    /// modulo (`edited`: anche quelli non ancora salvati) e toglie solo lo stato "rimosso".
+    /// modulo (`edited`: anche quelli non ancora salvati) e lo segna come "tenuto".
     static func keeping(_ latest: Grade, withEditsFrom edited: Grade) -> Grade {
         var g = latest
         g.subject = edited.subject

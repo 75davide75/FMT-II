@@ -38,6 +38,14 @@ enum RegistroText {
         }
     }
 
+    /// Avviso di "Scollega → Tenere i voti importati" sui giudizi non numerici
+    /// (singolare per 1, come `counted`).
+    static func nonNumericUnlinkWarning(_ n: Int) -> String {
+        n == 1
+            ? L("Attenzione: 1 giudizio senza voto numerico (es. «N.C.») perde l'etichetta del registro e resta come voto che non fa media.")
+            : L("Attenzione: \(n) giudizi senza voto numerico (es. «N.C.») perdono l'etichetta del registro e restano come voti che non fanno media.")
+    }
+
     static func snapshotKind(_ k: SnapshotKind) -> String {
         switch k {
         case .preLink: return L("Prima del collegamento")

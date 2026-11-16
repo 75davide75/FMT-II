@@ -731,6 +731,16 @@
         }
       }
     },
+    "Attenzione: 1 giudizio senza voto numerico (es. «N.C.») perde l'etichetta del registro e resta come voto che non fa media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note: 1 assessment without a numeric grade (e.g. “N.C.”) loses its register label and stays as a grade that doesn't count towards the average."
+          }
+        }
+      }
+    },
     "Attiva": {
       "localizations": {
         "en": {

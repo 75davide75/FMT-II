@@ -11,6 +11,9 @@ enum RemoteGradeKind: String, Codable {
 
 enum RemoteStatus: String, Codable {
     case active, removedFromRegistro
+    /// Tolto dal registro e "tenuto" dall'utente: la sync non lo segna di nuovo
+    /// come rimosso; se ricompare nel registro torna `.active`.
+    case keptAfterRemoval
 }
 
 enum GradeField: String, Codable {

@@ -26,6 +26,18 @@ final class RegistroTextTests: XCTestCase {
         XCTAssertEqual(RegistroText.message(forCode: "writeFailed"), RegistroText.message(forCode: "writeBlocked"))
     }
 
+    /// Avviso di "Scollega" sui giudizi non numerici: singolare per 1 (niente «1 giudizi»).
+    func testNonNumericUnlinkWarningUsesSingularForOne() {
+        LanguageSettings.current = .italian
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(1).hasPrefix("Attenzione: 1 giudizio senza voto numerico"))
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(1).contains("perde l'etichetta"))
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(3).hasPrefix("Attenzione: 3 giudizi senza voto numerico"))
+        LanguageSettings.current = .english
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(1).hasPrefix("Note: 1 assessment without a numeric grade"))
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(1).contains("loses its register label"))
+        XCTAssertTrue(RegistroText.nonNumericUnlinkWarning(3).hasPrefix("Note: 3 assessments without a numeric grade"))
+    }
+
     func testProviderErrorsMapToTheRightMessage() {
         LanguageSettings.current = .italian
         XCTAssertTrue(RegistroText.message(for: RegistroError.unexpectedFormat("client-version")).contains("aggiornamento di FMT"))

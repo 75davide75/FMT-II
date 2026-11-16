@@ -448,6 +448,38 @@ final class RegistroSyncEngineTests: XCTestCase {
         XCTAssertEqual(p.updates.first?.origin?.status, .active)
     }
 
+    /// "Tieni" su un voto rimosso dal registro: la sync successiva, con il voto
+    /// ancora assente, non lo segna di nuovo come rimosso (spec §5: l'utente può tenerlo).
+    func testKeptRemovedGradeIsNotMarkedRemovedAgain() throws {
+        let remotes = [remote("1511", date: d(1, 10)), remote("1512", date: d(1, 11))]
+        let local = imported(remotes)
+        var after = apply(plan(local, [remotes[0]]), to: local)
+        let i = try XCTUnwrap(after.firstIndex { $0.id == gid("1512") })
+        XCTAssertTrue(RegistroGradeDisplay.isRemoved(after[i]))
+
+        after[i] = RegistroGradeDisplay.keeping(after[i])
+        XCTAssertFalse(RegistroGradeDisplay.isRemoved(after[i]))
+
+        let p = plan(after, [remotes[0]])
+        XCTAssertTrue(p.isEmpty, "il voto tenuto non torna \"rimosso\": \(p)")
+        XCTAssertFalse(p.removalCheckSkipped)
+    }
+
+    /// Un voto tenuto dopo la rimozione che ricompare nel registro torna attivo.
+    func testKeptGradeReappearingBecomesActive() throws {
+        let remotes = [remote("1521", date: d(1, 10)), remote("1522", date: d(1, 11))]
+        let local = imported(remotes)
+        var after = apply(plan(local, [remotes[0]]), to: local)
+        let i = try XCTUnwrap(after.firstIndex { $0.id == gid("1522") })
+        after[i] = RegistroGradeDisplay.keeping(after[i])
+
+        let p = plan(after, remotes)
+        XCTAssertEqual(p.updates.map(\.id), [gid("1522")])
+        XCTAssertEqual(p.updates.first?.origin?.status, .active)
+        XCTAssertEqual(p.updates.first, local.first { $0.id == gid("1522") })
+        XCTAssertTrue(plan(apply(p, to: after), remotes).isEmpty)
+    }
+
     func testEmptyFetchSkipsRemovalCheck() {
         let local = imported([remote("1601", date: d(1, 10)), remote("1602", date: d(1, 11))])
         let p = plan(local, [])

@@ -41,13 +41,19 @@ final class RegistroGradeDisplayTests: XCTestCase {
         XCTAssertEqual(RegistroGradeDisplay.removedLabel(for: removed), "Removed from the register")
     }
 
+    /// "Tieni": il voto resta "tenuto" (la sync non lo segna di nuovo come rimosso),
+    /// senza badge "rimosso" ma ancora con quello del registro. Cambia solo lo stato.
     func testKeepClearsOnlyTheRemovedState() {
         let removed = grade(status: .removedFromRegistro)
         let kept = RegistroGradeDisplay.keeping(removed)
-        XCTAssertEqual(kept.origin?.status, .active)
+        XCTAssertEqual(kept.origin?.status, .keptAfterRemoval)
         var expected = removed
-        expected.origin?.status = .active
+        expected.origin?.status = .keptAfterRemoval
         XCTAssertEqual(kept, expected)
+        XCTAssertFalse(RegistroGradeDisplay.isRemoved(kept))
+        XCTAssertNil(RegistroGradeDisplay.removedLabel(for: kept))
+        XCTAssertEqual(RegistroGradeDisplay.accessibilityLabel(for: kept), "7, Dal registro")
+        XCTAssertNotNil(RegistroGradeDisplay.detail(for: kept))
     }
 
     func testTimeShownOnlyWhenProvided() {
@@ -96,7 +102,7 @@ final class RegistroGradeDisplayTests: XCTestCase {
         edited.countsForAverage = false
 
         let kept = RegistroGradeDisplay.keeping(latest, withEditsFrom: edited)
-        XCTAssertEqual(kept.origin?.status, .active)
+        XCTAssertEqual(kept.origin?.status, .keptAfterRemoval)
         XCTAssertEqual(kept.note, "mia nota")
         XCTAssertEqual(kept.value, 8)
         XCTAssertEqual(kept.weight, 0.5)

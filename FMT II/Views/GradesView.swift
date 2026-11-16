@@ -1469,7 +1469,7 @@ struct GradeEntrySheet: View {
         }
     }
 
-    /// "Tieni" dal foglio: toglie solo lo stato "rimosso", ma parte dal voto attuale
+    /// "Tieni" dal foglio: segna il voto come "tenuto" (non torna "rimosso"), parte dal voto attuale
     /// nello store (una sync può averlo aggiornato) e porta con sé le modifiche
     /// non ancora salvate del modulo.
     private func keepRemovedGrade(_ opened: Grade) {

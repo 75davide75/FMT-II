@@ -388,21 +388,23 @@ class GradesStore: ObservableObject {
     }
 
     /// Modifiche arrivate da iCloud: non vengono rinviate (niente loop), salvo
-    /// la rimozione dei doppioni del registro, che va propagata.
+    /// la risoluzione dei doppioni del registro, che va propagata. Un voto manuale
+    /// collegato non viene mai eliminato come doppione: torna un voto manuale
+    /// normale (vedi `RegistroDedupe`); si eliminano solo voti importati.
     func applyRemote(upserts: [Grade], deletions: Set<UUID>) {
         var merged = SyncMerge.apply(upserts: upserts, deletions: deletions, to: grades, modifiedAt: \.modifiedAt)
         var dedupedSaves: [UUID] = []
         var dedupedDeletes: [UUID] = []
         let deduped = RegistroDedupe.resolve(merged)
-        // Doppioni rimossi solo se il file è scrivibile e (con i backup attivi)
-        // dopo averli salvati in un'istantanea; altrimenti restano tutti.
-        if !deduped.dropped.isEmpty, !writeBlocked,
+        // Doppioni risolti solo se il file è scrivibile e (con i backup attivi)
+        // dopo un'istantanea; altrimenti restano tutti com'erano.
+        if !deduped.dropped.isEmpty || deduped.grades != merged, !writeBlocked,
            backups.map({ $0.snapshot(merged, kind: .preSync) != nil }) ?? true {
             let before = Dictionary(merged.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             let now = Date()
             merged = deduped.grades.map { g in
                 guard let old = before[g.id], old != g else { return g }
-                // Nota unita: il voto tenuto cambia e va propagato agli altri dispositivi.
+                // Nota unita o manuale ripristinato: il voto cambia e va propagato agli altri dispositivi.
                 var changed = g
                 changed.modifiedAt = now
                 dedupedSaves.append(g.id)

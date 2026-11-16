@@ -5,7 +5,7 @@ enum RegistroStatus: Equatable {
     case disconnected
     case idle
     case syncing
-    /// Credenziali assenti o rifiutate: nessuna sync automatica finché l'utente non rifà il login.
+    /// Credenziali assenti o rifiutate: nessuna sync (nemmeno manuale) finché l'utente non rifà il login.
     case needsLogin
     /// Il piano tocca più di 20 voti manuali: in attesa di `confirmPendingPlan()`.
     case needsConfirmation(Int)
@@ -43,10 +43,15 @@ final class RegistroSyncCoordinator: ObservableObject {
         static let lastAttempt = "registroLastAttempt"
         static let pendingConflicts = "registroPendingConflicts"
         static let decisions = "registroDecisions"
-        /// Credenziali rifiutate: niente tentativi automatici (evita blocchi dell'account).
+        /// Credenziali rifiutate: nessun tentativo, nemmeno manuale, fino al nuovo login (evita blocchi dell'account).
         static let needsLogin = "registroNeedsLogin"
+        /// Codice dell'ultimo errore che fallirebbe di nuovo (accesso limitato o
+        /// bloccato, account non supportato, versione dell'app rifiutata): niente
+        /// tentativi automatici finché una sync manuale o un nuovo login non riescono.
+        static let autoSyncBlocked = "registroAutoSyncBlocked"
 
-        static let all = [provider, accountKey, lastSync, lastAttempt, pendingConflicts, decisions, needsLogin]
+        static let all = [provider, accountKey, lastSync, lastAttempt, pendingConflicts, decisions, needsLogin,
+                          autoSyncBlocked]
 
         /// Preferenza "Notifiche voti nuovi" (spenta di default). Non è in `all`:
         /// è una scelta dell'utente, resta anche scollegando.
@@ -121,7 +126,13 @@ final class RegistroSyncCoordinator: ObservableObject {
         if defaults.string(forKey: Keys.provider).flatMap(RegistroProviderID.init(rawValue:)) == nil {
             status = .disconnected
         } else {
-            status = defaults.bool(forKey: Keys.needsLogin) ? .needsLogin : .idle
+            if defaults.bool(forKey: Keys.needsLogin) {
+                status = .needsLogin
+            } else if let code = defaults.string(forKey: Keys.autoSyncBlocked) {
+                status = .error(code)
+            } else {
+                status = .idle
+            }
         }
     }
 
@@ -157,6 +168,7 @@ final class RegistroSyncCoordinator: ObservableObject {
         defaults.set(session.accountKey, forKey: Keys.accountKey)
         defaults.set(now(), forKey: Keys.lastAttempt)
         defaults.removeObject(forKey: Keys.needsLogin)
+        defaults.removeObject(forKey: Keys.autoSyncBlocked)
         prefetched = (fetch, gen, now())
         status = .idle
         RegistroBackgroundRefresh.scheduleAndSubmit(now: now())
@@ -192,9 +204,12 @@ final class RegistroSyncCoordinator: ObservableObject {
     func syncNow(_ trigger: SyncTrigger) async -> SyncPlan? {
         guard connectedProvider != nil else { status = .disconnected; return nil }
         guard status != .syncing else { return nil }
+        // Credenziali rifiutate: nessun tentativo, nemmeno manuale (rimandarle
+        // potrebbe bloccare l'account). Serve un nuovo login.
+        guard !credentialsRejected() else { return nil }
         if trigger != .manual {
-            // Dopo credenziali rifiutate nessun tentativo automatico.
-            guard !defaults.bool(forKey: Keys.needsLogin) else { status = .needsLogin; return nil }
+            // Errore che fallirebbe di nuovo: solo l'utente può riprovare.
+            if let code = defaults.string(forKey: Keys.autoSyncBlocked) { status = .error(code); return nil }
             if trigger == .appOpen, let last = defaults.object(forKey: Keys.lastAttempt) as? Date,
                now().timeIntervalSince(last) < Self.appOpenInterval {
                 return nil
@@ -324,6 +339,7 @@ final class RegistroSyncCoordinator: ObservableObject {
             }
             guard gen == generation else { return nil }
             defaults.removeObject(forKey: Keys.needsLogin)
+            defaults.removeObject(forKey: Keys.autoSyncBlocked)
             return finish(fetch, provider: id, accountKey: accountKey)
         } catch {
             // Scollegato nel frattempo: lo stato è già quello giusto.
@@ -332,9 +348,24 @@ final class RegistroSyncCoordinator: ObservableObject {
                 defaults.set(true, forKey: Keys.needsLogin)
                 status = .needsLogin
             } else {
-                status = .error(Self.code(for: error))
+                let code = Self.code(for: error)
+                if Self.blocksAutomaticRetries(error) { defaults.set(code, forKey: Keys.autoSyncBlocked) }
+                status = .error(code)
             }
             return nil
+        }
+    }
+
+    /// Errori che un nuovo tentativo automatico ripeterebbe di sicuro (e ogni
+    /// tentativo può essere un login con password): accesso limitato o bloccato
+    /// dal registro (403/429; per ClasseViva un 403 può anche voler dire password
+    /// cambiata), account non supportato, versione dell'app rifiutata da Argo.
+    nonisolated static func blocksAutomaticRetries(_ error: Error) -> Bool {
+        guard let e = error as? RegistroError else { return false }
+        switch e {
+        case .rateLimited, .notSupported: return true
+        case .unexpectedFormat(let detail): return detail == "client-version"
+        case .invalidCredentials, .sessionExpired, .network: return false
         }
     }
 

@@ -233,8 +233,9 @@ private struct PlanBuilder {
     }
 
     /// Voti collegati spariti dal registro: segnati "rimossi", mai cancellati.
-    /// Solo voti con data nell'intervallo coperto dal download; controllo saltato
-    /// (e segnalato) se il download sembra incompleto.
+    /// Solo voti attivi (non quelli già rimossi o "tenuti" dall'utente) con data
+    /// nell'intervallo coperto dal download; controllo saltato (e segnalato) se il
+    /// download sembra incompleto.
     private mutating func markRemoved() {
         guard let range = input.fetch.coveredRange else { return }
         let activeInRange = linkedByKey.values.joined().filter {

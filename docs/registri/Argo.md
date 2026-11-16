@@ -292,7 +292,7 @@ lancia un errore diverso da `.network` e `.rateLimited` →
 | HTTP 401 su `profilo` o `dashboard/dashboard` | `.sessionExpired` (decisione del coordinatore; nessuna fonte Argo documenta il 401, TODO-AR6) |
 | HTTP 403 (login o endpoint dati) | `.rateLimited`: "accesso bloccato o limitato: nessun nuovo tentativo automatico" |
 | HTTP 429 | `.rateLimited` |
-| `success: false` con "ultima versione" | `.notSupported` (§ 3.2) |
+| `success: false` con "ultima versione" | `.unexpectedFormat("client-version")` (§ 3.2): il coordinatore mostra "serve un aggiornamento di FMT" e non fa nuovi tentativi automatici finché l'utente non sincronizza a mano |
 | `success: false` con altro `msg` | `.unexpectedFormat` |
 
 Perché 403 → `.rateLimited` (decisione del coordinatore, round 1 della
@@ -495,9 +495,9 @@ indica esplicitamente il fuso (le fonti usano l'ora locale del dispositivo).
 | Credenziali errate | passo 2 senza redirect (§ 2.2) | `invalidCredentials` |
 | Troppi tentativi | 429 al login o su endpoint dati | `rateLimited` |
 | Accesso bloccato o limitato | 403 al login o su endpoint dati (§ 3.4, decisione del coordinatore) | `rateLimited`, nessun nuovo tentativo automatico |
-| Versione dell'app troppo vecchia | `success: false`, `msg` con "ultima versione" | `notSupported` (va aggiornata `argo-client-version`) |
+| Versione dell'app troppo vecchia | `success: false`, `msg` con "ultima versione" | `unexpectedFormat("client-version")`, nessun nuovo tentativo automatico (va aggiornata `argo-client-version`) |
 | Sessione scaduta | `expiresAt` passato (controllo locale) o 401 (§ 3.4) | `sessionExpired` → il coordinatore rifà il login una volta |
-| Account disattivato | `profiloDisabilitato: true` nel login o nel profilo [AR-A] | `notSupported` (TODO-AR14: confermare) |
+| Account disattivato | `profiloDisabilitato: true` nel login o nel profilo [AR-A] | `notSupported`, nessun nuovo tentativo automatico (TODO-AR14: confermare) |
 | `success: false` con altro `msg` | — | `unexpectedFormat` |
 | Pagina o JSON inattesi | — | `unexpectedFormat` |
 | Rete / 5xx | — | `network` |
