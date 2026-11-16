@@ -126,10 +126,10 @@ How it works and privacy:
 
 Third-party service (guideline 5.2.2): neither Spaggiari nor Argo publishes a
 public API or a public authorization for third-party apps; the app uses the
-same access as the providers' own apps, with the user's own credentials, on
-the user's device. `TODO: ask the user` — decide how to present this and
-whether to request written authorization from the providers (TODO-R1, TODO-R2
-in `docs/registri/README.md`) before submitting.
+user's own credentials, on the user's device. `TODO: ask the user` — how to
+describe the use of official-app identifiers (README TODO-R1), and whether to
+request written authorization from the providers (TODO-R2 in
+`docs/registri/README.md`) before submitting.
 
 `TODO: ask the user` — decide whether to attach a demo video of the feature
 working with a real account (to be recorded by the app owner with their own or
