@@ -2383,6 +2383,26 @@
         }
       }
     },
+    "%lld nuovi voti dal registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld new grades from the register"
+          }
+        }
+      }
+    },
+    "Nuovo voto in %@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New grade in %@: %@"
+          }
+        }
+      }
+    },
     "Hai un promemoria": {
       "localizations": {
         "en": {

@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         if !seedingForScreenshots {
             center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         }
+        // Il task in background va registrato prima della fine del lancio.
+        RegistroBackgroundRefresh.register()
         // Push silenziose di CloudKit: avvisano quando un altro dispositivo cambia i dati.
         application.registerForRemoteNotifications()
         return true
@@ -44,6 +46,7 @@ struct FMT_IIApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("dynamicTypeLevel") private var dynamicTypeLevel = 0
     @ObservedObject private var languages = LanguageSettings.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     /// App-wide text-size override (nil = follow the system). Capped at "Enorme".
     private var overrideTypeSize: DynamicTypeSize? {
@@ -71,6 +74,16 @@ struct FMT_IIApp: App {
                 .environment(\.locale, languages.locale)
                 .id(languages.language)
                 .task { await languages.refineFromStorefront() }
+                .onChange(of: scenePhase) { _, phase in
+                    switch phase {
+                    case .active:
+                        // Il limite di 15 minuti è nel coordinatore; non blocca la UI.
+                        Task { await AppStores.shared.registro.syncNow(.appOpen) }
+                    case .background:
+                        RegistroBackgroundRefresh.scheduleAndSubmit()
+                    default: break
+                    }
+                }
         }
     }
 }

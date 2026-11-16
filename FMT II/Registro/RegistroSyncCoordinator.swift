@@ -159,6 +159,7 @@ final class RegistroSyncCoordinator: ObservableObject {
         defaults.removeObject(forKey: Keys.needsLogin)
         prefetched = (fetch, gen, now())
         status = .idle
+        RegistroBackgroundRefresh.scheduleAndSubmit(now: now())
 
         let mapping = settings.mapping
         var seen = Set<String>()
@@ -199,7 +200,15 @@ final class RegistroSyncCoordinator: ObservableObject {
                 return nil
             }
         }
-        return await run(useFetch: nil)
+        let isFirstImport = lastSync == nil
+        let plan = await run(useFetch: nil)
+        if let plan {
+            let toNotify = RegistroNotificationPolicy.gradesToNotify(
+                plan: plan, trigger: trigger, isFirstImport: isFirstImport,
+                toggleOn: defaults.bool(forKey: Keys.notifyNewGrades), grades: grades.grades)
+            if !toNotify.isEmpty { NotificationManager.shared.notifyNewGrades(toNotify) }
+        }
+        return plan
     }
 
     /// Applica il piano in attesa di conferma, ricalcolato sui voti attuali (così
@@ -270,6 +279,7 @@ final class RegistroSyncCoordinator: ObservableObject {
         lastSkippedCount = 0
         lastRemovalCheckSkipped = false
         status = .disconnected
+        RegistroBackgroundRefresh.cancel()
         // Per cortesia verso il registro; lo stato locale è già pulito.
         if let provider, let session { await provider.logout(session) }
     }

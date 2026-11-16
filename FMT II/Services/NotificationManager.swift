@@ -75,4 +75,20 @@ final class NotificationManager {
         cancel(ids: Set(notes.map(\.id)))
         for n in notes where !n.reminders.isEmpty { schedule(note: n) }
     }
+
+    /// Annuncia i voti nuovi arrivati dal registro (un solo avviso per sync).
+    /// Nessun valore nei log.
+    func notifyNewGrades(_ grades: [Grade]) {
+        guard let first = grades.first else { return }
+        let content = UNMutableNotificationContent()
+        content.title = L("Registro elettronico")
+        if grades.count == 1 {
+            content.body = L("Nuovo voto in \(first.subject): \(first.displayValue)")
+        } else {
+            content.body = L("\(grades.count) nuovi voti dal registro")
+        }
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "registro-\(UUID().uuidString)", content: content, trigger: nil)
+        center.add(request)
+    }
 }
