@@ -131,28 +131,6 @@
         }
       }
     },
-    "%lld lezioni · %lld classi · %lld docenti": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld lessons · %lld classes · %lld teachers"
-          }
-        }
-      }
-    },
-    "%lld lezioni · %lld docenti · %lld classi": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld lessons · %lld teachers · %lld classes"
-          }
-        }
-      }
-    },
     "%lld materie": {
       "localizations": {
         "en": {
