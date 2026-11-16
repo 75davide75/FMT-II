@@ -1,0 +1,391 @@
+{
+  "success": true,
+  "msg": null,
+  "data": {
+    "dati": [
+      {
+        "fuoriClasse": [],
+        "msg": "",
+        "opzioni": [],
+        "mediaGenerale": 6.95,
+        "listaMaterie": [
+          {
+            "abbreviazione": "MAT",
+            "scrut": true,
+            "codTipo": "NO",
+            "faMedia": true,
+            "materia": "MATEMATICA",
+            "pk": "MAT-0001"
+          },
+          {
+            "abbreviazione": "STO",
+            "scrut": true,
+            "codTipo": "NO",
+            "faMedia": true,
+            "materia": "STORIA",
+            "pk": "MAT-0002"
+          }
+        ],
+        "rimuoviDatiLocali": false,
+        "listaPeriodi": [
+          {
+            "pkPeriodo": "PER-0001",
+            "codPeriodo": "1Q",
+            "descrizione": "PRIMO QUADRIMESTRE",
+            "dataInizio": "14/09/2026",
+            "datInizio": "2026-09-14",
+            "dataFine": "31/01/2027",
+            "datFine": "2027-01-31",
+            "votoUnico": false,
+            "mediaScrutinio": 0,
+            "isMediaScrutinio": false,
+            "isScrutinioFinale": false
+          },
+          {
+            "pkPeriodo": "PER-0002",
+            "codPeriodo": "SF",
+            "descrizione": "SCRUTINIO FINALE",
+            "dataInizio": "01/02/2027",
+            "datInizio": "2027-02-01",
+            "dataFine": "08/06/2027",
+            "datFine": "2027-06-08",
+            "votoUnico": false,
+            "mediaScrutinio": 0,
+            "isMediaScrutinio": false,
+            "isScrutinioFinale": true
+          }
+        ],
+        "promemoria": [],
+        "bacheca": [],
+        "voti": [
+          {
+            "pk": "VOTO-0001",
+            "operazione": "I",
+            "datEvento": "2026-09-23",
+            "datGiorno": "2026-09-23",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "7",
+            "valore": 7,
+            "codVotoPratico": "S",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Verifica sulle equazioni",
+            "faMenoMedia": "",
+            "descrizioneVoto": "sette",
+            "codTipo": "V",
+            "mese": 9,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
+            "pk": "VOTO-0002",
+            "operazione": "I",
+            "datEvento": "2026-10-07",
+            "datGiorno": "2026-10-07",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "6+",
+            "valore": 6.25,
+            "codVotoPratico": "N",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "",
+            "faMenoMedia": "",
+            "descrizioneVoto": "sei+",
+            "codTipo": "V",
+            "mese": 10,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
+            "pk": "VOTO-0003",
+            "operazione": "I",
+            "datEvento": "2026-10-21",
+            "datGiorno": "2026-10-21",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "7½",
+            "valore": 7.5,
+            "codVotoPratico": "S",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "",
+            "faMenoMedia": "",
+            "descrizioneVoto": "sette e mezzo",
+            "codTipo": "V",
+            "mese": 10,
+            "numMedia": 1,
+            "desCommento": "Buon lavoro",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
+            "pk": "VOTO-0004",
+            "operazione": "I",
+            "datEvento": "2026-10-09",
+            "datGiorno": "2026-10-09",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "8--",
+            "valore": 7.75,
+            "codVotoPratico": "N",
+            "docente": "Docente B.",
+            "pkDocente": "DOC-0002",
+            "pkMateria": "MAT-0002",
+            "desMateria": "STORIA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "",
+            "faMenoMedia": "",
+            "descrizioneVoto": "otto--",
+            "codTipo": "V",
+            "mese": 10,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 2
+              },
+              "codMateria": "STO",
+              "desDescrizione": "STORIA",
+              "desDescrAbbrev": "STO",
+              "flgConcorreMedia": "S",
+              "prgMateria": 2,
+              "idmateria": "MAT-0002"
+            }
+          },
+          {
+            "pk": "VOTO-0005",
+            "operazione": "I",
+            "datEvento": "2026-10-16",
+            "datGiorno": "2026-10-16",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "buono",
+            "valore": 0,
+            "codVotoPratico": "N",
+            "docente": "Docente B.",
+            "pkDocente": "DOC-0002",
+            "pkMateria": "MAT-0002",
+            "desMateria": "STORIA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Lavoro di gruppo",
+            "faMenoMedia": "",
+            "descrizioneVoto": "",
+            "codTipo": "V",
+            "mese": 10,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 2
+              },
+              "codMateria": "STO",
+              "desDescrizione": "STORIA",
+              "desDescrAbbrev": "STO",
+              "flgConcorreMedia": "S",
+              "prgMateria": 2,
+              "idmateria": "MAT-0002"
+            }
+          },
+          {
+            "pk": "VOTO-0006",
+            "operazione": "I",
+            "datEvento": "2026-10-30",
+            "datGiorno": "2026-10-30",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "5",
+            "valore": 5,
+            "codVotoPratico": "S",
+            "docente": "Docente B.",
+            "pkDocente": "DOC-0002",
+            "pkMateria": "MAT-0002",
+            "desMateria": "STORIA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Prova di recupero",
+            "faMenoMedia": "S",
+            "descrizioneVoto": "cinque",
+            "codTipo": "V",
+            "mese": 10,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 2
+              },
+              "codMateria": "STO",
+              "desDescrizione": "STORIA",
+              "desDescrAbbrev": "STO",
+              "flgConcorreMedia": "S",
+              "prgMateria": 2,
+              "idmateria": "MAT-0002"
+            }
+          },
+          {
+            "pk": "VOTO-0007",
+            "operazione": "I",
+            "datEvento": "2026-11-04",
+            "datGiorno": "2026-11-04",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "8",
+            "valore": 8,
+            "codVotoPratico": "P",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Esercitazione in laboratorio",
+            "faMenoMedia": "",
+            "descrizioneVoto": "otto",
+            "codTipo": "V",
+            "mese": 11,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
+            "pk": "VOTO-0009",
+            "operazione": "I",
+            "datEvento": "2026-11-06",
+            "datGiorno": "2026-11-06",
+            "pkPeriodo": "PER-0001",
+            "codCodice": "+",
+            "valore": 0,
+            "codVotoPratico": "N",
+            "docente": "Docente A.",
+            "pkDocente": "DOC-0001",
+            "pkMateria": "MAT-0001",
+            "desMateria": "MATEMATICA",
+            "tipoValutazione": null,
+            "prgVoto": 1,
+            "descrizioneProva": "Intervento in classe",
+            "faMenoMedia": "",
+            "descrizioneVoto": "",
+            "codTipo": "N",
+            "mese": 11,
+            "numMedia": 1,
+            "desCommento": "",
+            "materiaLight": {
+              "scuMateriaPK": {
+                "codMin": "XX00000",
+                "prgScuola": 1,
+                "numAnno": 2026,
+                "prgMateria": 1
+              },
+              "codMateria": "MAT",
+              "desDescrizione": "MATEMATICA",
+              "desDescrAbbrev": "MAT",
+              "flgConcorreMedia": "S",
+              "prgMateria": 1,
+              "idmateria": "MAT-0001"
+            }
+          },
+          {
+            "pk": "VOTO-0008",
+            "operazione": "D"
+          }
+        ],
+        "ricaricaDati": false,
+        "listaDocentiClasse": [
+          {
+            "desCognome": "DOCENTE",
+            "materie": [
+              "MATEMATICA"
+            ],
+            "desNome": "A",
+            "pk": "DOC-0001",
+            "desEmail": ""
+          },
+          {
+            "desCognome": "DOCENTE",
+            "materie": [
+              "STORIA"
+            ],
+            "desNome": "B",
+            "pk": "DOC-0002",
+            "desEmail": ""
+          }
+        ],
+        "bachecaAlunno": [],
+        "profiloDisabilitato": false,
+        "registro": [],
+        "appello": [],
+        "pk": "SCHEDA-0001"
+      }
+    ]
+  }
+}

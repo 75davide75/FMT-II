@@ -175,6 +175,9 @@ struct ContentView: View {
             #if DEBUG
             // Seed di dati demo per gli screenshot (solo con -FMTSeedDemo).
             DemoSeed.seedIfRequested(schedule: store, notes: notesStore, grades: gradesStore)
+            // Registro finto per i test di interfaccia (solo con -FMTFakeRegistro).
+            FakeRegistro.prepareIfRequested(grades: gradesStore)
+            FakeRegistro.autoConnectIfRequested(AppStores.shared.registro)
             let dbgArgs = ProcessInfo.processInfo.arguments
             if let i = dbgArgs.firstIndex(of: "-FMTViewMode"), i + 1 < dbgArgs.count {
                 switch dbgArgs[i + 1] {

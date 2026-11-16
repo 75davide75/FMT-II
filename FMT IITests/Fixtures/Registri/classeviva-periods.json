@@ -1,0 +1,22 @@
+{
+  "periods": [
+    {
+      "periodCode": "Q1",
+      "periodPos": 1,
+      "periodDesc": "TRIMESTRE",
+      "isFinal": false,
+      "dateStart": "2026-09-14",
+      "dateEnd": "2026-12-22",
+      "miurDivisionCode": null
+    },
+    {
+      "periodCode": "Q3",
+      "periodPos": 3,
+      "periodDesc": "PENTAMESTRE",
+      "isFinal": true,
+      "dateStart": "2027-01-07",
+      "dateEnd": "2027-06-08",
+      "miurDivisionCode": null
+    }
+  ]
+}

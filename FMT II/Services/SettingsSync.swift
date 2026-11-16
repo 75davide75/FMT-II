@@ -11,7 +11,8 @@ extension Notification.Name {
 final class SettingsSync {
     static let shared = SettingsSync()
     nonisolated static let syncedKeys = ["sufficientGrade", "maxGrade", "periodSystem", "period1EndTimestamp",
-                                         "fmt_subject_colors", "fmt_entity_colors"]
+                                         "fmt_subject_colors", "fmt_entity_colors",
+                                         "registroSubjectMap", "registroIgnored"]
 
     private let kvs = NSUbiquitousKeyValueStore.default
     private let defaults = UserDefaults.standard

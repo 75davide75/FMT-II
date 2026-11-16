@@ -14,7 +14,8 @@ final class SettingsSyncTests: XCTestCase {
     func testSchoolSettingsAreSynced() {
         XCTAssertEqual(Set(SettingsSync.syncedKeys),
                        ["sufficientGrade", "maxGrade", "periodSystem", "period1EndTimestamp",
-                        "fmt_subject_colors", "fmt_entity_colors"])
+                        "fmt_subject_colors", "fmt_entity_colors",
+                        "registroSubjectMap", "registroIgnored"])
     }
 
     func testSameComparesValues() {

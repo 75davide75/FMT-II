@@ -1,0 +1,20 @@
+{
+  "subjects": [
+    {
+      "id": 900101,
+      "description": "MATEMATICA",
+      "order": 1,
+      "teachers": [
+        { "teacherId": "A9000101", "teacherName": "DOCENTE PRIMO" }
+      ]
+    },
+    {
+      "id": 900102,
+      "description": "STORIA",
+      "order": 2,
+      "teachers": [
+        { "teacherId": "A9000102", "teacherName": "DOCENTE SECONDO" }
+      ]
+    }
+  ]
+}

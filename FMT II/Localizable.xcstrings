@@ -91,6 +91,16 @@
         }
       }
     },
+    "%lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld"
+          }
+        }
+      }
+    },
     "%lld docenti": {
       "localizations": {
         "en": {
@@ -117,28 +127,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld lessons"
-          }
-        }
-      }
-    },
-    "%lld lezioni · %lld classi · %lld docenti": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld lessons · %lld classes · %lld teachers"
-          }
-        }
-      }
-    },
-    "%lld lezioni · %lld docenti · %lld classi": {
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld lessons · %lld teachers · %lld classes"
           }
         }
       }
@@ -343,12 +331,42 @@
         }
       }
     },
+    "A quale materia dell'app corrisponde ogni materia del registro.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which app subject each register subject belongs to."
+          }
+        }
+      }
+    },
     "ANDAMENTO": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "TREND"
+          }
+        }
+      }
+    },
+    "Accedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Accedi a %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to %@"
           }
         }
       }
@@ -369,6 +387,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sign in to iCloud in iOS Settings to have grades, planner and timetable on all your devices."
+          }
+        }
+      }
+    },
+    "Accedi di nuovo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in again"
+          }
+        }
+      }
+    },
+    "Accesso a %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to %@"
+          }
+        }
+      }
+    },
+    "Accesso in corso…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in…"
+          }
+        }
+      }
+    },
+    "Accesso richiesto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in required"
+          }
+        }
+      }
+    },
+    "Account con più studenti non ancora supportato. Usa le credenziali dello studente.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accounts with more than one student aren't supported yet. Use the student's own credentials."
           }
         }
       }
@@ -483,6 +551,26 @@
         }
       }
     },
+    "Altro nome…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other name…"
+          }
+        }
+      }
+    },
+    "Anche %@ va in questa materia: va bene solo se sono la stessa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ also goes into this subject: that's fine only if they are the same subject."
+          }
+        }
+      }
+    },
     "Ancora nessun voto": {
       "localizations": {
         "en": {
@@ -519,6 +607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apply"
+          }
+        }
+      }
+    },
+    "Applica le modifiche": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply the changes"
           }
         }
       }
@@ -619,6 +717,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Assign or fix the subject of each period, class by class: the subject entered for a teacher is carried over to their other periods."
+          }
+        }
+      }
+    },
+    "Attenzione: %lld giudizi senza voto numerico (es. «N.C.») perdono l'etichetta del registro e restano come voti che non fanno media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note: %lld assessments without a numeric grade (e.g. “N.C.”) lose their register label and stay as grades that don't count towards the average."
+          }
+        }
+      }
+    },
+    "Attenzione: 1 giudizio senza voto numerico (es. «N.C.») perde l'etichetta del registro e resta come voto che non fa media.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note: 1 assessment without a numeric grade (e.g. “N.C.”) loses its register label and stays as a grade that doesn't count towards the average."
           }
         }
       }
@@ -739,6 +857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Change or remove the timetable, delete the whole planner or all grades. Each action asks for confirmation and cannot be undone."
+          }
+        }
+      }
+    },
+    "Cambiando una materia, i voti importati che non hai modificato passano alla nuova materia.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you change a subject, imported grades you haven't edited move to the new subject."
           }
         }
       }
@@ -1003,6 +1131,16 @@
         }
       }
     },
+    "Codice scuola": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "School code"
+          }
+        }
+      }
+    },
     "Cognome": {
       "localizations": {
         "en": {
@@ -1029,6 +1167,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Use the selector to browse by class or by teacher. If the imported timetable only contains subjects (no teachers), the filter automatically becomes Class/Subject."
+          }
+        }
+      }
+    },
+    "Collega %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link %@"
+          }
+        }
+      }
+    },
+    "Collega il registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link your school register"
+          }
+        }
+      }
+    },
+    "Collegamento non ufficiale: FMT non è affiliato né approvato da Spaggiari o da Argo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unofficial connection: FMT is not affiliated with or endorsed by Spaggiari or Argo."
+          }
+        }
+      }
+    },
+    "Collegato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linked"
           }
         }
       }
@@ -1153,6 +1331,16 @@
         }
       }
     },
+    "Con «Più tardi» il registro resta collegato ma nessun voto viene importato: potrai confermare le materie dalle Impostazioni.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With “Later” the register stays linked but no grades are imported: you can confirm the subjects from Settings."
+          }
+        }
+      }
+    },
     "Condividere l'orario": {
       "localizations": {
         "en": {
@@ -1179,6 +1367,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Confirm"
+          }
+        }
+      }
+    },
+    "Conferma e importa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm and import"
+          }
+        }
+      }
+    },
+    "Confermate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed"
           }
         }
       }
@@ -1233,6 +1441,36 @@
         }
       }
     },
+    "Controlla a quale materia dell'app va ogni materia del registro. Nessun voto viene importato finché non confermi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check which app subject each register subject goes into. No grades are imported until you confirm."
+          }
+        }
+      }
+    },
+    "Copie dei voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grade copies"
+          }
+        }
+      }
+    },
+    "Copie di sicurezza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safety copies"
+          }
+        }
+      }
+    },
     "Corpo": {
       "localizations": {
         "en": {
@@ -1249,6 +1487,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teacher ↔ subject matches"
+          }
+        }
+      }
+    },
+    "Cosa succede": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What happens"
           }
         }
       }
@@ -1333,6 +1581,26 @@
         }
       }
     },
+    "Da confermare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To confirm"
+          }
+        }
+      }
+    },
+    "Da sapere": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good to know"
+          }
+        }
+      }
+    },
     "Dal cerchio colorato in alto a destra nella scheda materia personalizzi il colore: righe, grafico e sfondo si adattano.": {
       "localizations": {
         "en": {
@@ -1349,6 +1617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "From the ••• menu at the top right choose \"Share timetable\": you export a file to send or save; whoever receives it imports it without redoing anything."
+          }
+        }
+      }
+    },
+    "Dal registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the register"
           }
         }
       }
@@ -1389,6 +1667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Timetable data"
+          }
+        }
+      }
+    },
+    "Decidi dopo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decide later"
           }
         }
       }
@@ -1573,6 +1861,16 @@
         }
       }
     },
+    "Dopo l'accesso controllerai le materie: nessun voto viene importato prima.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in you'll check the subjects: no grades are imported before that."
+          }
+        }
+      }
+    },
     "Durata lezione": {
       "localizations": {
         "en": {
@@ -1639,6 +1937,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete grade"
+          }
+        }
+      }
+    },
+    "Eliminare i voti importati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete imported grades"
           }
         }
       }
@@ -1739,6 +2047,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Export timetable, planner and grades in a single file and import them again whenever you want, even on another device."
+          }
+        }
+      }
+    },
+    "FMT legge i voti dal registro; non li modifica mai sul registro. I voti che inserisci tu non vengono mai cancellati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FMT reads grades from the register and never changes them there. The grades you enter are never deleted."
+          }
+        }
+      }
+    },
+    "FMT usa lo stesso accesso dell'app ufficiale: se il registro cambia, il collegamento può smettere di funzionare in qualsiasi momento.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FMT signs in the same way as the official app: if the register changes, the connection may stop working at any time."
           }
         }
       }
@@ -2043,6 +2371,26 @@
         }
       }
     },
+    "%lld nuovi voti dal registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld new grades from the register"
+          }
+        }
+      }
+    },
+    "Nuovo voto in %@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New grade in %@: %@"
+          }
+        }
+      }
+    },
     "Hai un promemoria": {
       "localizations": {
         "en": {
@@ -2063,6 +2411,16 @@
         }
       }
     },
+    "Ho letto e accetto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I have read and accept"
+          }
+        }
+      }
+    },
     "I dati attuali verranno sostituiti con il backup: %lld voci di diario e %lld voti%@. L'azione non è reversibile.": {
       "localizations": {
         "en": {
@@ -2079,6 +2437,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "FMT data was deleted from iCloud: sync is paused. Tap \"Sync now\" to upload this device's data again."
+          }
+        }
+      }
+    },
+    "I dati restano sul dispositivo: FMT parla solo con il registro, senza server propri. I voti importati vanno sui tuoi dispositivi via iCloud, come quelli che inserisci tu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays on your device: FMT talks only to the register, with no servers of its own. Imported grades reach your devices via iCloud, like the ones you enter."
+          }
+        }
+      }
+    },
+    "I tuoi voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your grades"
+          }
+        }
+      }
+    },
+    "I voti attuali verranno sostituiti con quelli della copia (%@). Prima FMT salva una copia dello stato attuale, così puoi tornare indietro. I voti del registro assenti dalla copia non verranno reimportati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current grades will be replaced with the ones in this copy (%@). FMT first saves a copy of the current state, so you can go back. Register grades missing from the copy won't be imported again."
+          }
+        }
+      }
+    },
+    "I voti che hai inserito tu non vengono mai eliminati: quelli collegati al registro tornano come li avevi scritti, con le modifiche che hai fatto. Prima di scollegare FMT salva una copia di tutti i voti, ripristinabile da «Ripristina voti».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades you entered are never deleted: those linked to the register go back to how you wrote them, with any edits you made. Before unlinking, FMT saves a copy of all grades, which you can restore from “Restore grades”."
+          }
+        }
+      }
+    },
+    "I voti del registro arrivano nella tab Voti insieme a quelli che inserisci tu. Collegamento non ufficiale: tutto resta su questo dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register grades appear in the Grades tab alongside the ones you enter. Unofficial connection: everything stays on this device."
+          }
+        }
+      }
+    },
+    "I voti delle materie non ancora confermate restano in attesa e non vengono importati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades for subjects not yet confirmed stay on hold and aren't imported."
           }
         }
       }
@@ -2149,6 +2567,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "The next grade is an opportunity, not a threat. 😉"
+          }
+        }
+      }
+    },
+    "Il registro ha limitato o bloccato temporaneamente l'accesso a questo account. FMT non riprova da solo: attendi un po' prima di riprovare.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register has limited or temporarily blocked access to this account. FMT won't retry on its own: wait a while before trying again."
+          }
+        }
+      }
+    },
+    "Il registro ha restituito molti meno voti del previsto: per sicurezza nessun voto è stato segnato come rimosso.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register returned far fewer grades than expected: to be safe, no grade was marked as removed."
+          }
+        }
+      }
+    },
+    "Il registro ha rifiutato nome utente o password. Per evitare il blocco dell'account FMT non riprova da solo: accedi di nuovo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register rejected the username or password. To avoid locking the account FMT won't retry on its own: sign in again."
+          }
+        }
+      }
+    },
+    "Il registro ha risposto in un formato inatteso (potrebbe essere cambiato). Nessun voto è stato modificato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register replied in an unexpected format (it may have changed). No grades were changed."
+          }
+        }
+      }
+    },
+    "Il registro ha un voto simile a uno dei tuoi: scegli tu, così non compare due volte.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register has a grade similar to one of yours: you choose, so it doesn't appear twice."
+          }
+        }
+      }
+    },
+    "Il registro non accetta più questa versione: serve un aggiornamento di FMT.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register no longer accepts this version: an FMT update is needed."
+          }
+        }
+      }
+    },
+    "Il registro potrebbe limitare o bloccare l'account se nota accessi insoliti. FMT sincronizza di rado e non riprova mai dopo una password rifiutata.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register might limit or block the account if it notices unusual sign-ins. FMT syncs rarely and never retries after a rejected password."
           }
         }
       }
@@ -2269,6 +2757,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't open the file."
+          }
+        }
+      }
+    },
+    "Impossibile raggiungere il registro. Controlla la connessione e riprova.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't reach the register. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Impossibile ripristinare questa copia: i voti attuali non sono stati modificati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't restore this copy: your current grades were not changed."
+          }
+        }
+      }
+    },
+    "Impossibile salvare i voti in sicurezza in questo momento. Nessun voto è stato modificato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades can't be saved safely right now. No grades were changed."
+          }
+        }
+      }
+    },
+    "Impossibile salvare la copia di sicurezza dei voti, quindi non è stato modificato nulla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the safety copy of your grades, so nothing was changed."
+          }
+        }
+      }
+    },
+    "Impossibile salvare le credenziali nel Portachiavi. Riprova.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the credentials in the Keychain. Try again."
           }
         }
       }
@@ -2583,6 +3121,16 @@
         }
       }
     },
+    "La sessione del registro è scaduta. Riprova.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The register session has expired. Try again."
+          }
+        }
+      }
+    },
     "La striscia dei giorni": {
       "localizations": {
         "en": {
@@ -2673,6 +3221,16 @@
         }
       }
     },
+    "Le modifiche arrivate dal registro sembravano anomale e non sono state applicate. I tuoi voti sono invariati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The changes from the register looked unusual and were not applied. Your grades are unchanged."
+          }
+        }
+      }
+    },
     "Le note con questa etichetta compariranno qui.": {
       "localizations": {
         "en": {
@@ -2683,12 +3241,32 @@
         }
       }
     },
+    "Le stesse credenziali dell'app ufficiale dello studente. La password viene inviata solo al registro e salvata nel Portachiavi di questo dispositivo per rinnovare l'accesso quando la sessione scade.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The same credentials as the student's official app. The password is sent only to the register and saved in this device's Keychain to renew access when the session expires."
+          }
+        }
+      }
+    },
     "Le tre viste": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The three views"
+          }
+        }
+      }
+    },
+    "Leggi con attenzione: per continuare devi accettare.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read carefully: you must accept to continue."
           }
         }
       }
@@ -2783,6 +3361,16 @@
         }
       }
     },
+    "Mai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        }
+      }
+    },
     "Mail non configurata": {
       "localizations": {
         "en": {
@@ -2859,6 +3447,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Subjects"
+          }
+        }
+      }
+    },
+    "Materie da confermare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subjects to confirm"
+          }
+        }
+      }
+    },
+    "Materie del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register subjects"
+          }
+        }
+      }
+    },
+    "Materie dell'app": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App subjects"
           }
         }
       }
@@ -3273,6 +3891,16 @@
         }
       }
     },
+    "Nessuna copia salvata finora. FMT ne crea una prima del collegamento al registro e prima di ogni sincronizzazione che cambia i voti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No copies saved yet. FMT makes one before linking the register and before every sync that changes your grades."
+          }
+        }
+      }
+    },
     "Nessuna corrispondenza": {
       "localizations": {
         "en": {
@@ -3323,6 +3951,16 @@
         }
       }
     },
+    "Nessuna materia del registro per ora.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No register subjects yet."
+          }
+        }
+      }
+    },
     "Nessuna verifica in programma": {
       "localizations": {
         "en": {
@@ -3349,6 +3987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No"
+          }
+        }
+      }
+    },
+    "No, è un voto diverso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No, it's a different grade"
           }
         }
       }
@@ -3383,6 +4031,46 @@
         }
       }
     },
+    "Nome della materia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subject name"
+          }
+        }
+      }
+    },
+    "Nome utente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Username"
+          }
+        }
+      }
+    },
+    "Nome utente e password vengono salvati nel Portachiavi di questo dispositivo (non su iCloud), solo per rinnovare l'accesso quando scade. Scollegando vengono cancellati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Username and password are saved in this device's Keychain (not in iCloud), only to renew access when it expires. Unlinking deletes them."
+          }
+        }
+      }
+    },
+    "Nome utente o password non corretti. Per sicurezza FMT non riprova da solo: accedi di nuovo con i dati giusti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incorrect username or password. For safety FMT won't retry on its own: sign in again with the right details."
+          }
+        }
+      }
+    },
     "Non attiva": {
       "localizations": {
         "en": {
@@ -3399,6 +4087,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "There are no notes for \"%@\"."
+          }
+        }
+      }
+    },
+    "Non collegato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not linked"
           }
         }
       }
@@ -3443,6 +4141,16 @@
         }
       }
     },
+    "Notifiche voti nuovi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New grade notifications"
+          }
+        }
+      }
+    },
     "Novembre": {
       "localizations": {
         "en": {
@@ -3479,6 +4187,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New lesson"
+          }
+        }
+      }
+    },
+    "Nuova materia «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New subject “%@”"
           }
         }
       }
@@ -3629,6 +4347,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every bit of study today is a better grade tomorrow. 📚"
+          }
+        }
+      }
+    },
+    "Operazione annullata: il registro è stato scollegato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled: the register was unlinked."
           }
         }
       }
@@ -3813,6 +4541,16 @@
         }
       }
     },
+    "Password": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password"
+          }
+        }
+      }
+    },
     "Pensata per iPad": {
       "localizations": {
         "en": {
@@ -3983,6 +4721,76 @@
         }
       }
     },
+    "Presto disponibile": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming soon"
+          }
+        }
+      }
+    },
+    "Prima del collegamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before linking"
+          }
+        }
+      }
+    },
+    "Prima del collegamento e di ogni sincronizzazione che cambia qualcosa FMT salva una copia dei voti sul dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before linking and before every sync that changes something, FMT saves a copy of your grades on the device."
+          }
+        }
+      }
+    },
+    "Prima dello scollegamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before unlinking"
+          }
+        }
+      }
+    },
+    "Prima di collegare %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before linking %@"
+          }
+        }
+      }
+    },
+    "Prima di un ripristino": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before a restore"
+          }
+        }
+      }
+    },
+    "Prima di una sincronizzazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before a sync"
+          }
+        }
+      }
+    },
     "Professore": {
       "localizations": {
         "en": {
@@ -4043,6 +4851,36 @@
         }
       }
     },
+    "Questa sincronizzazione modificherebbe %lld voti inseriti da te. Per sicurezza viene applicata solo se confermi (prima viene salvata una copia dei voti).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This sync would change %lld grades you entered. For safety it's applied only if you confirm (a copy of your grades is saved first)."
+          }
+        }
+      }
+    },
+    "Queste credenziali sono di un altro account. Per cambiare account scollega prima il registro.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These credentials belong to another account. To switch accounts, unlink the register first."
+          }
+        }
+      }
+    },
+    "Questo account non è supportato oppure il profilo è stato disattivato dalla scuola.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account isn't supported, or the profile has been disabled by the school."
+          }
+        }
+      }
+    },
     "Questo colore è già usato da: %@. Vuoi usarlo lo stesso?": {
       "localizations": {
         "en": {
@@ -4053,12 +4891,42 @@
         }
       }
     },
+    "Questo registro non è ancora disponibile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This register isn't available yet."
+          }
+        }
+      }
+    },
+    "Registro elettronico": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "School register"
+          }
+        }
+      }
+    },
     "Religione": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Religious education"
+          }
+        }
+      }
+    },
+    "Restano nella tab Voti come voti normali, senza collegamento al registro.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They stay in the Grades tab as normal grades, no longer linked to the register."
           }
         }
       }
@@ -4133,6 +5001,16 @@
         }
       }
     },
+    "Ripristina voti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore grades"
+          }
+        }
+      }
+    },
     "Ripristinare il backup?": {
       "localizations": {
         "en": {
@@ -4149,6 +5027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Discard the changes?"
+          }
+        }
+      }
+    },
+    "Ripristinare questa copia?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore this copy?"
           }
         }
       }
@@ -4313,12 +5201,52 @@
         }
       }
     },
+    "Scollega": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlink"
+          }
+        }
+      }
+    },
+    "Scollega il registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlink the register"
+          }
+        }
+      }
+    },
+    "Scollegando, nome utente e password vengono cancellati dal Portachiavi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlinking deletes the username and password from the Keychain."
+          }
+        }
+      }
+    },
     "Scritto": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Written"
+          }
+        }
+      }
+    },
+    "Scrivi il nome della materia dell'app per «%@».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the app subject name for “%@”."
           }
         }
       }
@@ -4483,6 +5411,16 @@
         }
       }
     },
+    "Si è verificato un errore imprevisto. Nessun voto è stato modificato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unexpected error occurred. No grades were changed."
+          }
+        }
+      }
+    },
     "Sincronizza ora": {
       "localizations": {
         "en": {
@@ -4503,12 +5441,32 @@
         }
       }
     },
+    "Sincronizzazione…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncing…"
+          }
+        }
+      }
+    },
     "Soglia personalizzata": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Custom threshold"
+          }
+        }
+      }
+    },
+    "Sono tenute le ultime 10 copie, più quella di prima del collegamento, che non viene mai eliminata. Le copie restano solo su questo dispositivo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The last 10 copies are kept, plus the one from before linking, which is never deleted. Copies stay only on this device."
           }
         }
       }
@@ -4579,6 +5537,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "iCloud storage full"
+          }
+        }
+      }
+    },
+    "Stato": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
           }
         }
       }
@@ -4683,6 +5651,16 @@
         }
       }
     },
+    "Sì, è questo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, that's the one"
+          }
+        }
+      }
+    },
     "Tecnologia": {
       "localizations": {
         "en": {
@@ -4729,6 +5707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Theme and colors"
+          }
+        }
+      }
+    },
+    "Tenere i voti importati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep imported grades"
           }
         }
       }
@@ -4963,6 +5951,16 @@
         }
       }
     },
+    "Ultima sincronizzazione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last sync"
+          }
+        }
+      }
+    },
     "Ultimi voti": {
       "localizations": {
         "en": {
@@ -4979,6 +5977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Latest grades and subject list"
+          }
+        }
+      }
+    },
+    "Un avviso quando arrivano voti nuovi dal registro (mai per il primo import).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An alert when new grades arrive from the register (never for the first import)."
           }
         }
       }
@@ -5083,6 +6091,16 @@
         }
       }
     },
+    "Vengono eliminati solo i voti arrivati dal registro che non hai modificato.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only grades from the register that you haven't edited are deleted."
+          }
+        }
+      }
+    },
     "Verifica": {
       "localizations": {
         "en": {
@@ -5129,6 +6147,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Grades"
+          }
+        }
+      }
+    },
+    "Voti da controllare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades to check"
+          }
+        }
+      }
+    },
+    "Voti del registro che potrebbero essere già nella tua lista: decidi tu se sono lo stesso voto.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register grades that might already be in your list: you decide whether they're the same grade."
+          }
+        }
+      }
+    },
+    "Voti importati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported grades"
+          }
+        }
+      }
+    },
+    "Voti non letti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unread grades"
+          }
+        }
+      }
+    },
+    "Voti ripristinati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grades restored"
           }
         }
       }
@@ -5353,6 +6421,26 @@
         }
       }
     },
+    "nuova": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "new"
+          }
+        }
+      }
+    },
+    "suggerito": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "suggested"
+          }
+        }
+      }
+    },
     "termina tra %lld min": {
       "localizations": {
         "en": {
@@ -5383,12 +6471,52 @@
         }
       }
     },
+    "«No, è un voto diverso» importa il voto del registro come nuovo. «Decidi dopo» lo lascia in attesa senza importarlo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“No, it's a different grade” imports the register grade as new. “Decide later” keeps it on hold without importing it."
+          }
+        }
+      }
+    },
+    "«Suggerito» indica un abbinamento probabile ma non certo: controllalo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Suggested” means a likely but uncertain match: check it."
+          }
+        }
+      }
+    },
     "· %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "· %@"
+          }
+        }
+      }
+    },
+    "È già collegato un altro registro: scollegalo prima di collegarne uno nuovo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another register is already linked: unlink it before linking a new one."
+          }
+        }
+      }
+    },
+    "È questo il voto che hai già inserito?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Is this the grade you already entered?"
           }
         }
       }
@@ -5429,6 +6557,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "№%lld"
+          }
+        }
+      }
+    },
+    "Rimosso dal registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed from the register"
+          }
+        }
+      }
+    },
+    "Tieni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep"
+          }
+        }
+      }
+    },
+    "Altro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "Periodo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Commento del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register comment"
+          }
+        }
+      }
+    },
+    "Valore originale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original value"
+          }
+        }
+      }
+    },
+    "Docente del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register teacher"
+          }
+        }
+      }
+    },
+    "Tipo del registro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register type"
+          }
+        }
+      }
+    },
+    "Il voto non è più sul registro. Resta nell'app finché non lo elimini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This grade is no longer on the register. It stays in the app until you delete it."
+          }
+        }
+      }
+    },
+    "Dati arrivati dal registro, in sola lettura. Il tuo appunto resta modificabile.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data from the register, read-only. Your own note stays editable."
+          }
+        }
+      }
+    },
+    "Eliminare questo voto?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this grade?"
+          }
+        }
+      }
+    },
+    "Il voto verrà eliminato e non sarà più importato dal registro.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The grade will be deleted and will not be imported from the register again."
           }
         }
       }

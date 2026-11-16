@@ -444,6 +444,14 @@ struct SettingsView: View {
                     Self.row(L("Importa backup"), icon: "square.and.arrow.down", "#34D399")
                         .foregroundStyle(.primary)
                 }
+                if let gradesStore {
+                    NavigationLink {
+                        RegistroSettingsView(registro: AppStores.shared.registro, grades: gradesStore)
+                    } label: {
+                        RegistroSettingsRow(registro: AppStores.shared.registro)
+                    }
+                    .accessibilityIdentifier("settings.registro")
+                }
             } header: {
                 Self.header(L("Dati e backup"))
             } footer: {
